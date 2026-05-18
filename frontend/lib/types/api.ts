@@ -1,0 +1,96 @@
+export interface ApiError {
+  detail: string;
+}
+
+export type UserRole = "prof" | "rh" | "admin";
+
+export interface TokenResponse {
+  access_token: string;
+  role: UserRole;
+}
+
+// ── CV ──────────────────────────────────────────────────────────────────────
+
+export type CVStatus = "aucun" | "en_cours" | "traite" | "erreur";
+export type TaskStatus = "queued" | "processing" | "done" | "error";
+
+export interface CompetenceItem {
+  nom: string;
+  niveau: number;
+  annees_exp: number | null;
+}
+
+export interface ExperienceItem {
+  titre: string;
+  employeur: string | null;
+  date_debut: string | null;
+  date_fin: string | null;
+}
+
+export interface FormationItem {
+  diplome: string;
+  etablissement: string | null;
+  annee: number | null;
+}
+
+export interface LangueItem {
+  langue: string;
+  niveau: string;
+}
+
+export interface CVExtracted {
+  competences: CompetenceItem[];
+  experiences: ExperienceItem[];
+  formations: FormationItem[];
+  langues: LangueItem[];
+}
+
+export interface CVStatusResponse {
+  statut: TaskStatus;
+  data: CVExtracted | null;
+  champs_erreur: string[] | null;
+}
+
+export interface CVUploadResponse {
+  task_id: string;
+}
+
+// ── Affectations ─────────────────────────────────────────────────────────────
+
+export type AffectationStatus = "proposee" | "validee" | "rejetee";
+
+export interface Affectation {
+  id: number;
+  professeur_id: number;
+  cours_id: number;
+  session_id: number;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  statut: AffectationStatus;
+  justification: string | null;
+  valide_par: number | null;
+  cree_le: string;
+}
+
+// ── Pondérations ─────────────────────────────────────────────────────────────
+
+export interface Ponderation {
+  session_id: number;
+  w1: number;
+  w2: number;
+  w3: number;
+  w4: number;
+  xai_actif: boolean;
+}
+
+// ── Utilitaires ──────────────────────────────────────────────────────────────
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+}

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[project]
+name = "profmatch-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    # Web framework
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    # Base de données
+    "sqlalchemy[asyncio]",
+    "asyncpg",
+    "alembic",
+    # Validation et configuration
+    "pydantic",
+    "pydantic-settings",
+    # Authentification
+    "python-jose[cryptography]",
+    "passlib[bcrypt]",
+    # File d'attente
+    "celery[redis]",
+    "redis",
+    # Parsing CV
+    "pdfplumber",
+    "python-docx",
+    # LLM
+    "openai>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+    "pytest-mock",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
