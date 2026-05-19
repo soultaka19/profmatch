@@ -6,7 +6,7 @@ celery_app = Celery(
     "profmatch",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.cv_tasks"],
+    include=["app.services.cv_extraction_service"],
 )
 
 celery_app.conf.update(
@@ -16,4 +16,6 @@ celery_app.conf.update(
     timezone="America/Toronto",
     enable_utc=True,
     task_track_started=True,
+    task_always_eager=settings.CELERY_ALWAYS_EAGER,
+    task_eager_propagates=True,
 )

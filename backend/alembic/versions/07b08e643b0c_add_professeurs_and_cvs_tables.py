@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('nom_original', sa.String(length=255), nullable=False),
     sa.Column('chemin_fichier', sa.String(length=512), nullable=False),
     sa.Column('taille_octets', sa.Integer(), nullable=False),
-    sa.Column('mime_type', sa.String(length=64), nullable=False),
+    sa.Column('mime_type', sa.String(length=128), nullable=False),
     sa.Column('statut', sa.Enum('en_attente', 'en_cours', 'traite', 'erreur', name='cvstatut'), nullable=False),
     sa.Column('texte_brut', sa.Text(), nullable=True),
     sa.Column('message_erreur', sa.Text(), nullable=True),
