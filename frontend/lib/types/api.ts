@@ -102,3 +102,22 @@ export interface PaginatedResponse<T> {
   page: number;
   size: number;
 }
+
+// ── CV (feature cv-upload) ──────────────────────────────────────────────────
+
+export type CVStatut = "en_attente" | "en_cours" | "traite" | "erreur";
+
+export interface CVResponse {
+  id: number;
+  nom_original: string;
+  statut: CVStatut;
+  taille_octets: number;
+  mime_type: string;
+  televerse_le: string;
+  traite_le: string | null;
+  message_erreur: string | null;
+}
+
+export interface CVTexteResponse {
+  texte_brut: string;
+}

@@ -6,13 +6,23 @@ function getAuthHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response
       .json()
       .catch(() => ({ detail: "Erreur réseau" }));
-    throw new Error(
-      (error as { detail?: string }).detail ?? `HTTP ${response.status}`
+    throw new ApiError(
+      (error as { detail?: string }).detail ?? `HTTP ${response.status}`,
+      response.status
     );
   }
   if (response.status === 204) return {} as T;
