@@ -28,7 +28,9 @@ class Professeur(Base):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="professeur", uselist=False)
-    # NB: relation `cv` ajoutée dans Task 6 quand le modèle CV existe
+    cv: Mapped["CV | None"] = relationship(
+        "CV", back_populates="professeur", uselist=False, cascade="all, delete-orphan"
+    )
 
 
 @event.listens_for(User, "after_insert")
