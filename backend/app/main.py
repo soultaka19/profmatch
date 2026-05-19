@@ -17,9 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Les routers sont ajoutés ici au fur et à mesure des features
-# from app.routers import auth, cv, affectations
-# app.include_router(auth.router, prefix="/api")
+from app.routers import auth
+
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
 
 @app.get("/health", tags=["system"])
