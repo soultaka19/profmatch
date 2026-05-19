@@ -18,8 +18,9 @@ RUN pip install --no-cache-dir -e ".[dev]"
 COPY . .
 
 # Entrypoint : migrations puis démarrage
+# sed normalise les fins de ligne CRLF → LF (cas Windows sans .gitattributes)
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 

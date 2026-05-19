@@ -1,0 +1,19 @@
+# Normalisation automatique des fins de ligne
+* text=auto
+
+# Scripts shell et fichiers Linux → toujours LF
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+*.mako text eol=lf
+
+# Fichiers Windows-compatibles → CRLF sur checkout Windows
+*.md text eol=crlf
+*.txt text eol=crlf
+
+# Binaires — pas de conversion
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.ico binary
