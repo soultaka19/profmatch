@@ -7,6 +7,14 @@ export type UserRole = "prof" | "rh" | "admin";
 export interface TokenResponse {
   access_token: string;
   role: UserRole;
+  nom_complet: string;
+}
+
+export interface UserOut {
+  id: number;
+  email: string;
+  role: UserRole;
+  nom_complet: string;
 }
 
 // ── CV ──────────────────────────────────────────────────────────────────────
