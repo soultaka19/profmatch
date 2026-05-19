@@ -1,4 +1,3 @@
-import asyncio
 from typing import AsyncGenerator
 
 import pytest
@@ -14,29 +13,20 @@ from app.main import app
 from app.models.user import User, UserRole
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="session")
-async def test_engine():
+@pytest_asyncio.fixture
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Crée un engine + schéma propre par test (function scope pour éviter les
+    conflits d'event loop avec pytest-asyncio 1.x)."""
     engine = create_async_engine(settings.TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
 
-
-@pytest_asyncio.fixture
-async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
-    SessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)
+    SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
     async with SessionLocal() as session:
         yield session
         await session.rollback()
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture

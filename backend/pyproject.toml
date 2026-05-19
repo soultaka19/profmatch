@@ -19,11 +19,12 @@ dependencies = [
     "asyncpg",
     "alembic",
     # Validation et configuration
-    "pydantic",
+    "pydantic[email]",
     "pydantic-settings",
     # Authentification
     "python-jose[cryptography]",
     "passlib[bcrypt]",
+    "bcrypt<4",
     # File d'attente
     "celery[redis]",
     "redis",
