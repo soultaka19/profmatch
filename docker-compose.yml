@@ -15,6 +15,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-profmatch}:${POSTGRES_PASSWORD:-profmatch}@db:5432/${POSTGRES_DB:-profmatch}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -31,6 +34,9 @@ services:
     build: ./backend
     command: celery -A app.worker worker --loglevel=info --concurrency=2
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-profmatch}:${POSTGRES_PASSWORD:-profmatch}@db:5432/${POSTGRES_DB:-profmatch}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -40,6 +46,8 @@ services:
 
   db:
     image: postgres:16-alpine
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-profmatch}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-profmatch}
@@ -55,6 +63,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
