@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +16,7 @@ class Settings(BaseSettings):
 
     # Redis / Celery
     REDIS_URL: str = "redis://redis:6379/0"
+    CELERY_ALWAYS_EAGER: bool = False
 
     # JWT
     SECRET_KEY: str
@@ -28,6 +31,7 @@ class Settings(BaseSettings):
 
     # Upload CV
     UPLOAD_DIR: str = "/app/uploads"
+    UPLOADS_DIR: Path = Path("/uploads")
     MAX_UPLOAD_SIZE_MB: int = 10
 
 
