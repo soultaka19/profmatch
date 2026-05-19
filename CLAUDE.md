@@ -252,8 +252,8 @@ En cas de `ValidationError`, retry automatique max 2× — le 2e retry inclut l'
 - Variables obligatoires :
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/profmatch
-REDIS_URL=redis://redis:6379/0
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/profmatch
+REDIS_URL=redis://localhost:6379/0
 SECRET_KEY=<jwt-secret-min-32-chars>
 LLM_API_URL=https://defi-informatique.cocalc.cloud/api
 LLM_API_COOKIE=FC3yLm9Wyu4Fz7FS

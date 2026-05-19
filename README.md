@@ -80,11 +80,11 @@ Ouvrir `.env` et remplir **toutes** les valeurs vides :
 POSTGRES_USER=profmatch
 POSTGRES_PASSWORD=profmatch
 POSTGRES_DB=profmatch
-DATABASE_URL=postgresql+asyncpg://profmatch:profmatch@db:5432/profmatch
+DATABASE_URL=postgresql+asyncpg://profmatch:profmatch@localhost:5432/profmatch
 TEST_DATABASE_URL=postgresql+asyncpg://profmatch:profmatch@localhost:5432/profmatch_test
 
 # Redis
-REDIS_URL=redis://redis:6379/0
+REDIS_URL=redis://localhost:6379/0
 
 # JWT — générer avec : python -c "import secrets; print(secrets.token_hex(32))"
 SECRET_KEY=<générer une clé aléatoire>
