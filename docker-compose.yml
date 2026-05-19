@@ -18,6 +18,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-profmatch}:${POSTGRES_PASSWORD:-profmatch}@db:5432/${POSTGRES_DB:-profmatch}
       REDIS_URL: redis://redis:6379/0
+      UPLOADS_DIR: /uploads
+      CELERY_ALWAYS_EAGER: "false"
+    volumes:
+      - profmatch_uploads:/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +41,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-profmatch}:${POSTGRES_PASSWORD:-profmatch}@db:5432/${POSTGRES_DB:-profmatch}
       REDIS_URL: redis://redis:6379/0
+      UPLOADS_DIR: /uploads
+      CELERY_ALWAYS_EAGER: "false"
+    volumes:
+      - profmatch_uploads:/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -74,3 +82,4 @@ services:
 
 volumes:
   postgres_data:
+  profmatch_uploads:

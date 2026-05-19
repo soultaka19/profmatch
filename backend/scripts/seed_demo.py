@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.core.security import hash_password
+from app.models.professeur import Professeur  # noqa: F401  - enregistre le listener after_insert
 from app.models.user import User, UserRole
 
 DEMO_USERS = [
@@ -57,6 +58,16 @@ async def seed() -> None:
             db.add(user)
             print(f"[create] {u['email']} ({u['role'].value})")
         await db.commit()
+
+        # Vérifie que le listener after_insert a bien créé la ligne professeur.
+        result = await db.execute(
+            select(Professeur).join(User).where(User.email == "prof@defi-lacite.ca")
+        )
+        prof_row = result.scalar_one_or_none()
+        if prof_row is None:
+            print("[error] La ligne professeur n'a pas été créée pour prof@defi-lacite.ca")
+        else:
+            print(f"[ok] Ligne professeur id={prof_row.id} pour prof@defi-lacite.ca")
 
     await engine.dispose()
     print("Seed terminé.")
