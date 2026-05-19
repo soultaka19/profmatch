@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     # Base de données
     DATABASE_URL: str
+    TEST_DATABASE_URL: str = ""
 
     # Redis / Celery
     REDIS_URL: str = "redis://redis:6379/0"
