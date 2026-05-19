@@ -10,7 +10,7 @@ from alembic import context
 from app.db.base import Base
 
 # Importer les modèles ici pour qu'Alembic les détecte lors de l'autogenerate
-# from app.models import user, professeur, cours  # décommenter au fur et à mesure
+from app.models import user  # noqa: F401
 
 config = context.config
 
