@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import auth
+
 app = FastAPI(
     title="ProfMatch API",
     version="0.1.0",
@@ -17,9 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Les routers sont ajoutés ici au fur et à mesure des features
-# from app.routers import auth, cv, affectations
-# app.include_router(auth.router, prefix="/api")
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
 
 @app.get("/health", tags=["system"])
