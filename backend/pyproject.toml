@@ -43,6 +43,7 @@ dev = [
     "httpx",
     "pytest-mock",
     "ruff",
+    "reportlab",
 ]
 
 [tool.pytest.ini_options]
