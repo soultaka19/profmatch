@@ -3,7 +3,7 @@ from enum import Enum
 
 from sqlalchemy import BigInteger, DateTime, String, func
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -24,4 +24,8 @@ class User(Base):
     nom_complet: Mapped[str] = mapped_column(String(255), nullable=False)
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    professeur: Mapped["Professeur | None"] = relationship(
+        "Professeur", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
