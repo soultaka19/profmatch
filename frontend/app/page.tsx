@@ -1,7 +1,27 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+
+import { useAuth } from "@/components/auth/AuthProvider";
+
 export default function Home() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (user) {
+      router.replace(`/dashboard/${user.role}`);
+    } else {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#FBF7F0]">
-      <h1 className="text-2xl font-semibold text-[#8B2332]">ProfMatch — en construction</h1>
+    <main className="flex min-h-screen items-center justify-center bg-creme">
+      <Loader2 className="h-6 w-6 animate-spin text-bordeaux" />
     </main>
   );
 }
