@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, event, func
+from sqlalchemy import BigInteger, DateTime, Enum as SQLEnum, ForeignKey, Text, event, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.competence import SourceOrigine
 from app.models.user import User, UserRole
 
 if TYPE_CHECKING:
@@ -32,6 +33,18 @@ class Professeur(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+    resume_profil: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resume_profil_source: Mapped[SourceOrigine] = mapped_column(
+        SQLEnum(
+            SourceOrigine,
+            name="source_origine",
+            values_callable=lambda e: [m.value for m in e],
+            create_type=False,
+        ),
+        nullable=False,
+        default=SourceOrigine.LLM,
+        server_default=SourceOrigine.LLM.value,
     )
 
     user: Mapped["User"] = relationship("User", back_populates="professeur", uselist=False)
