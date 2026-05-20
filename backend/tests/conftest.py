@@ -112,6 +112,30 @@ def celery_eager(monkeypatch):
     monkeypatch.setattr(celery_app.conf, "task_eager_propagates", True)
 
 
+@pytest.fixture(autouse=True)
+def mock_llm_client(monkeypatch):
+    """Mock global du client LLM — JAMAIS d'appel API réel en CI.
+
+    Retourne par défaut un client qui produit un JSON valide d'extraction (ok_complete).
+    Tests qui veulent un comportement différent doivent override via patch local.
+    """
+    from unittest.mock import MagicMock
+    fixture_path = FIXTURES_DIR / "llm_responses" / "ok_complete.json"
+    if not fixture_path.exists():
+        return  # fixtures pas encore créées (avant Task 10), pas de mock
+    content = fixture_path.read_text(encoding="utf-8")
+
+    def fake_factory():
+        client = MagicMock()
+        client.chat.completions.create.return_value = MagicMock(
+            choices=[MagicMock(message=MagicMock(content=content))]
+        )
+        return client
+
+    monkeypatch.setattr("app.services.llm_client.get_llm_client", fake_factory)
+    monkeypatch.setattr("app.tasks.extraction_tasks.get_llm_client", fake_factory)
+
+
 @pytest_asyncio.fixture
 async def professeur_prof(db_session: AsyncSession, test_user_prof: User) -> Professeur:
     result = await db_session.execute(

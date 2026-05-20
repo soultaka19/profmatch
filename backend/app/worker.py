@@ -6,7 +6,10 @@ celery_app = Celery(
     "profmatch",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.services.cv_extraction_service"],
+    include=[
+        "app.services.cv_extraction_service",
+        "app.tasks.extraction_tasks",
+    ],
 )
 
 celery_app.conf.update(

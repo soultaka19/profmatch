@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,7 @@ def _seed_cv_for(prof: Professeur, content: bytes, ext: str, uploads_dir: Path) 
 
 
 @pytest.mark.asyncio
-async def test_extract_pdf_updates_status_traite(
+async def test_extract_pdf_extracts_text_and_chains_to_llm(
     db_session: AsyncSession,
     professeur_prof: Professeur,
     tmp_uploads_dir: Path,
@@ -41,18 +42,21 @@ async def test_extract_pdf_updates_status_traite(
     await db_session.commit()
     await db_session.refresh(cv)
 
-    from app.services.cv_extraction_service import extract_cv_text
-    extract_cv_text(cv.id)
+    # Mock le maillon LLM en aval pour éviter un vrai appel API.
+    with patch("app.tasks.extraction_tasks.extract_cv_data_llm") as mock_llm_task:
+        from app.services.cv_extraction_service import extract_cv_text
+        extract_cv_text(cv.id)
+        mock_llm_task.delay.assert_called_once_with(cv.id)
 
     await db_session.refresh(cv)
-    assert cv.statut == CVStatut.TRAITE
+    # extract_cv_text laisse le statut EN_COURS — la chaîne LLM le passera à TRAITE.
+    assert cv.statut == CVStatut.EN_COURS
     assert cv.texte_brut is not None
     assert "Jean Dupont" in cv.texte_brut
-    assert cv.traite_le is not None
 
 
 @pytest.mark.asyncio
-async def test_extract_docx_updates_status_traite(
+async def test_extract_docx_extracts_text_and_chains_to_llm(
     db_session: AsyncSession,
     professeur_prof: Professeur,
     tmp_uploads_dir: Path,
@@ -64,11 +68,13 @@ async def test_extract_docx_updates_status_traite(
     await db_session.commit()
     await db_session.refresh(cv)
 
-    from app.services.cv_extraction_service import extract_cv_text
-    extract_cv_text(cv.id)
+    with patch("app.tasks.extraction_tasks.extract_cv_data_llm") as mock_llm_task:
+        from app.services.cv_extraction_service import extract_cv_text
+        extract_cv_text(cv.id)
+        mock_llm_task.delay.assert_called_once_with(cv.id)
 
     await db_session.refresh(cv)
-    assert cv.statut == CVStatut.TRAITE
+    assert cv.statut == CVStatut.EN_COURS
     assert cv.texte_brut is not None
     assert "Marie Tremblay" in cv.texte_brut
 

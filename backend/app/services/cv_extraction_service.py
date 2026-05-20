@@ -70,10 +70,15 @@ def extract_cv_text(self, cv_id: int) -> None:
                 raise ValueError("Aucun texte détectable dans le CV (PDF image-only ?).")
 
             cv.texte_brut = texte
-            cv.statut = CVStatut.TRAITE
-            cv.traite_le = datetime.now(timezone.utc)
+            # Statut RESTE en_cours — la chaîne LLM (extract_cv_data_llm) continue.
+            # Le statut passera à TRAITE quand l'extraction structurée sera terminée.
             cv.message_erreur = None
             db.commit()
+
+            # Chaînage Celery : déclenche l'extraction LLM en aval.
+            # Lazy import pour éviter cycle (extraction_tasks importe la même metadata).
+            from app.tasks.extraction_tasks import extract_cv_data_llm
+            extract_cv_data_llm.delay(cv.id)
         except (FileNotFoundError, ValueError) as exc:
             cv.statut = CVStatut.ERREUR
             cv.message_erreur = str(exc)
