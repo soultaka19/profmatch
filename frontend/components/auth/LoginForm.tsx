@@ -51,15 +51,20 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-sm">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 flex w-full max-w-[360px] flex-col gap-4">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
+            <FormItem className="gap-1.5">
+              <FormLabel className="text-sm font-medium text-fg">Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  className="rounded-md border-border bg-surface px-4 py-3 text-sm placeholder:text-fg-subtle"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -69,16 +74,25 @@ export function LoginForm() {
           control={form.control}
           name="password"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mot de passe</FormLabel>
+            <FormItem className="gap-1.5">
+              <FormLabel className="text-sm font-medium text-fg">Mot de passe</FormLabel>
               <FormControl>
-                <Input type="password" autoComplete="current-password" {...field} />
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  className="rounded-md border-border bg-surface px-4 py-3 text-sm placeholder:text-fg-subtle"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={submitting} className="w-full">
+        <Button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-active hover:bg-primary/95"
+        >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Se connecter"}
         </Button>
       </form>
