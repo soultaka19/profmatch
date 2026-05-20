@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CVDropzone, type CVDropzoneHandle } from "@/components/cv/CVDropzone";
 import { CVStatusCard } from "@/components/cv/CVStatusCard";
-import { CVTextPreview } from "@/components/cv/CVTextPreview";
+import { CVExtractionPanel } from "@/components/cv/extraction/CVExtractionPanel";
 import { useCVPolling } from "@/lib/hooks/useCVPolling";
 
 const TITLE_BY_STATUT: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function ProfDashboardPage() {
 
       {cv?.statut === "traite" && (
         <>
-          <CVTextPreview />
+          <CVExtractionPanel />
           <CVDropzone ref={dropzoneRef} onUploaded={() => mutate()} variant="compact" />
         </>
       )}
