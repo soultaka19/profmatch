@@ -8,15 +8,36 @@ const config: Config = {
     "./lib/**/*.{ts,tsx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        // Palette académique ProfMatch (voir CLAUDE.md)
-        bordeaux: "#8B2332",
-        "vert-sapin": "#1F4D3F",
-        "gris-violet": "#4A3F5C",
-        creme: "#FBF7F0",
-      },
-    },
+  	extend: {
+  		colors: {
+  			bordeaux: '#8B2332',
+  			'vert-sapin': '#1F4D3F',
+  			'gris-violet': '#4A3F5C',
+  			creme: '#FBF7F0'
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
+  		}
+  	}
   },
   plugins: [],
 };

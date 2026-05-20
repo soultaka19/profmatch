@@ -17,6 +17,7 @@ dependencies = [
     # Base de données
     "sqlalchemy[asyncio]",
     "asyncpg",
+    "psycopg2-binary",
     "alembic",
     # Validation et configuration
     "pydantic[email]",
@@ -43,6 +44,7 @@ dev = [
     "httpx",
     "pytest-mock",
     "ruff",
+    "reportlab",
 ]
 
 [tool.pytest.ini_options]
