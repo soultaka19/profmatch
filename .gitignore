@@ -12,6 +12,18 @@
 docs/features/
 
 # ──────────────────────────────
+# Brainstorming visuel + dispatch prompts (locaux uniquement)
+# ──────────────────────────────
+.superpowers/
+
+# ──────────────────────────────
+# Images d'inspiration design (locales uniquement)
+# ──────────────────────────────
+inspiration-*.png
+inspiration-*.jpg
+inspiration-*.jpeg
+
+# ──────────────────────────────
 # Fichiers CV uploadés
 # ──────────────────────────────
 backend/uploads/*
