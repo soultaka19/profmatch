@@ -18,11 +18,11 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
   const active = !disabled && pathname === href;
 
   const baseClasses =
-    "flex items-center gap-3 pl-6 pr-4 py-2.5 text-[14px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
+    "relative flex items-center gap-3 pl-6 pr-4 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
 
   const stateClasses = active
-    ? "bg-primary text-primary-foreground font-medium shadow-active"
-    : "text-fg-muted hover:bg-white/60";
+    ? "bg-primary-soft text-primary font-medium before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-primary before:content-['']"
+    : "text-fg-muted hover:bg-white/70 hover:text-fg";
 
   if (disabled) {
     return (
@@ -30,9 +30,12 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
         type="button"
         onClick={onDisabledClick}
         data-active="false"
-        className={cn(baseClasses, "text-fg-subtle hover:bg-white/60 text-left w-full")}
+        className={cn(
+          baseClasses,
+          "w-full text-left text-fg-subtle hover:bg-white/70 hover:text-fg-muted"
+        )}
       >
-        <Icon className="h-[18px] w-[18px] opacity-70" />
+        <Icon className="h-[18px] w-[18px] opacity-80" />
         <span>{label}</span>
       </button>
     );
@@ -44,7 +47,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
       data-active={active ? "true" : "false"}
       className={cn(baseClasses, stateClasses)}
     >
-      <Icon className={cn("h-[18px] w-[18px]", active ? "opacity-100" : "opacity-70")} />
+      <Icon className={cn("h-[18px] w-[18px]", active ? "text-primary" : "opacity-80")} />
       <span>{label}</span>
     </Link>
   );
