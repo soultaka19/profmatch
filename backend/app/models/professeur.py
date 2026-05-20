@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.competence import Competence  # noqa: F401
     from app.models.experience import Experience  # noqa: F401
     from app.models.formation import Formation  # noqa: F401
+    from app.models.langue import Langue  # noqa: F401
 
 
 class Professeur(Base):
@@ -49,6 +50,11 @@ class Professeur(Base):
     )
     formations: Mapped[list["Formation"]] = relationship(
         "Formation",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
+    )
+    langues: Mapped[list["Langue"]] = relationship(
+        "Langue",
         back_populates="professeur",
         cascade="all, delete-orphan",
     )
