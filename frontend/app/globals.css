@@ -3,12 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --bordeaux: #8B2332;
-  --vert-sapin: #1F4D3F;
-  --gris-violet: #4A3F5C;
-  --creme: #FBF7F0;
+  --primary: #8B2332;
+  --primary-foreground: #FBF7F0;
+  --surface: #FBF7F0;
+  --canvas: #FFFFFF;
+  --success: #1F4D3F;
+  --destructive: #B91C1C;
+  --warning: #B45309;
+  --info: #3B82F6;
+  --fg: #18181B;
+  --fg-muted: #52525B;
+  --fg-subtle: #A1A1AA;
+  --border: #E4E4E7;
+  --border-soft: #F4F4F5;
 }
 
 body {
-  background-color: var(--creme);
+  background-color: var(--canvas);
+  color: var(--fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
