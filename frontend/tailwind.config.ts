@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bordeaux: "#991F36",
+        bordeaux: "#A01835",
         "vert-sapin": "#047857",
         creme: "#F7F2EA",
         primary: {
@@ -32,6 +32,7 @@ const config: Config = {
         border: {
           DEFAULT: "var(--border)",
           soft: "var(--border-soft)",
+          surface: "var(--surface-border)",
         },
         success: {
           DEFAULT: "var(--success)",

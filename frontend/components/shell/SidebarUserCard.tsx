@@ -21,7 +21,7 @@ export function SidebarUserCard() {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       title="Se déconnecter"
-      className="group flex w-full items-center gap-3 border-t border-border-soft bg-surface px-6 py-4 text-left outline-none transition-colors hover:bg-primary-soft/50 focus-visible:bg-primary-soft/50"
+      className="group flex w-full items-center gap-3 border-t border-border-surface bg-surface px-6 py-4 text-left outline-none transition-colors hover:bg-primary-soft focus-visible:bg-primary-soft"
     >
       <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
         {initial(user.nom_complet)}

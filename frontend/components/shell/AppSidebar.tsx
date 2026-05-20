@@ -19,13 +19,13 @@ export function AppSidebar({ navigation, homeHref = "/" }: Props) {
   };
 
   return (
-    <aside className="flex w-[260px] flex-shrink-0 flex-col border-r border-border-soft bg-surface">
+    <aside className="flex w-[260px] flex-shrink-0 flex-col border-r border-border-surface bg-surface">
       <div className="flex flex-col gap-7 pb-6 pt-6">
         <SidebarBrand homeHref={homeHref} />
 
         {navigation.map((section) => (
           <div key={section.label} className="flex flex-col gap-1">
-            <div className="mb-2 pl-6 text-eyebrow font-semibold uppercase text-primary">
+            <div className="mb-2 pl-6 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
               {section.label}
             </div>
             {section.items.map((item) => (
