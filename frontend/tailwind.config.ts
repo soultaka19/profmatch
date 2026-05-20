@@ -10,9 +10,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bordeaux: "#A01835",
-        "vert-sapin": "#047857",
-        creme: "#F7F2EA",
         primary: {
           DEFAULT: "var(--primary)",
           dark: "var(--primary-dark)",
@@ -66,9 +63,9 @@ const config: Config = {
       },
       boxShadow: {
         soft: "0 1px 2px rgba(17,24,39,0.04)",
-        card: "0 1px 3px rgba(17,24,39,0.04), 0 8px 24px rgba(153,31,54,0.04)",
-        lift: "0 4px 12px rgba(17,24,39,0.06), 0 16px 40px rgba(153,31,54,0.06)",
-        active: "0 1px 2px rgba(153,31,54,0.18), 0 4px 12px rgba(153,31,54,0.12)",
+        card: "0 1px 3px rgba(17,24,39,0.04), 0 8px 24px rgba(17,24,39,0.04)",
+        lift: "0 4px 12px rgba(17,24,39,0.06), 0 16px 40px rgba(17,24,39,0.06)",
+        active: "0 1px 2px rgba(17,24,39,0.16), 0 4px 12px rgba(17,24,39,0.10)",
       },
       keyframes: {
         "accordion-down": {
