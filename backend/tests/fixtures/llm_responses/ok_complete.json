@@ -1,0 +1,17 @@
+{
+  "resume": "Développeur Python senior avec 8 ans d'expérience.",
+  "competences": [
+    {"nom": "Python", "niveau": "expert"},
+    {"nom": "Django", "niveau": "avance"}
+  ],
+  "experiences": [
+    {"poste": "Lead Dev", "employeur": "Acme", "annee_debut": 2020, "annee_fin": null, "description_courte": "Backend Django"}
+  ],
+  "formations": [
+    {"diplome": "Maîtrise informatique", "etablissement": "U. Laval", "annee": 2018}
+  ],
+  "langues": [
+    {"langue": "Français", "niveau": "natif"},
+    {"langue": "Anglais", "niveau": "C1"}
+  ]
+}

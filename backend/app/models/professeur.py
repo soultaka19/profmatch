@@ -1,10 +1,18 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, event, func
+from sqlalchemy import BigInteger, DateTime, Enum as SQLEnum, ForeignKey, Text, event, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.competence import SourceOrigine
 from app.models.user import User, UserRole
+
+if TYPE_CHECKING:
+    from app.models.competence import Competence  # noqa: F401
+    from app.models.experience import Experience  # noqa: F401
+    from app.models.formation import Formation  # noqa: F401
+    from app.models.langue import Langue  # noqa: F401
 
 
 class Professeur(Base):
@@ -26,10 +34,42 @@ class Professeur(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    resume_profil: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resume_profil_source: Mapped[SourceOrigine] = mapped_column(
+        SQLEnum(
+            SourceOrigine,
+            name="source_origine",
+            values_callable=lambda e: [m.value for m in e],
+            create_type=False,
+        ),
+        nullable=False,
+        default=SourceOrigine.LLM,
+        server_default=SourceOrigine.LLM.value,
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="professeur", uselist=False)
     cv: Mapped["CV | None"] = relationship(
         "CV", back_populates="professeur", uselist=False, cascade="all, delete-orphan"
+    )
+    competences: Mapped[list["Competence"]] = relationship(
+        "Competence",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
+    )
+    experiences: Mapped[list["Experience"]] = relationship(
+        "Experience",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
+    )
+    formations: Mapped[list["Formation"]] = relationship(
+        "Formation",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
+    )
+    langues: Mapped[list["Langue"]] = relationship(
+        "Langue",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
     )
 
 
