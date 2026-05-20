@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Serif, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme/config";
+
+const NO_FLASH_SCRIPT = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t!=="anthraciteIvory"&&t!=="institutionalBurgundy")t=${JSON.stringify(DEFAULT_THEME)};document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme",${JSON.stringify(DEFAULT_THEME)});}})();`;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,10 +39,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${instrumentSerif.variable} ${geistMono.variable}`}>
+    <html
+      lang="fr"
+      className={`${inter.variable} ${instrumentSerif.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+      </head>
       <body className="font-sans">
-        <AuthProvider>{children}</AuthProvider>
-        <Toaster />
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
