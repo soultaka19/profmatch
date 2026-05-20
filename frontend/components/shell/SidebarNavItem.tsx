@@ -32,10 +32,10 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
         data-active="false"
         className={cn(
           baseClasses,
-          "w-full text-left text-fg-subtle hover:bg-white/70 hover:text-fg-muted"
+          "w-full text-left text-fg hover:bg-white/70"
         )}
       >
-        <Icon className="h-[18px] w-[18px] opacity-80" />
+        <Icon className="h-[18px] w-[18px]" />
         <span>{label}</span>
       </button>
     );
