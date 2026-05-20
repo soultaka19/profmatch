@@ -18,7 +18,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
   const active = !disabled && pathname === href;
 
   const baseClasses =
-    "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+    "flex items-center gap-3 pl-6 pr-4 py-2.5 text-[14px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
 
   const stateClasses = active
     ? "bg-primary text-primary-foreground font-medium shadow-active"
