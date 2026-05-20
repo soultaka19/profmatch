@@ -1,10 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, event, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.user import User, UserRole
+
+if TYPE_CHECKING:
+    from app.models.competence import Competence  # noqa: F401
 
 
 class Professeur(Base):
@@ -30,6 +34,11 @@ class Professeur(Base):
     user: Mapped["User"] = relationship("User", back_populates="professeur", uselist=False)
     cv: Mapped["CV | None"] = relationship(
         "CV", back_populates="professeur", uselist=False, cascade="all, delete-orphan"
+    )
+    competences: Mapped[list["Competence"]] = relationship(
+        "Competence",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
     )
 
 

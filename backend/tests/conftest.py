@@ -13,6 +13,7 @@ from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models.cv import CV  # noqa: F401  - register model with metadata
+from app.models.competence import Competence  # noqa: F401  - register model with metadata
 from app.models.professeur import Professeur
 from app.models.user import User, UserRole
 
