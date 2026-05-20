@@ -9,6 +9,7 @@ from app.models.user import User, UserRole
 
 if TYPE_CHECKING:
     from app.models.competence import Competence  # noqa: F401
+    from app.models.experience import Experience  # noqa: F401
 
 
 class Professeur(Base):
@@ -37,6 +38,11 @@ class Professeur(Base):
     )
     competences: Mapped[list["Competence"]] = relationship(
         "Competence",
+        back_populates="professeur",
+        cascade="all, delete-orphan",
+    )
+    experiences: Mapped[list["Experience"]] = relationship(
+        "Experience",
         back_populates="professeur",
         cascade="all, delete-orphan",
     )
