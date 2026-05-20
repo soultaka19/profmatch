@@ -1,0 +1,76 @@
+"use client";
+
+import { Check, Palette } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { THEMES } from "@/lib/theme/config";
+import type { ThemeId } from "@/lib/theme/types";
+import { useTheme } from "./ThemeProvider";
+
+export function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const current = THEMES.find((t) => t.id === theme) ?? THEMES[0];
+
+  const handleSelect = (id: ThemeId) => {
+    setTheme(id);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-canvas-pure px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <Palette className="h-3.5 w-3.5 text-fg-subtle" />
+        {current.label}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-md border border-border bg-canvas-pure shadow-card"
+        >
+          {THEMES.map((t) => {
+            const active = t.id === theme;
+            return (
+              <button
+                key={t.id}
+                role="menuitem"
+                type="button"
+                onClick={() => handleSelect(t.id)}
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
+              >
+                <span className={active ? "font-semibold text-primary" : ""}>{t.label}</span>
+                {active && <Check className="h-3.5 w-3.5 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

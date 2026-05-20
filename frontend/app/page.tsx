@@ -20,8 +20,8 @@ export default function Home() {
   }, [isLoading, user, router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-creme">
-      <Loader2 className="h-6 w-6 animate-spin text-bordeaux" />
+    <main className="flex min-h-screen items-center justify-center bg-canvas">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
     </main>
   );
 }

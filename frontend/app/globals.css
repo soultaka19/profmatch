@@ -2,13 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+ * Tokens partagés (indépendants du thème)
+ * ───────────────────────────────────────────────────────────── */
 :root {
-  --bordeaux: #8B2332;
-  --vert-sapin: #1F4D3F;
-  --gris-violet: #4A3F5C;
-  --creme: #FBF7F0;
+  /* Canvas pur (contenu principal) — identique sur les deux thèmes */
+  --canvas-pure: #FFFFFF;
+
+  /* Succès — vert "ANALYSÉ" toujours distinct du thème */
+  --success: #047857;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+
+  /* Destructive / warning / info */
+  --destructive: #B91C1C;
+  --destructive-bg: #FEF2F2;
+  --warning: #B45309;
+  --warning-bg: #FEF3C7;
+  --info: #3B82F6;
+
+  /* Texte primaire et bordures neutres */
+  --fg: #111827;
+  --border: #E5E7EB;
+  --border-soft: #F3F4F6;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Thème par défaut : Anthracite ivoire
+ * Appliqué quand aucun data-theme n'est défini sur <html>.
+ * ───────────────────────────────────────────────────────────── */
+:root,
+[data-theme="anthraciteIvory"] {
+  --primary: #27352F;
+  --primary-dark: #1B2722;
+  --primary-soft: #EBE8DE;
+  --primary-foreground: #FFFFFF;
+
+  --surface: #F7F3EA;
+  --surface-border: #E5DCCD;
+
+  --canvas: #FFFFFF;
+
+  --fg-muted: #555F5A;
+  --fg-subtle: #88918C;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Thème : Bordeaux institutionnel
+ * ───────────────────────────────────────────────────────────── */
+[data-theme="institutionalBurgundy"] {
+  --primary: #A01835;
+  --primary-dark: #86162D;
+  --primary-soft: #F8E9ED;
+  --primary-foreground: #FBF7F0;
+
+  --surface: #F8F5EF;
+  --surface-border: #E7DFD2;
+
+  --canvas: #FAFAF8;
+
+  --fg-muted: #5F6673;
+  --fg-subtle: #8B95A1;
 }
 
 body {
-  background-color: var(--creme);
+  background-color: var(--canvas);
+  color: var(--fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
