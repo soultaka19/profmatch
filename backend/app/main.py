@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, cv
+from app.routers import auth, cv, extraction
 
 app = FastAPI(
     title="ProfMatch API",
@@ -21,6 +21,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(cv.router, prefix="/api/cv", tags=["cv"])
+app.include_router(extraction.router, prefix="/api/cv", tags=["extraction"])
 
 
 @app.get("/health", tags=["system"])
