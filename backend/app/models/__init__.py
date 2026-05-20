@@ -3,3 +3,4 @@ from app.models.professeur import Professeur  # noqa: F401
 from app.models.cv import CV, CVStatut  # noqa: F401
 from app.models.competence import Competence, CompetenceNiveau, SourceOrigine  # noqa: F401
 from app.models.experience import Experience  # noqa: F401
+from app.models.formation import Formation  # noqa: F401
