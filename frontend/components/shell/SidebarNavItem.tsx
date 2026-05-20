@@ -22,7 +22,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
 
   const stateClasses = active
     ? "bg-primary-soft text-primary font-medium before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-primary before:content-['']"
-    : "text-fg-muted hover:bg-white/70 hover:text-fg";
+    : "text-fg-muted hover:bg-primary-soft hover:text-fg";
 
   if (disabled) {
     return (
@@ -32,7 +32,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
         data-active="false"
         className={cn(
           baseClasses,
-          "w-full text-left text-fg hover:bg-white/70"
+          "w-full text-left text-fg hover:bg-primary-soft"
         )}
       >
         <Icon className="h-[18px] w-[18px]" />
