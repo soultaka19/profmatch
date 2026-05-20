@@ -18,7 +18,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
   const active = !disabled && pathname === href;
 
   const baseClasses =
-    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+    "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
   const stateClasses = active
     ? "bg-primary text-primary-foreground font-medium shadow-active"
@@ -32,7 +32,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
         data-active="false"
         className={cn(baseClasses, "text-fg-subtle hover:bg-white/60 text-left w-full")}
       >
-        <Icon className="h-4 w-4 opacity-70" />
+        <Icon className="h-[18px] w-[18px] opacity-70" />
         <span>{label}</span>
       </button>
     );
@@ -44,7 +44,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
       data-active={active ? "true" : "false"}
       className={cn(baseClasses, stateClasses)}
     >
-      <Icon className={cn("h-4 w-4", active ? "opacity-100" : "opacity-70")} />
+      <Icon className={cn("h-[18px] w-[18px]", active ? "opacity-100" : "opacity-70")} />
       <span>{label}</span>
     </Link>
   );
