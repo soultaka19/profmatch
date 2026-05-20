@@ -1,3 +1,5 @@
+"use client";
+
 import { type ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";

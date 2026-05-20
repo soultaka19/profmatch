@@ -1,3 +1,5 @@
+"use client";
+
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/shell";
 import { adminNav } from "@/lib/nav/adminNav";
