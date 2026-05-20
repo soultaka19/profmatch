@@ -12,7 +12,7 @@ const showDemoCreds = process.env.NEXT_PUBLIC_SHOW_DEMO_CREDS !== "false";
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col md:flex-row">
-      <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-[#6B1A28] px-14 py-14 text-primary-foreground">
+      <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-primary-dark px-14 py-14 text-primary-foreground">
         <div className="pointer-events-none absolute -top-1/3 -right-1/4 h-3/5 w-3/5 rounded-full bg-[radial-gradient(circle,rgba(251,247,240,0.06)_0%,transparent_70%)]" />
         <div className="relative">
           <div className="text-eyebrow font-semibold uppercase tracking-[0.15em] text-primary-foreground/70">

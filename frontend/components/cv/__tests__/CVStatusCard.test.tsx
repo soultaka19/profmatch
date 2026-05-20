@@ -15,9 +15,9 @@ const baseCV: CVResponse = {
 };
 
 describe("CVStatusCard", () => {
-  it("rend l'état 'traité' avec badge success", () => {
+  it("rend l'état 'traité' avec badge Analysé", () => {
     render(<CVStatusCard data={baseCV} loading={false} />);
-    expect(screen.getByText(/CV traité/i)).toBeInTheDocument();
+    expect(screen.getByText(/Analysé/i)).toBeInTheDocument();
     expect(screen.getByText("cv-jean.pdf")).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe("CVStatusCard", () => {
         loading={false}
       />
     );
-    expect(screen.getByText(/Erreur d'extraction/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Erreur$/i)).toBeInTheDocument();
     expect(screen.getByText(/PDF illisible/i)).toBeInTheDocument();
   });
 

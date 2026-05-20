@@ -30,17 +30,24 @@ export function CVTextPreview() {
   };
 
   return (
-    <div className="mt-4 max-w-[680px] overflow-hidden rounded-lg border border-border bg-canvas">
+    <div className="mt-4 overflow-hidden rounded-md border border-border bg-canvas-pure">
       <Accordion type="single" collapsible>
         <AccordionItem value="texte" className="border-none">
           <AccordionTrigger
             onClick={fetchText}
-            className="flex items-center gap-2.5 border-b border-border-soft px-6 py-4 text-sm font-medium text-fg hover:no-underline"
+            className="flex items-center gap-3 px-5 py-4 text-left hover:no-underline data-[state=open]:border-b data-[state=open]:border-border-soft"
           >
-            <FileText className="h-4 w-4 text-fg-subtle" />
-            <span className="flex-1 text-left">Texte extrait par l&apos;IA</span>
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <FileText className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-fg">Texte extrait par l&apos;IA</div>
+              <div className="mt-0.5 text-xs text-fg-subtle">
+                Compétences, expériences et formations détectées
+              </div>
+            </div>
           </AccordionTrigger>
-          <AccordionContent className="bg-surface p-6 text-sm leading-relaxed text-fg-muted">
+          <AccordionContent className="bg-surface/60 p-5 text-sm leading-relaxed text-fg-muted">
             {loading && (
               <div className="flex items-center gap-2 text-fg-subtle">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement…

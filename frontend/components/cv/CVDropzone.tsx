@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +20,14 @@ interface CVDropzoneProps {
   variant?: "default" | "compact";
 }
 
-export function CVDropzone({ onUploaded, disabled, variant = "default" }: CVDropzoneProps) {
+export interface CVDropzoneHandle {
+  open: () => void;
+}
+
+export const CVDropzone = forwardRef<CVDropzoneHandle, CVDropzoneProps>(function CVDropzone(
+  { onUploaded, disabled, variant = "default" },
+  ref
+) {
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(
@@ -42,35 +49,47 @@ export function CVDropzone({ onUploaded, disabled, variant = "default" }: CVDrop
     [onUploaded]
   );
 
-  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections, open } = useDropzone({
     onDrop,
     accept: ACCEPTED,
     maxSize: MAX_SIZE,
     maxFiles: 1,
     disabled: disabled || isUploading,
+    noClick: false,
   });
+
+  const openRef = useRef(open);
+  openRef.current = open;
+  useImperativeHandle(ref, () => ({ open: () => openRef.current() }), []);
 
   if (variant === "compact") {
     return (
       <div
         {...getRootProps()}
         className={cn(
-          "mt-4 max-w-[680px] cursor-pointer rounded-md border border-dashed border-[#c8b9a5] bg-surface px-5 py-4 text-center text-sm text-fg-subtle transition-colors",
-          isDragActive && "border-primary bg-primary/[0.04]",
-          (disabled || isUploading) && "cursor-not-allowed opacity-50"
+          "mt-6 cursor-pointer rounded-md border border-dashed border-border bg-surface/40 px-5 py-5 transition-colors",
+          isDragActive && "border-primary bg-primary-soft/60",
+          (disabled || isUploading) && "cursor-not-allowed opacity-60"
         )}
       >
         <input {...getInputProps()} />
-        {isUploading ? (
-          <span className="inline-flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Téléversement…
-          </span>
-        ) : (
-          <>
-            Remplacer le CV ?{" "}
-            <strong className="text-primary">Glissez un nouveau fichier ici</strong> ou cliquez pour parcourir.
-          </>
-        )}
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-border bg-canvas-pure text-fg-muted">
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-fg">Remplacer le CV</div>
+            <div className="mt-0.5 text-xs text-fg-subtle">
+              {isUploading
+                ? "Téléversement en cours…"
+                : "Glissez un nouveau fichier ici ou cliquez pour parcourir. PDF ou DOCX · 10 Mo maximum."}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -79,18 +98,20 @@ export function CVDropzone({ onUploaded, disabled, variant = "default" }: CVDrop
     <div
       {...getRootProps()}
       className={cn(
-        "mt-6 max-w-[680px] cursor-pointer rounded-lg border-[1.5px] border-dashed border-[#c8b9a5] bg-surface px-6 py-12 text-center transition-colors",
-        isDragActive && "border-primary bg-primary/[0.04]",
-        (disabled || isUploading) && "cursor-not-allowed opacity-50"
+        "mt-6 cursor-pointer rounded-lg border-[1.5px] border-dashed border-border bg-surface/50 px-6 py-12 text-center transition-colors",
+        isDragActive && "border-primary bg-primary-soft/60",
+        (disabled || isUploading) && "cursor-not-allowed opacity-60"
       )}
     >
       <input {...getInputProps()} />
       <div className="flex flex-col items-center gap-3">
-        {isUploading ? (
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        ) : (
-          <Upload className="h-6 w-6 text-fg-subtle" />
-        )}
+        <div className="flex h-12 w-12 items-center justify-center rounded-md border border-border bg-canvas-pure text-fg-muted">
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <Upload className="h-5 w-5" />
+          )}
+        </div>
         <div className="text-base font-medium text-fg">
           {isUploading
             ? "Téléversement en cours…"
@@ -102,7 +123,7 @@ export function CVDropzone({ onUploaded, disabled, variant = "default" }: CVDrop
         {!isUploading && (
           <button
             type="button"
-            className="mt-2 inline-block rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-active"
+            className="mt-2 inline-block rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-active transition-colors hover:bg-primary-dark"
           >
             Choisir un fichier
           </button>
@@ -113,4 +134,4 @@ export function CVDropzone({ onUploaded, disabled, variant = "default" }: CVDrop
       </div>
     </div>
   );
-}
+});
