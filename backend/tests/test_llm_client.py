@@ -10,8 +10,16 @@ def test_get_llm_client_returns_openai_instance():
 def test_get_llm_client_uses_cookie_auth(monkeypatch):
     monkeypatch.setattr("app.core.config.settings.LLM_API_COOKIE", "test-cookie-value")
     client = get_llm_client()
-    cookie_header = client.default_headers.get("Cookie", "")
-    assert "COCALC_COMPUTE_SERVER_AUTH_TOKEN=test-cookie-value" in cookie_header
+    # Le cookie doit être posé sur le httpx.CookieJar interne, pas dans default_headers
+    # (le proxy CoCalc ne lit que les cookies httpx-normalisés, pas un Cookie: brut).
+    assert client._client.cookies.get("COCALC_COMPUTE_SERVER_AUTH_TOKEN") == "test-cookie-value"
+
+
+def test_get_llm_client_uses_api_key_from_settings(monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.LLM_API_KEY", "sk-test-key")
+    client = get_llm_client()
+    # L'inner LLM derrière le proxy CoCalc exige son propre Bearer token.
+    assert client.api_key == "sk-test-key"
 
 
 def test_get_llm_client_uses_base_url(monkeypatch):

@@ -19,6 +19,12 @@ vi.mock("@/lib/hooks/useExtraction", () => ({
   useExtraction: () => ({ data: fakeData, isLoading: false, error: null, mutate: vi.fn() }),
 }));
 
+vi.mock("@/components/auth/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "prof@test.ca", nom_complet: "Souleymane Diallo", role: "prof" },
+  }),
+}));
+
 vi.mock("@/components/cv/CVTextPreview", () => ({
   CVTextPreview: () => <div data-testid="cv-text-preview">Texte brut</div>,
 }));

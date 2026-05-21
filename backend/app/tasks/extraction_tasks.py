@@ -51,4 +51,12 @@ def extract_cv_data_llm(self, cv_id: int) -> None:
             db.commit()
         except Exception as exc:
             db.rollback()
-            raise self.retry(exc=exc)
+            if self.request.retries < self.max_retries:
+                raise self.retry(exc=exc)
+            # Retries épuisés : terminal ERREUR avant de propager, sinon le
+            # CV reste en EN_COURS pour toujours (spinner frontend perpétuel).
+            cv.statut = CVStatut.ERREUR
+            cv.message_erreur = f"Extraction IA impossible après plusieurs tentatives : {exc}"
+            cv.traite_le = datetime.now(timezone.utc)
+            db.commit()
+            raise

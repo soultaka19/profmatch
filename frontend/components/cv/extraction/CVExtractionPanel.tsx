@@ -1,8 +1,11 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useExtraction } from "@/lib/hooks/useExtraction";
 import { CVTextPreview } from "@/components/cv/CVTextPreview";
+import { ProfilHeaderCard } from "./ProfilHeaderCard";
+import { ProfilCompletion } from "./ProfilCompletion";
 import { ProfilSection } from "./ProfilSection";
 import { CompetenceSection } from "./CompetenceSection";
 import { ExperienceSection } from "./ExperienceSection";
@@ -11,6 +14,7 @@ import { LangueSection } from "./LangueSection";
 
 export function CVExtractionPanel() {
   const { data, isLoading, error, mutate } = useExtraction();
+  const { user } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,7 +34,11 @@ export function CVExtractionPanel() {
   }
 
   return (
-    <div className="mt-2">
+    <div className="mt-6">
+      {user && (
+        <ProfilHeaderCard nomComplet={user.nom_complet ?? ""} email={user.email} />
+      )}
+      <ProfilCompletion data={data} />
       <ProfilSection profil={data.profil} onMutate={mutate} />
       <CompetenceSection items={data.competences} onMutate={mutate} />
       <ExperienceSection items={data.experiences} onMutate={mutate} />

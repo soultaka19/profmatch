@@ -41,7 +41,9 @@
   --surface: #F7F3EA;
   --surface-border: #E5DCCD;
 
-  --canvas: #FFFFFF;
+  /* Off-white chaud — sert de fond pour <main> et la topbar. Les cards
+     gardent --canvas-pure (#FFFFFF) pour un léger lift visuel. */
+  --canvas: #FBF8F1;
 
   --fg-muted: #555F5A;
   --fg-subtle: #88918C;

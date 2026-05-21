@@ -60,7 +60,9 @@ export default function ProfDashboardPage() {
       {cv?.statut === "traite" && (
         <>
           <CVExtractionPanel />
-          <CVDropzone ref={dropzoneRef} onUploaded={() => mutate()} variant="compact" />
+          {/* Dropzone monté en headless (variant=hidden) pour que la card Status
+              puisse l'ouvrir via onReplace → dropzoneRef.current.open(). */}
+          <CVDropzone ref={dropzoneRef} onUploaded={() => mutate()} variant="hidden" />
         </>
       )}
 

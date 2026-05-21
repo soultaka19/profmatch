@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # API LLM
     LLM_API_URL: str
     LLM_API_COOKIE: str
+    LLM_API_KEY: str
     LLM_MODEL: str = "gpt-oss-ctx24k:120b"
     LLM_MAX_RETRIES: int = 2
 

@@ -9,7 +9,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { extractionApi, type FormationDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { FormationForm } from "./FormationForm";
 
 interface Props {
@@ -55,18 +54,16 @@ export function FormationSection({ items, onMutate }: Props) {
       ) : (
         <ul className="divide-y divide-border-soft">
           {items.map((f) => (
-            <li key={f.id} className="group/item flex items-baseline justify-between px-7 py-3.5 transition-colors hover:bg-surface/40 gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <h4 className="font-medium text-fg truncate">{f.diplome}</h4>
-                  <span className="text-fg-subtle">·</span>
-                  <span className="text-sm text-fg-muted">{f.etablissement}</span>
-                  <span className="font-mono text-xs text-fg-subtle tabular-nums">{f.annee}</span>
+            <li key={f.id} className="group/item px-7 py-4 transition-colors hover:bg-surface/30">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h4 className="text-[15px] font-semibold text-fg truncate">{f.diplome}</h4>
+                    <span className="flex-shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">{f.annee}</span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-fg-muted">{f.etablissement}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <SourceBadge source={f.source} />
-                <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
+                <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(f)} aria-label={`Modifier ${f.diplome}`}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>

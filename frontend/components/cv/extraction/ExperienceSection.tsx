@@ -9,7 +9,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { extractionApi, type ExperienceDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { ExperienceForm } from "./ExperienceForm";
 
 interface Props {
@@ -59,29 +58,32 @@ export function ExperienceSection({ items, onMutate }: Props) {
       ) : (
         <ul className="divide-y divide-border-soft">
           {items.map((exp) => (
-            <li key={exp.id} className="group/item px-7 py-4 transition-colors hover:bg-surface/40">
+            <li key={exp.id} className="group/item px-7 py-5 transition-colors hover:bg-surface/30">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <h4 className="font-medium text-fg">{exp.poste}</h4>
-                    <span className="text-fg-subtle">·</span>
-                    <span className="text-sm text-fg-muted">{exp.employeur}</span>
-                    <span className="font-mono text-xs text-fg-subtle tabular-nums">{formatPeriode(exp.annee_debut, exp.annee_fin)}</span>
+                  {/* Ligne 1 : poste + période alignée à droite */}
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h4 className="text-[15px] font-semibold text-fg truncate">{exp.poste}</h4>
+                    <span className="flex-shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
+                      {formatPeriode(exp.annee_debut, exp.annee_fin)}
+                    </span>
                   </div>
+                  {/* Ligne 2 : employeur */}
+                  <p className="mt-0.5 text-sm text-fg-muted">{exp.employeur}</p>
+                  {/* Ligne 3 : description, séparée par une marge */}
                   {exp.description_courte && (
-                    <p className="mt-1 text-sm text-fg-muted leading-relaxed max-w-[62ch]">{exp.description_courte}</p>
+                    <p className="mt-2.5 text-sm leading-relaxed text-fg-muted max-w-[64ch]">
+                      {exp.description_courte}
+                    </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <SourceBadge source={exp.source} />
-                  <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(exp)} aria-label={`Modifier ${exp.poste}`}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => setDeleting(exp)} aria-label={`Supprimer ${exp.poste}`}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(exp)} aria-label={`Modifier ${exp.poste}`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => setDeleting(exp)} aria-label={`Supprimer ${exp.poste}`}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             </li>

@@ -4,8 +4,27 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ProfilDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { ProfilForm } from "./ProfilForm";
+
+/**
+ * Découpe un résumé en paragraphes : split sur double-newline si présent,
+ * sinon split sur points pour produire 2-3 paragraphes équilibrés à partir
+ * d'un bloc unique. Évite le mur de texte que renvoie souvent le LLM.
+ */
+function splitParagraphs(text: string): string[] {
+  const trimmed = text.trim();
+  // Cas 1 : l'utilisateur (ou le LLM) a déjà mis des sauts de ligne doubles.
+  if (/\n\s*\n/.test(trimmed)) {
+    return trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  }
+  // Cas 2 : un seul bloc. Si court (< 280 chars), un seul paragraphe.
+  if (trimmed.length < 280) return [trimmed];
+  // Cas 3 : un long bloc — couper en 2 sur le point le plus proche du milieu.
+  const sentences = trimmed.match(/[^.!?]+[.!?]+(\s|$)/g);
+  if (!sentences || sentences.length < 2) return [trimmed];
+  const mid = Math.floor(sentences.length / 2);
+  return [sentences.slice(0, mid).join("").trim(), sentences.slice(mid).join("").trim()];
+}
 
 interface Props {
   profil: ProfilDto;
@@ -23,26 +42,27 @@ export function ProfilSection({ profil, onMutate }: Props) {
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">00</span>
           <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">Profil</h3>
         </div>
-        <div className="flex items-center gap-3">
-          {hasResume && <SourceBadge source={profil.source} />}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setFormOpen(true)}
-            className="opacity-0 transition-opacity group-hover/section:opacity-100 focus-visible:opacity-100 -mr-2"
-            aria-label={hasResume ? "Modifier le profil" : "Ajouter un profil"}
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1" />
-            {hasResume ? "Modifier" : "Ajouter"}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setFormOpen(true)}
+          className="opacity-0 transition-opacity group-hover/section:opacity-100 focus-visible:opacity-100 -mr-2"
+          aria-label={hasResume ? "Modifier le profil" : "Ajouter un profil"}
+        >
+          <Pencil className="h-3.5 w-3.5 mr-1" />
+          {hasResume ? "Modifier" : "Ajouter"}
+        </Button>
       </header>
 
-      <div className="px-7 py-6">
+      <div className="px-7 py-7">
         {hasResume ? (
-          <p className="font-display text-lg italic leading-relaxed text-fg max-w-[62ch]">
-            {profil.resume}
-          </p>
+          <div className="max-w-[68ch] space-y-4">
+            {splitParagraphs(profil.resume!).map((p, i) => (
+              <p key={i} className="text-[15px] leading-[1.75] text-fg-muted">
+                {p}
+              </p>
+            ))}
+          </div>
         ) : (
           <button
             onClick={() => setFormOpen(true)}
