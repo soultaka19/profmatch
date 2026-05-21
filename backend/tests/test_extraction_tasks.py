@@ -79,6 +79,47 @@ async def test_extract_cv_data_llm_marks_erreur_on_extraction_error(
 
 
 @pytest.mark.asyncio
+async def test_extract_cv_data_llm_marks_erreur_when_retries_exhausted(
+    db_session, professeur_prof: Professeur, celery_eager
+):
+    """Quand le client LLM lève une exception transient et que les retries
+    sont épuisés, le CV doit se terminer en statut=ERREUR avec un message
+    explicite — JAMAIS rester en EN_COURS (bug observé en local avec une
+    auth invalide → spinner perpétuel côté frontend, dropzone bloquée)."""
+    cv = CV(
+        professeur_id=professeur_prof.id,
+        nom_original="test.pdf",
+        chemin_fichier="x/test.pdf",
+        taille_octets=100,
+        mime_type="application/pdf",
+        statut=CVStatut.EN_COURS,
+        texte_brut="CV avec API LLM down",
+    )
+    db_session.add(cv)
+    await db_session.commit()
+    await db_session.refresh(cv)
+
+    from app.tasks.extraction_tasks import extract_cv_data_llm
+    from openai import OpenAIError
+    failing_client = MagicMock()
+    failing_client.chat.completions.create.side_effect = OpenAIError("API down")
+
+    # Simule "dernier essai" : la task croit qu'elle est déjà au max de retries.
+    extract_cv_data_llm.push_request(retries=extract_cv_data_llm.max_retries)
+    try:
+        with patch("app.tasks.extraction_tasks.get_llm_client", return_value=failing_client):
+            with pytest.raises(OpenAIError):
+                extract_cv_data_llm.run(cv.id)
+    finally:
+        extract_cv_data_llm.pop_request()
+
+    await db_session.refresh(cv)
+    assert cv.statut == CVStatut.ERREUR, f"attendu ERREUR, obtenu {cv.statut}"
+    assert cv.message_erreur is not None
+    assert "Extraction IA" in cv.message_erreur
+
+
+@pytest.mark.asyncio
 async def test_extract_cv_data_llm_noop_if_no_text(
     db_session, professeur_prof: Professeur, celery_eager
 ):
