@@ -174,6 +174,12 @@ chore/description          # ex. chore/db-migrations, chore/ci-setup
 - Minimum 1 approbation d'un autre membre avant le merge.
 - Les pipelines CI (pytest + ESLint/TS) doivent passer avant le merge.
 
+**Rétention des branches après merge (squash) :**
+
+- **Garder** les branches `feature/*` et `fix/*` — elles servent de référence historique des fonctionnalités livrées et facilitent une recovery rapide en cas de rollback.
+- **Supprimer** les branches `docs/*` et `chore/*` à la suppression de leur PR — leur valeur est consommée au merge.
+- Commande type : `gh pr merge <num> --squash` (sans `--delete-branch`) pour les feat/fix ; ajouter `--delete-branch` pour les docs/chore. Si oubli, nettoyer avec `git push origin --delete <branch>`.
+
 ### Python / FastAPI
 
 - Indentation : 4 espaces.
