@@ -17,7 +17,12 @@ const MAX_SIZE = 10 * 1024 * 1024;
 interface CVDropzoneProps {
   onUploaded?: () => void;
   disabled?: boolean;
-  variant?: "default" | "compact";
+  /**
+   * "default" — pleine zone visible.
+   * "compact" — barre fine "Remplacer le CV".
+   * "hidden" — headless : aucun rendu visible, déclenchable via ref.open() uniquement.
+   */
+  variant?: "default" | "compact" | "hidden";
 }
 
 export interface CVDropzoneHandle {
@@ -61,6 +66,10 @@ export const CVDropzone = forwardRef<CVDropzoneHandle, CVDropzoneProps>(function
   const openRef = useRef(open);
   openRef.current = open;
   useImperativeHandle(ref, () => ({ open: () => openRef.current() }), []);
+
+  if (variant === "hidden") {
+    return <input {...getInputProps()} className="sr-only" tabIndex={-1} aria-hidden="true" />;
+  }
 
   if (variant === "compact") {
     return (

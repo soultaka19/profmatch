@@ -23,11 +23,15 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
   );
 
   return (
-    <div className="flex min-h-screen bg-canvas">
-      <AppSidebar navigation={navigation} homeHref={homeHref} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AppTopbar breadcrumb={breadcrumb} actions={actions} />
-        <main className="flex-1 overflow-auto bg-canvas">
+    <div className="flex h-screen overflow-hidden bg-canvas">
+      <div className="sticky top-0 h-screen flex-shrink-0">
+        <AppSidebar navigation={navigation} homeHref={homeHref} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="sticky top-0 z-10">
+          <AppTopbar breadcrumb={breadcrumb} actions={actions} />
+        </div>
+        <main className="flex-1 overflow-y-auto bg-canvas">
           <div className="mx-auto max-w-[960px] px-10 py-12">{children}</div>
         </main>
       </div>

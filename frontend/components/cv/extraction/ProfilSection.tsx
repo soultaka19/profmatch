@@ -6,6 +6,26 @@ import { Button } from "@/components/ui/button";
 import type { ProfilDto } from "@/lib/api/extraction";
 import { ProfilForm } from "./ProfilForm";
 
+/**
+ * Découpe un résumé en paragraphes : split sur double-newline si présent,
+ * sinon split sur points pour produire 2-3 paragraphes équilibrés à partir
+ * d'un bloc unique. Évite le mur de texte que renvoie souvent le LLM.
+ */
+function splitParagraphs(text: string): string[] {
+  const trimmed = text.trim();
+  // Cas 1 : l'utilisateur (ou le LLM) a déjà mis des sauts de ligne doubles.
+  if (/\n\s*\n/.test(trimmed)) {
+    return trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  }
+  // Cas 2 : un seul bloc. Si court (< 280 chars), un seul paragraphe.
+  if (trimmed.length < 280) return [trimmed];
+  // Cas 3 : un long bloc — couper en 2 sur le point le plus proche du milieu.
+  const sentences = trimmed.match(/[^.!?]+[.!?]+(\s|$)/g);
+  if (!sentences || sentences.length < 2) return [trimmed];
+  const mid = Math.floor(sentences.length / 2);
+  return [sentences.slice(0, mid).join("").trim(), sentences.slice(mid).join("").trim()];
+}
+
 interface Props {
   profil: ProfilDto;
   onMutate: () => void;
@@ -34,11 +54,15 @@ export function ProfilSection({ profil, onMutate }: Props) {
         </Button>
       </header>
 
-      <div className="px-7 py-6">
+      <div className="px-7 py-7">
         {hasResume ? (
-          <p className="font-sans text-base leading-7 text-fg max-w-[68ch] whitespace-pre-line">
-            {profil.resume}
-          </p>
+          <div className="max-w-[68ch] space-y-4">
+            {splitParagraphs(profil.resume!).map((p, i) => (
+              <p key={i} className="text-[15px] leading-[1.75] text-fg-muted">
+                {p}
+              </p>
+            ))}
+          </div>
         ) : (
           <button
             onClick={() => setFormOpen(true)}
