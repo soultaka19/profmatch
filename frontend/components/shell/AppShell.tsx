@@ -27,7 +27,7 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
       <AppSidebar navigation={navigation} homeHref={homeHref} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppTopbar breadcrumb={breadcrumb} actions={actions} />
-        <main className="flex-1 overflow-auto bg-canvas-pure">
+        <main className="flex-1 overflow-auto bg-canvas">
           <div className="mx-auto max-w-[960px] px-10 py-12">{children}</div>
         </main>
       </div>

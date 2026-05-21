@@ -25,14 +25,12 @@ describe("CompetenceSection", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 
-  it("liste les compétences avec niveau et source", () => {
+  it("liste les compétences avec niveau", () => {
     render(<CompetenceSection items={items} onMutate={vi.fn()} />);
     expect(screen.getByText("Python")).toBeInTheDocument();
     expect(screen.getByText("Expert")).toBeInTheDocument();
     expect(screen.getByText("Java")).toBeInTheDocument();
     expect(screen.getByText("Avancé")).toBeInTheDocument();
-    expect(screen.getByLabelText("Extrait par l'IA")).toBeInTheDocument();
-    expect(screen.getByLabelText("Édité manuellement")).toBeInTheDocument();
   });
 
   it("affiche le placeholder cliquable si vide", () => {
@@ -61,7 +59,8 @@ describe("CompetenceSection", () => {
 
   it("ouvre le form au click Ajouter", () => {
     render(<CompetenceSection items={items} onMutate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Ajouter/i }));
+    // Header button (texte exact 'Ajouter'), pas le chip "ajouter une compétence" en fin de liste
+    fireEvent.click(screen.getByRole("button", { name: /^Ajouter$/i }));
     expect(screen.getByText("Nouvelle compétence")).toBeInTheDocument();
   });
 });

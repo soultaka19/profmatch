@@ -12,10 +12,9 @@ describe("ProfilSection", () => {
     expect(screen.getByRole("button", { name: /Ajouter un profil/i })).toBeInTheDocument();
   });
 
-  it("affiche le resume + badge IA quand profil rempli", () => {
+  it("affiche le resume quand profil rempli", () => {
     render(<ProfilSection profil={{ resume: "Dev senior 8 ans", source: "llm" }} onMutate={onMutate} />);
     expect(screen.getByText("Dev senior 8 ans")).toBeInTheDocument();
-    expect(screen.getByLabelText("Extrait par l'IA")).toBeInTheDocument();
   });
 
   it("affiche eyebrow numéroté '00' et titre PROFIL", () => {

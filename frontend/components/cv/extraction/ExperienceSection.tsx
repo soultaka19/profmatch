@@ -9,7 +9,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { extractionApi, type ExperienceDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { ExperienceForm } from "./ExperienceForm";
 
 interface Props {
@@ -73,7 +72,6 @@ export function ExperienceSection({ items, onMutate }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <SourceBadge source={exp.source} />
                   <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(exp)} aria-label={`Modifier ${exp.poste}`}>
                       <Pencil className="h-3.5 w-3.5" />

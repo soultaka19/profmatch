@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +9,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { extractionApi, type CompetenceDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { CompetenceForm } from "./CompetenceForm";
 
 interface Props {
@@ -63,44 +62,42 @@ export function CompetenceSection({ items, onMutate }: Props) {
           Aucune compétence détectée — cliquez pour en ajouter.
         </button>
       ) : (
-        <ul className="divide-y divide-border-soft">
+        <div className="flex flex-wrap gap-2 px-7 py-5">
           {items.map((c) => (
-            <li
+            <div
               key={c.id}
-              className="group/item flex items-center justify-between px-7 py-3.5 transition-colors hover:bg-surface/40"
+              className="group/chip inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 pl-3 pr-1 py-1 transition-all hover:border-primary/40 hover:bg-primary-soft/60"
             >
-              <div className="flex items-baseline gap-4 min-w-0 flex-1">
-                <span className="font-medium text-fg truncate">{c.nom}</span>
-                <span className="text-xs text-fg-muted whitespace-nowrap">
-                  {NIVEAU_LABEL[c.niveau] ?? c.niveau}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <SourceBadge source={c.source} />
-                <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100 focus-within:opacity-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => openEdit(c)}
-                    aria-label={`Modifier ${c.nom}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 hover:text-destructive"
-                    onClick={() => setDeleting(c)}
-                    aria-label={`Supprimer ${c.nom}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </li>
+              <button
+                type="button"
+                onClick={() => openEdit(c)}
+                className="flex items-baseline gap-1.5 outline-none"
+                aria-label={`Modifier ${c.nom}`}
+              >
+                <span className="text-sm font-medium text-fg">{c.nom}</span>
+                <span className="text-[11px] text-fg-subtle">·</span>
+                <span className="text-[11px] text-fg-muted">{NIVEAU_LABEL[c.niveau] ?? c.niveau}</span>
+              </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 rounded-full opacity-0 transition-opacity group-hover/chip:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); setDeleting(c); }}
+                aria-label={`Supprimer ${c.nom}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
           ))}
-        </ul>
+          <button
+            onClick={openAdd}
+            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-sm text-fg-subtle hover:border-primary/40 hover:bg-primary-soft/40 hover:text-fg-muted transition-colors"
+            aria-label="Ajouter une compétence"
+          >
+            <Pencil className="h-3 w-3" />
+            <span className="text-[11px]">ajouter</span>
+          </button>
+        </div>
       )}
 
       <CompetenceForm open={formOpen} initial={editing} onOpenChange={setFormOpen} onMutate={onMutate} />

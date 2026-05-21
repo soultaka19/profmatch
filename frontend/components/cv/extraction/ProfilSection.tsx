@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ProfilDto } from "@/lib/api/extraction";
-import { SourceBadge } from "./SourceBadge";
 import { ProfilForm } from "./ProfilForm";
 
 interface Props {
@@ -23,24 +22,21 @@ export function ProfilSection({ profil, onMutate }: Props) {
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">00</span>
           <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">Profil</h3>
         </div>
-        <div className="flex items-center gap-3">
-          {hasResume && <SourceBadge source={profil.source} />}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setFormOpen(true)}
-            className="opacity-0 transition-opacity group-hover/section:opacity-100 focus-visible:opacity-100 -mr-2"
-            aria-label={hasResume ? "Modifier le profil" : "Ajouter un profil"}
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1" />
-            {hasResume ? "Modifier" : "Ajouter"}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setFormOpen(true)}
+          className="opacity-0 transition-opacity group-hover/section:opacity-100 focus-visible:opacity-100 -mr-2"
+          aria-label={hasResume ? "Modifier le profil" : "Ajouter un profil"}
+        >
+          <Pencil className="h-3.5 w-3.5 mr-1" />
+          {hasResume ? "Modifier" : "Ajouter"}
+        </Button>
       </header>
 
       <div className="px-7 py-6">
         {hasResume ? (
-          <p className="font-display text-lg italic leading-relaxed text-fg max-w-[62ch]">
+          <p className="font-sans text-base leading-7 text-fg max-w-[68ch] whitespace-pre-line">
             {profil.resume}
           </p>
         ) : (
