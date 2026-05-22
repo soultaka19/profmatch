@@ -1,0 +1,71 @@
+from datetime import datetime
+from enum import Enum
+
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    Enum as SQLEnum,
+    SmallInteger,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base
+
+
+class Semestre(str, Enum):
+    PRINTEMPS = "printemps"
+    ETE = "ete"
+    AUTOMNE = "automne"
+    HIVER = "hiver"
+
+
+class SessionStatut(str, Enum):
+    PLANIFIEE = "planifiee"
+    OUVERTE = "ouverte"
+    FERMEE = "fermee"
+
+
+class Session(Base):
+    """Session académique (ex. Automne 2026) — clé naturelle (annee, semestre)."""
+
+    __tablename__ = "sessions"
+    __table_args__ = (
+        UniqueConstraint("annee", "semestre", name="uq_session_annee_semestre"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    annee: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    semestre: Mapped[Semestre] = mapped_column(
+        SQLEnum(
+            Semestre,
+            name="semestre",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+    )
+    statut: Mapped[SessionStatut] = mapped_column(
+        SQLEnum(
+            SessionStatut,
+            name="session_statut",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+        default=SessionStatut.PLANIFIEE,
+        server_default=SessionStatut.PLANIFIEE.value,
+    )
+    cree_le: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    mis_a_jour_le: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    @property
+    def nom(self) -> str:
+        """Affichage humain : 'Automne 2026'."""
+        return f"{self.semestre.value.capitalize()} {self.annee}"
