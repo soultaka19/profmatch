@@ -62,5 +62,6 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           LLM_API_URL: ${{ secrets.LLM_API_URL }}
           LLM_API_COOKIE: ${{ secrets.LLM_API_COOKIE }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: pytest --cov=app --cov-report=term-missing --cov-fail-under=70
