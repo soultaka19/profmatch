@@ -5,3 +5,5 @@ from app.models.competence import Competence, CompetenceNiveau, SourceOrigine  #
 from app.models.experience import Experience  # noqa: F401
 from app.models.formation import Formation  # noqa: F401
 from app.models.langue import Langue, LangueNiveau  # noqa: F401
+from app.models.programme import Programme  # noqa: F401
+from app.models.etape_programme import EtapeProgramme  # noqa: F401
