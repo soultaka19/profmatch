@@ -34,6 +34,7 @@ dependencies = [
     "python-docx",
     # LLM
     "openai>=1.40.0",
+    "sentence-transformers",
 ]
 
 [project.optional-dependencies]
