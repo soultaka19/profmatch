@@ -76,38 +76,39 @@ def score_competences(
     competences_prof: set[str],
     competences_cours: set[str],
 ) -> Decimal:
-    """W1 — Ratio des compétences du cours couvertes par le professeur.
+    """W1 — Ratio brut des compétences du cours couvertes par le professeur.
 
     Exemple : 6 compétences couvertes sur 7 requises → 6/7 ≈ 0,857.
+    Le résultat n'est PAS quantizé : c'est le service de persistance qui
+    arrondira à 3 décimales (DECIMAL(4,3)) au moment d'écrire en BDD.
     """
     if not competences_cours:
         return Decimal("0")
     couvertes = competences_prof & competences_cours
-    ratio = Decimal(len(couvertes)) / Decimal(len(competences_cours))
-    return ratio.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+    return Decimal(len(couvertes)) / Decimal(len(competences_cours))
 
 
 def score_experience(
     annees_experience: float,
     reference_years: int = EXPERIENCE_REFERENCE_YEARS,
 ) -> Decimal:
-    """W2 — Années d'expérience normalisées : min(années / référence, 1.0)."""
+    """W2 — Années d'expérience normalisées brut : min(années / référence, 1.0)."""
     if annees_experience <= 0:
         return Decimal("0")
     ratio = min(annees_experience / reference_years, 1.0)
-    return Decimal(str(ratio)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+    return Decimal(str(ratio))
 
 
 def score_historique(bonus_normalise: float) -> Decimal:
-    """W3 — Bonus de continuité (note normalisée en BDD, déjà dans [0, 1])."""
+    """W3 — Bonus de continuité brut (déjà normalisé dans [0, 1] en amont)."""
     valeur = max(0.0, min(1.0, bonus_normalise))
-    return Decimal(str(valeur)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+    return Decimal(str(valeur))
 
 
 def score_semantique(similarite_cosinus: float) -> Decimal:
-    """W4 — Similarité sémantique (cosinus ou score LLM) plafonnée à [0, 1]."""
+    """W4 — Similarité sémantique brute (cosinus ou score LLM) plafonnée à [0, 1]."""
     valeur = max(0.0, min(1.0, similarite_cosinus))
-    return Decimal(str(valeur)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+    return Decimal(str(valeur))
 
 
 def calculer_score_composite(
@@ -190,10 +191,10 @@ def generer_justification_statique(ctx: ContexteJustification) -> str:
         if ctx.competences_maitrisees
         else "compétences documentées"
     )
-    w1_pct = int(ctx.poids.w1 * 100)
-    w2_pct = int(ctx.poids.w2 * 100)
-    w3_pct = int(ctx.poids.w3 * 100)
-    w4_pct = int(ctx.poids.w4 * 100)
+    w1_pct = _pct(ctx.poids.w1)
+    w2_pct = _pct(ctx.poids.w2)
+    w3_pct = _pct(ctx.poids.w3)
+    w4_pct = _pct(ctx.poids.w4)
     exp_pct = _pct(ctx.composants.score_exp)
     reco = (
         "Fortement recommandé pour affectation."

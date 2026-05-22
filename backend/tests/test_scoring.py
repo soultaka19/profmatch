@@ -35,9 +35,15 @@ def test_score_competences_couverture_complete():
 
 
 def test_score_competences_couverture_partielle_arrondie():
+    """Helper renvoie le ratio brut ; le quantize à 3 décimales appartient au
+    service de persistance (DECIMAL(4,3)). 2/3 ≈ 0,667."""
+    from decimal import ROUND_HALF_UP
+
     prof = {"Python", "SQL"}
     cours = {"Python", "SQL", "GraphQL"}
-    assert score_competences(prof, cours) == Decimal("0.667")
+    brut = score_competences(prof, cours)
+    assert brut == Decimal(2) / Decimal(3)
+    assert brut.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP) == Decimal("0.667")
 
 
 def test_score_competences_aucune_couverture():
@@ -166,12 +172,13 @@ def test_calculer_score_composite_decimal_4_3():
 def test_evaluer_profil_cas_cahier_des_charges_ahmed_diallo():
     """Cas Ahmed Diallo / PI-301 du Cahier des charges §2.8 : score attendu 0.840.
 
-    Décomposition CdC §2.8 :
-      W1 = 0.40 × 0.857 (6/7 compétences) = 0.343
-      W2 = 0.30 × 0.750 (9 ans, base 12) = 0.225
-      W3 = 0.20 × 0.900 (3 sessions, note 4.5/5) = 0.180
-      W4 = 0.10 × 0.920 (cosinus embeddings)  = 0.092
-      Total                                   = 0.840
+    Décomposition CdC §2.8 (valeurs brutes, composite quantizé à la fin) :
+      W1 × score_comp = 0.40 × 6/7   ≈ 0.34286
+      W2 × score_exp  = 0.30 × 9/12  = 0.22500
+      W3 × score_hist = 0.20 × 0.90  = 0.18000
+      W4 × score_sem  = 0.10 × 0.92  = 0.09200
+      Somme brute                    ≈ 0.83986
+      Quantize ROUND_HALF_UP → 0.840
     """
     poids = PoidsScoring(w1=DEFAULT_W1, w2=DEFAULT_W2, w3=DEFAULT_W3, w4=DEFAULT_W4)
     competences_prof = {"React", "Node.js", "API REST", "JavaScript", "TypeScript", "MongoDB"}
@@ -290,6 +297,44 @@ def test_justification_mentionne_les_poids_en_pourcentage(contexte_demo):
     assert "W4 = 10 %" in texte
 
 
+def test_justification_arrondit_les_poids_non_ronds():
+    """Régression : les poids non-ronds doivent utiliser _pct (ROUND_HALF_UP),
+    pas int() qui tronque vers zéro. Decimal('0.335') doit afficher 34 %."""
+    poids = PoidsScoring(
+        w1=Decimal("0.335"),
+        w2=Decimal("0.335"),
+        w3=Decimal("0.165"),
+        w4=Decimal("0.165"),
+    )
+    composants = ScoresComposants(
+        score_comp=Decimal("0.5"),
+        score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.5"),
+        score_sem=Decimal("0.5"),
+    )
+    ctx = ContexteJustification(
+        nom_professeur="Test",
+        code_cours="X-001",
+        titre_cours="Test",
+        nb_comp_couvertes=1,
+        nb_comp_requises=2,
+        competences_maitrisees=["Python"],
+        annees_experience=5,
+        nb_sessions_precedentes=0,
+        note_rh_moyenne=3.0,
+        similarite_semantique=0.5,
+        score_global_pct=50.0,
+        poids=poids,
+        composants=composants,
+    )
+    texte = generer_justification_statique(ctx)
+    # 0.335 → 33.5 % → ROUND_HALF_UP → 34 % (truncation aurait donné 33 %)
+    assert "W1 = 34 %" in texte
+    assert "W2 = 34 %" in texte
+    assert "W3 = 17 %" in texte
+    assert "W4 = 17 %" in texte
+
+
 def test_justification_contient_nom_prof_et_code_cours(contexte_demo):
     texte = generer_justification_statique(contexte_demo)
     assert "Ahmed Diallo" in texte
@@ -358,12 +403,16 @@ def test_poids_scoring_accepte_somme_exacte_un():
 
 
 def test_poids_scoring_accepte_derive_dans_la_tolerance():
-    """Tolérance ±0.001 pour absorber les arrondis Decimal côté frontend/DB."""
+    """Tolérance ±0.001 pour absorber les arrondis Decimal côté frontend/DB.
+
+    Somme volontairement décalée à 1,0005 (= 1 + tolérance) pour s'assurer
+    que la branche de tolérance est bien exercée, pas seulement le cas exact.
+    """
     PoidsScoring(
         w1=Decimal("0.4005"),
-        w2=Decimal("0.2995"),
-        w3=Decimal("0.2"),
-        w4=Decimal("0.1"),
+        w2=Decimal("0.3000"),
+        w3=Decimal("0.2000"),
+        w4=Decimal("0.1000"),
     )
 
 
