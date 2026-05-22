@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum as SQLEnum,
     SmallInteger,
     UniqueConstraint,
+    event,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,6 +17,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.affectation import Affectation
+    from app.models.ponderations_session import PonderationsSession
 
 
 class Semestre(str, Enum):
@@ -72,8 +74,23 @@ class Session(Base):
     affectations: Mapped[list["Affectation"]] = relationship(
         "Affectation", back_populates="session", cascade="all, delete-orphan"
     )
+    ponderations: Mapped["PonderationsSession | None"] = relationship(
+        "PonderationsSession",
+        back_populates="session",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     @property
     def nom(self) -> str:
         """Affichage humain : 'Automne 2026'."""
         return f"{self.semestre.value.capitalize()} {self.annee}"
+
+
+@event.listens_for(Session, "after_insert")
+def _create_ponderations_for_session(mapper, connection, target: Session) -> None:
+    from app.models.ponderations_session import PonderationsSession
+
+    connection.execute(
+        PonderationsSession.__table__.insert().values(session_id=target.id)
+    )
