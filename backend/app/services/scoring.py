@@ -11,8 +11,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 
-# Base de référence pour la normalisation de l'expérience (tableau Livrable 1, §2.8).
-EXPERIENCE_REFERENCE_YEARS: int = 15
+# Base de référence pour la normalisation de l'expérience (Cahier des charges §2.8 :
+# texte et exemple chiffré "9 ans, base 12 → 0,750"). Score Ahmed Diallo = 0,840.
+EXPERIENCE_REFERENCE_YEARS: int = 12
 
 # Pondérations par défaut recommandées.
 DEFAULT_W1: Decimal = Decimal("0.40")
@@ -20,15 +21,36 @@ DEFAULT_W2: Decimal = Decimal("0.30")
 DEFAULT_W3: Decimal = Decimal("0.20")
 DEFAULT_W4: Decimal = Decimal("0.10")
 
+# Tolérance d'arrondi sur la validation de l'invariant W1+W2+W3+W4 = 1,0.
+# Les pondérations arrivent depuis le frontend en Decimal à 3 décimales — on
+# accepte une dérive ≤ 0,001 pour absorber les arrondis successifs.
+SOMME_POIDS_TOLERANCE: Decimal = Decimal("0.001")
+
+
+class PoidsInvalidesError(ValueError):
+    """La somme W1+W2+W3+W4 s'écarte de 1,0 au-delà de la tolérance."""
+
 
 @dataclass(frozen=True)
 class PoidsScoring:
-    """Poids W1–W4 pour une session (somme = 1,0)."""
+    """Poids W1–W4 pour une session — invariant W1+W2+W3+W4 = 1,0."""
 
     w1: Decimal
     w2: Decimal
     w3: Decimal
     w4: Decimal
+
+    def __post_init__(self) -> None:
+        poids = (self.w1, self.w2, self.w3, self.w4)
+        if any(p < Decimal("0") for p in poids):
+            raise PoidsInvalidesError(
+                f"Tous les poids doivent être >= 0 ; reçus {poids}"
+            )
+        somme = sum(poids, start=Decimal("0"))
+        if abs(somme - Decimal("1")) > SOMME_POIDS_TOLERANCE:
+            raise PoidsInvalidesError(
+                f"W1+W2+W3+W4 = {somme} (attendu 1,000 ± {SOMME_POIDS_TOLERANCE})"
+            )
 
 
 @dataclass(frozen=True)

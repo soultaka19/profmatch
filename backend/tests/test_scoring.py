@@ -11,6 +11,7 @@ from app.services.scoring import (
     DEFAULT_W4,
     EXPERIENCE_REFERENCE_YEARS,
     ContexteJustification,
+    PoidsInvalidesError,
     PoidsScoring,
     ResultatScoring,
     ScoresComposants,
@@ -69,8 +70,8 @@ def test_score_experience_au_dessus_reference_plafonne_a_un():
 
 
 def test_score_experience_partielle():
-    # 9 / 15 = 0.6
-    assert score_experience(9) == Decimal("0.600")
+    # 9 / 12 = 0.750 (Cahier des charges §2.8, exemple Ahmed Diallo)
+    assert score_experience(9) == Decimal("0.750")
 
 
 def test_score_experience_zero():
@@ -162,8 +163,16 @@ def test_calculer_score_composite_decimal_4_3():
 # --- evaluer_profil_cours : intégration complète ----------------------
 
 
-def test_evaluer_profil_cas_livrable_ahmed_diallo():
-    """Cas de référence du Livrable 1, §2.8 : score attendu 0.795."""
+def test_evaluer_profil_cas_cahier_des_charges_ahmed_diallo():
+    """Cas Ahmed Diallo / PI-301 du Cahier des charges §2.8 : score attendu 0.840.
+
+    Décomposition CdC §2.8 :
+      W1 = 0.40 × 0.857 (6/7 compétences) = 0.343
+      W2 = 0.30 × 0.750 (9 ans, base 12) = 0.225
+      W3 = 0.20 × 0.900 (3 sessions, note 4.5/5) = 0.180
+      W4 = 0.10 × 0.920 (cosinus embeddings)  = 0.092
+      Total                                   = 0.840
+    """
     poids = PoidsScoring(w1=DEFAULT_W1, w2=DEFAULT_W2, w3=DEFAULT_W3, w4=DEFAULT_W4)
     competences_prof = {"React", "Node.js", "API REST", "JavaScript", "TypeScript", "MongoDB"}
     competences_cours = {
@@ -183,7 +192,7 @@ def test_evaluer_profil_cas_livrable_ahmed_diallo():
         bonus_historique=0.90,
         similarite_semantique=0.92,
     )
-    assert resultat.score_global == Decimal("0.795")
+    assert resultat.score_global == Decimal("0.840")
 
 
 def test_evaluer_profil_retourne_structure_complete():
@@ -334,3 +343,56 @@ def test_justification_competences_vides_utilise_fallback():
     )
     texte = generer_justification_statique(ctx)
     assert "compétences documentées" in texte
+
+
+# --- Invariant W1+W2+W3+W4 = 1,0 --------------------------------------
+
+
+def test_poids_scoring_accepte_somme_exacte_un():
+    PoidsScoring(
+        w1=Decimal("0.40"),
+        w2=Decimal("0.30"),
+        w3=Decimal("0.20"),
+        w4=Decimal("0.10"),
+    )
+
+
+def test_poids_scoring_accepte_derive_dans_la_tolerance():
+    """Tolérance ±0.001 pour absorber les arrondis Decimal côté frontend/DB."""
+    PoidsScoring(
+        w1=Decimal("0.4005"),
+        w2=Decimal("0.2995"),
+        w3=Decimal("0.2"),
+        w4=Decimal("0.1"),
+    )
+
+
+def test_poids_scoring_rejette_somme_inferieure_a_un():
+    with pytest.raises(PoidsInvalidesError, match="0.99"):
+        PoidsScoring(
+            w1=Decimal("0.40"),
+            w2=Decimal("0.30"),
+            w3=Decimal("0.20"),
+            w4=Decimal("0.09"),
+        )
+
+
+def test_poids_scoring_rejette_somme_superieure_a_un():
+    with pytest.raises(PoidsInvalidesError, match="1.01"):
+        PoidsScoring(
+            w1=Decimal("0.41"),
+            w2=Decimal("0.30"),
+            w3=Decimal("0.20"),
+            w4=Decimal("0.10"),
+        )
+
+
+def test_poids_scoring_rejette_poids_negatif_qui_compense():
+    """Une somme = 1.0 obtenue avec un poids négatif doit aussi être refusée."""
+    with pytest.raises(PoidsInvalidesError):
+        PoidsScoring(
+            w1=Decimal("1.20"),
+            w2=Decimal("0.30"),
+            w3=Decimal("-0.50"),
+            w4=Decimal("0.00"),
+        )
