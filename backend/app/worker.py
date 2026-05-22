@@ -9,6 +9,7 @@ celery_app = Celery(
     include=[
         "app.services.cv_extraction_service",
         "app.tasks.extraction_tasks",
+        "app.tasks.affectation_tasks",
     ],
 )
 
