@@ -18,6 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.affectation_feedback import AffectationFeedback
     from app.models.cours import Cours
     from app.models.professeur import Professeur
     from app.models.session import Session
@@ -106,3 +107,8 @@ class Affectation(Base):
     professeur: Mapped["Professeur"] = relationship("Professeur")
     cours: Mapped["Cours"] = relationship("Cours")
     valide_par: Mapped["User | None"] = relationship("User")
+    feedbacks: Mapped[list["AffectationFeedback"]] = relationship(
+        "AffectationFeedback",
+        back_populates="affectation",
+        cascade="all, delete-orphan",
+    )
