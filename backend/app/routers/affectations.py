@@ -1,0 +1,130 @@
+"""Routes RH et Admin pour la génération et révision des affectations."""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.deps import require_role
+from app.db.session import get_db
+from app.models.affectation import Affectation, AffectationStatut
+from app.models.user import User
+from app.schemas.affectation import (
+    AffectationOut,
+    AffectationValidateRequest,
+    FeedbackCreate,
+    FeedbackOut,
+    GenererAffectationsRequest,
+    GenererAffectationsResponse,
+)
+from app.services.affectation_service import ajouter_feedback, valider_affectation
+
+router = APIRouter()
+
+
+@router.post(
+    "/generer",
+    response_model=GenererAffectationsResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def generer_affectations(
+    payload: GenererAffectationsRequest,
+    current_user: User = Depends(require_role("rh")),
+) -> GenererAffectationsResponse:
+    """Lance la génération asynchrone des affectations via Celery."""
+    from app.tasks.affectation_tasks import generer_affectations_task
+
+    task = generer_affectations_task.delay(payload.session_id, payload.programme_ids)
+    return GenererAffectationsResponse(task_id=task.id)
+
+
+@router.get("/generation/{task_id}")
+async def get_generation_status(
+    task_id: str,
+    current_user: User = Depends(require_role("rh", "admin")),
+) -> dict:
+    """Retourne le statut de la tâche Celery de génération."""
+    from app.worker import celery_app
+    from celery.result import AsyncResult
+
+    result = AsyncResult(task_id, app=celery_app)
+    if result.state == "SUCCESS":
+        return {"status": "done", "result": result.get()}
+    if result.state == "FAILURE":
+        return {"status": "error", "detail": str(result.info)}
+    return {"status": result.state.lower()}
+
+
+@router.get("/", response_model=list[AffectationOut])
+async def list_affectations(
+    session_id: int | None = None,
+    cours_id: int | None = None,
+    statut: AffectationStatut | None = None,
+    current_user: User = Depends(require_role("rh", "admin")),
+    db: AsyncSession = Depends(get_db),
+) -> list[AffectationOut]:
+    query = select(Affectation)
+    if session_id is not None:
+        query = query.where(Affectation.session_id == session_id)
+    if cours_id is not None:
+        query = query.where(Affectation.cours_id == cours_id)
+    if statut is not None:
+        query = query.where(Affectation.statut == statut)
+    query = query.order_by(Affectation.score_total.desc())
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+@router.get("/{affectation_id}", response_model=AffectationOut)
+async def get_affectation(
+    affectation_id: int,
+    current_user: User = Depends(require_role("rh", "admin", "prof")),
+    db: AsyncSession = Depends(get_db),
+) -> AffectationOut:
+    result = await db.execute(
+        select(Affectation).where(Affectation.id == affectation_id)
+    )
+    aff = result.scalar_one_or_none()
+    if not aff:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Affectation introuvable")
+    # Prof : peut voir uniquement ses propres affectations
+    if current_user.role.value == "prof":
+        from app.models.professeur import Professeur
+        from sqlalchemy import select as sa_select
+        prof_result = await db.execute(
+            sa_select(Professeur).where(Professeur.user_id == current_user.id)
+        )
+        prof = prof_result.scalar_one_or_none()
+        if not prof or aff.professeur_id != prof.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+    return aff
+
+
+@router.patch("/{affectation_id}", response_model=AffectationOut)
+async def valider_ou_rejeter(
+    affectation_id: int,
+    payload: AffectationValidateRequest,
+    current_user: User = Depends(require_role("rh")),
+    db: AsyncSession = Depends(get_db),
+) -> AffectationOut:
+    try:
+        return await valider_affectation(
+            affectation_id, current_user.id, payload.statut, db
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post(
+    "/{affectation_id}/feedback",
+    response_model=FeedbackOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_feedback(
+    affectation_id: int,
+    payload: FeedbackCreate,
+    current_user: User = Depends(require_role("rh")),
+    db: AsyncSession = Depends(get_db),
+) -> FeedbackOut:
+    return await ajouter_feedback(
+        affectation_id, current_user.id, payload.note, payload.commentaire, db
+    )
