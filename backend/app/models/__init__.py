@@ -9,3 +9,4 @@ from app.models.programme import Programme  # noqa: F401
 from app.models.etape_programme import EtapeProgramme  # noqa: F401
 from app.models.cours import Cours  # noqa: F401
 from app.models.cours_etape_programme import CategorieCours, CoursEtapeProgramme  # noqa: F401
+from app.models.cours_competence import CoursCompetence  # noqa: F401
