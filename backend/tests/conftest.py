@@ -113,6 +113,21 @@ def celery_eager(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def default_llm_api_key(monkeypatch):
+    """Garantit un LLM_API_KEY non vide pour les tests qui instancient le SDK OpenAI.
+
+    En CI le secret n'est pas exposé et le défaut de Settings est "" ; le SDK
+    OpenAI refuse alors `api_key=""`. On force un placeholder qui n'est PAS
+    une vraie clé pour que `get_llm_client()` construise un client utilisable
+    dans les tests d'instanciation (`test_llm_client.py`)."""
+    if not settings.LLM_API_KEY:
+        monkeypatch.setattr(
+            "app.core.config.settings.LLM_API_KEY",
+            "test-placeholder-not-for-prod",
+        )
+
+
+@pytest.fixture(autouse=True)
 def mock_llm_client(monkeypatch):
     """Mock global du client LLM — JAMAIS d'appel API réel en CI.
 
