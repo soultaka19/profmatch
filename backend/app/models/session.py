@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
@@ -9,9 +10,12 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.affectation import Affectation
 
 
 class Semestre(str, Enum):
@@ -63,6 +67,10 @@ class Session(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    affectations: Mapped[list["Affectation"]] = relationship(
+        "Affectation", back_populates="session", cascade="all, delete-orphan"
     )
 
     @property
