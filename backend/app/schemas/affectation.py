@@ -52,10 +52,10 @@ class SessionCreate(BaseModel):
 
 class PonderationsOut(BaseModel):
     session_id: int
-    w1: Decimal
-    w2: Decimal
-    w3: Decimal
-    w4: Decimal
+    w1: float
+    w2: float
+    w3: float
+    w4: float
     xai_actif: bool
     mis_a_jour_le: datetime
 
@@ -84,11 +84,11 @@ class AffectationOut(BaseModel):
     session_id: int
     professeur_id: int
     cours_id: int
-    score_total: Decimal
-    score_comp: Decimal
-    score_exp: Decimal
-    score_hist: Decimal
-    score_sem: Decimal
+    score_total: float
+    score_comp: float
+    score_exp: float
+    score_hist: float
+    score_sem: float
     justification: Optional[str]
     statut: AffectationStatut
     valide_par_user_id: Optional[int]

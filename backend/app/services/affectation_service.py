@@ -88,6 +88,7 @@ async def _charger_professeurs_traites(db: AsyncSession) -> list[Professeur]:
         .join(CV, CV.professeur_id == Professeur.id)
         .where(CV.statut == CVStatut.TRAITE)
         .options(
+            selectinload(Professeur.user),
             selectinload(Professeur.competences),
             selectinload(Professeur.experiences),
         )
@@ -188,10 +189,14 @@ async def generer_affectations(
             competences_prof = {c.nom for c in prof.competences}
             sc_comp = _score_comp_pondere(competences_prof, competences_cours)
 
-            # W2 — expérience totale en années
+            # W2 — expérience totale en années (annee_fin - annee_debut, en cours = année actuelle)
+            from datetime import date as _date
+            annee_courante = _date.today().year
             annees_exp = sum(
-                (exp.annees_experience or 0) for exp in prof.experiences
+                ((exp.annee_fin or annee_courante) - exp.annee_debut)
+                for exp in prof.experiences
             ) if prof.experiences else 0
+            annees_exp = max(0, annees_exp)
             sc_exp = score_experience(float(annees_exp))
 
             # W3 — bonus historique (sessions validées précédentes)
