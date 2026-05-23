@@ -7,17 +7,21 @@ Le modèle est chargé une seule fois en mémoire (singleton lazy).
 
 from __future__ import annotations
 
-import math
 from functools import lru_cache
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
-from sentence_transformers import SentenceTransformer
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 
 
 @lru_cache(maxsize=1)
-def _get_model() -> SentenceTransformer:
+def _get_model() -> "SentenceTransformer":
+    # Import différé : PyTorch / sentence-transformers ne se chargent qu'au
+    # premier appel réel (génération affectations), pas au démarrage du serveur.
+    from sentence_transformers import SentenceTransformer  # noqa: PLC0415
+
     return SentenceTransformer(MODEL_NAME)
 
 

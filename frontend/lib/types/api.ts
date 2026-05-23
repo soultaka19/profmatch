@@ -121,3 +121,74 @@ export interface CVResponse {
 export interface CVTexteResponse {
   texte_brut: string;
 }
+
+// ── Sessions ─────────────────────────────────────────────────────────────────
+
+export type Semestre = "printemps" | "ete" | "automne" | "hiver";
+export type SessionStatut = "planifiee" | "ouverte" | "fermee";
+
+export interface Session {
+  id: number;
+  annee: number;
+  semestre: Semestre;
+  statut: SessionStatut;
+  nom: string;
+  cree_le: string;
+}
+
+// ── Programmes ────────────────────────────────────────────────────────────────
+
+export interface Programme {
+  id: number;
+  code: string;
+  nom: string;
+  departement: string | null;
+}
+
+// ── Pondérations ─────────────────────────────────────────────────────────────
+
+export interface PonderationsOut {
+  session_id: number;
+  w1: number;
+  w2: number;
+  w3: number;
+  w4: number;
+  xai_actif: boolean;
+  mis_a_jour_le: string;
+}
+
+// ── Affectations (complet) ────────────────────────────────────────────────────
+
+export type AffectationStatut = "proposee" | "validee" | "rejetee";
+
+export interface AffectationOut {
+  id: number;
+  session_id: number;
+  professeur_id: number;
+  cours_id: number;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  justification: string | null;
+  statut: AffectationStatut;
+  valide_par_user_id: number | null;
+  valide_le: string | null;
+  cree_le: string;
+}
+
+// ── Génération ────────────────────────────────────────────────────────────────
+
+export type GenerationPhase = "queued" | "processing" | "done" | "error";
+
+export interface GenerationStatus {
+  status: GenerationPhase;
+  result?: { session_id: number; nb_affectations: number };
+  detail?: string;
+}
+
+export interface GenerationResponse {
+  task_id: string;
+  message: string;
+}
