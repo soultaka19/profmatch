@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, Enum as SQLEnum, ForeignKey, Text, event, func
+from sqlalchemy import BigInteger, DateTime, Enum as SQLEnum, Float, ForeignKey, Text, event, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -35,6 +36,7 @@ class Professeur(Base):
         nullable=False,
     )
     resume_profil: Mapped[str | None] = mapped_column(Text, nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(ARRAY(Float), nullable=True)
     resume_profil_source: Mapped[SourceOrigine] = mapped_column(
         SQLEnum(
             SourceOrigine,
