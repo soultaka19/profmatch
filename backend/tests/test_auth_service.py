@@ -1,5 +1,8 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
+from app.models.user import User, UserRole
 from app.services.auth_service import authenticate
 
 
@@ -21,3 +24,19 @@ async def test_authenticate_wrong_password(db_session, test_user_prof):
 async def test_authenticate_unknown_email(db_session):
     user = await authenticate(db_session, "doesnotexist@test.ca", "anything")
     assert user is None
+
+
+@pytest.mark.asyncio
+async def test_authenticate_refuse_utilisateur_inactif(db_session: AsyncSession):
+    u = User(
+        email="inactif@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Inactif",
+        actif=False,
+    )
+    db_session.add(u)
+    await db_session.commit()
+
+    result = await authenticate(db_session, "inactif@test.ca", "Test@1234")
+    assert result is None
