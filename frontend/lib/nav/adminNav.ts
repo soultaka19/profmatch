@@ -7,7 +7,7 @@ export const adminNav: NavSection[] = [
     items: [
       { href: "/dashboard/admin", label: "Tableau de bord", icon: Home },
       { href: "/dashboard/admin/utilisateurs", label: "Utilisateurs", icon: UserCog },
-      { href: "/dashboard/admin/cours", label: "Cours & programmes", icon: BookOpen, disabled: true },
+      { href: "/dashboard/admin/programmes", label: "Programmes", icon: BookOpen },
       { href: "/dashboard/admin/sessions", label: "Sessions", icon: Calendar, disabled: true },
       { href: "/dashboard/admin/ponderations", label: "Pondérations W1–W4", icon: Scale, disabled: true },
     ],
