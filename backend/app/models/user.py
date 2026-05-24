@@ -19,7 +19,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(60), nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(String(60), nullable=True)
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, name="userrole"), nullable=False)
     nom_complet: Mapped[str] = mapped_column(String(255), nullable=False)
     actif: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
