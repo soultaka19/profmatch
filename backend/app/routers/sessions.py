@@ -15,6 +15,7 @@ from app.schemas.affectation import (
     PonderationsUpdate,
     SessionCreate,
     SessionOut,
+    SessionUpdate,
 )
 from app.services.affectation_service import update_ponderations
 
@@ -65,6 +66,37 @@ async def get_session(
     if not sess:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
     return sess
+
+
+@router.put("/{session_id}", response_model=SessionOut)
+async def update_session(
+    session_id: int,
+    payload: SessionUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    sess.statut = payload.statut
+    await db.commit()
+    await db.refresh(sess)
+    return sess
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(
+    session_id: int,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    await db.delete(sess)
+    await db.commit()
 
 
 @router.get("/{session_id}/ponderations", response_model=PonderationsOut)

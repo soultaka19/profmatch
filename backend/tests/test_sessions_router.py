@@ -110,3 +110,107 @@ async def test_create_programme(client: AsyncClient, auth_headers_admin: dict):
     )
     assert r.status_code == 201
     assert r.json()["code"] == "51046"
+
+
+# ── PUT /sessions/{id} (changement statut) ───────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_update_session_statut_admin(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.put(
+        f"/api/sessions/{sess.id}",
+        json={"statut": "ouverte"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    assert r.json()["statut"] == "ouverte"
+
+
+@pytest.mark.asyncio
+async def test_update_session_statut_refuse_rh(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_rh: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.put(
+        f"/api/sessions/{sess.id}",
+        json={"statut": "ouverte"},
+        headers=auth_headers_rh,
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_session_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.put(
+        "/api/sessions/999",
+        json={"statut": "ouverte"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_session_statut_invalide(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.put(
+        f"/api/sessions/{sess.id}",
+        json={"statut": "n'importe_quoi"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 422
+
+
+# ── DELETE /sessions/{id} ────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_delete_session_admin(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.HIVER)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    session_id = sess.id
+
+    r = await client.delete(f"/api/sessions/{session_id}", headers=auth_headers_admin)
+    assert r.status_code == 204
+
+    # vérifier que la session ET ses pondérations ont disparu (cascade)
+    r2 = await client.get(f"/api/sessions/{session_id}", headers=auth_headers_admin)
+    assert r2.status_code == 404
+    r3 = await client.get(f"/api/sessions/{session_id}/ponderations", headers=auth_headers_admin)
+    assert r3.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_session_refuse_rh(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_rh: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.HIVER)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    r = await client.delete(f"/api/sessions/{sess.id}", headers=auth_headers_rh)
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_session_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.delete("/api/sessions/999", headers=auth_headers_admin)
+    assert r.status_code == 404
