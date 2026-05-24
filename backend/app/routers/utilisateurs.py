@@ -91,9 +91,14 @@ async def update_utilisateur(
 @router.delete("/{user_id}", response_model=UserAdminOut)
 async def desactiver_utilisateur(
     user_id: int,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminOut:
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Un admin ne peut pas se désactiver lui-même",
+        )
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:

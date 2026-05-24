@@ -172,3 +172,11 @@ async def test_restaurer_utilisateur(client: AsyncClient, auth_headers_admin: di
 async def test_delete_utilisateur_404(client: AsyncClient, auth_headers_admin: dict):
     r = await client.delete("/api/admin/utilisateurs/99999", headers=auth_headers_admin)
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_ne_peut_pas_se_desactiver(client: AsyncClient, auth_headers_admin: dict, test_user_admin: User):
+    r = await client.delete(f"/api/admin/utilisateurs/{test_user_admin.id}", headers=auth_headers_admin)
+    assert r.status_code == 403
+    detail = r.json()["detail"].lower()
+    assert "lui-même" in detail or "soi-même" in detail
