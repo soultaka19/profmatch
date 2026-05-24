@@ -40,3 +40,20 @@ async def test_authenticate_refuse_utilisateur_inactif(db_session: AsyncSession)
 
     result = await authenticate(db_session, "inactif@test.ca", "Test@1234")
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_authenticate_leve_account_not_activated(db_session: AsyncSession):
+    from app.services.auth_service import AccountNotActivatedError
+
+    u = User(
+        email="aactiver@test.ca",
+        password_hash=None,
+        role=UserRole.PROF,
+        nom_complet="A Activer",
+    )
+    db_session.add(u)
+    await db_session.commit()
+
+    with pytest.raises(AccountNotActivatedError):
+        await authenticate(db_session, "aactiver@test.ca", "n-importe-quoi")
