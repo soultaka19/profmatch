@@ -19,6 +19,7 @@ class ProgrammeOut(BaseModel):
     code: str
     nom: str
     departement: Optional[str]
+    semestres_admission: list[Semestre]
 
     model_config = {"from_attributes": True}
 
@@ -27,6 +28,7 @@ class ProgrammeCreate(BaseModel):
     code: str = Field(max_length=20)
     nom: str = Field(max_length=200)
     departement: Optional[str] = Field(None, max_length=120)
+    semestres_admission: list[Semestre] = Field(default_factory=lambda: [Semestre.AUTOMNE])
 
 
 # ── Session ──────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from app.models.cours_etape_programme import CategorieCours
+from app.models.session import Semestre
 
 
 # ── Programme ────────────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ class ProgrammeUpdate(BaseModel):
 
     nom: Optional[str] = Field(None, max_length=200)
     departement: Optional[str] = Field(None, max_length=120)
+    semestres_admission: Optional[list[Semestre]] = None
 
 
 # ── Étape ────────────────────────────────────────────────────────────────────

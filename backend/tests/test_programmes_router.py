@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.etape_programme import EtapeProgramme
 from app.models.programme import Programme
+from app.models.session import Semestre
 
 
 @pytest.mark.asyncio
@@ -95,3 +96,74 @@ async def test_delete_programme_refuse_rh(
     await db_session.refresh(p)
     r = await client.delete(f"/api/programmes/{p.id}", headers=auth_headers_rh)
     assert r.status_code == 403
+
+
+# ── semestres_admission ──────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_create_programme_avec_semestres(
+    client: AsyncClient, auth_headers_admin: dict
+):
+    r = await client.post(
+        "/api/programmes/",
+        json={
+            "code": "51046",
+            "nom": "Programmation",
+            "departement": "TI",
+            "semestres_admission": ["automne", "hiver", "printemps"],
+        },
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert set(data["semestres_admission"]) == {"automne", "hiver", "printemps"}
+
+
+@pytest.mark.asyncio
+async def test_create_programme_semestres_par_defaut_automne(
+    client: AsyncClient, auth_headers_admin: dict
+):
+    r = await client.post(
+        "/api/programmes/",
+        json={"code": "51046", "nom": "Programmation", "departement": None},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 201
+    assert r.json()["semestres_admission"] == ["automne"]
+
+
+@pytest.mark.asyncio
+async def test_update_programme_change_semestres(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    p = Programme(
+        code="51046", nom="P", departement=None,
+        semestres_admission=[Semestre.AUTOMNE],
+    )
+    db_session.add(p)
+    await db_session.commit()
+    await db_session.refresh(p)
+    r = await client.put(
+        f"/api/programmes/{p.id}",
+        json={"semestres_admission": ["automne", "hiver"]},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    assert set(r.json()["semestres_admission"]) == {"automne", "hiver"}
+
+
+@pytest.mark.asyncio
+async def test_create_programme_semestre_invalide_refuse(
+    client: AsyncClient, auth_headers_admin: dict
+):
+    r = await client.post(
+        "/api/programmes/",
+        json={
+            "code": "51046",
+            "nom": "P",
+            "departement": None,
+            "semestres_admission": ["fall_2026"],
+        },
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 422

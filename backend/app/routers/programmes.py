@@ -37,7 +37,12 @@ async def create_programme(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Programme {payload.code} existe déjà",
         )
-    prog = Programme(code=payload.code, nom=payload.nom, departement=payload.departement)
+    prog = Programme(
+        code=payload.code,
+        nom=payload.nom,
+        departement=payload.departement,
+        semestres_admission=payload.semestres_admission,
+    )
     db.add(prog)
     await db.commit()
     await db.refresh(prog)
@@ -72,6 +77,8 @@ async def update_programme(
         prog.nom = payload.nom
     if payload.departement is not None:
         prog.departement = payload.departement
+    if payload.semestres_admission is not None:
+        prog.semestres_admission = payload.semestres_admission
     await db.commit()
     await db.refresh(prog)
     return prog
