@@ -15,6 +15,8 @@ import { EtapeAccordion } from "@/components/admin/EtapeAccordion";
 import { EtapeCreateDialog } from "@/components/admin/EtapeCreateDialog";
 import { EtapeDeleteDialog } from "@/components/admin/EtapeDeleteDialog";
 import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
+import { ProgrammeCalendarPanel } from "@/components/admin/ProgrammeCalendarPanel";
+import { SemestresAdmissionBadges } from "@/components/admin/SemestresAdmissionBadges";
 
 export default function Page() {
   const params = useParams<{ id: string }>();
@@ -68,6 +70,10 @@ export default function Page() {
           {programme.departement && (
             <p className="mt-1 text-sm text-fg-muted">{programme.departement}</p>
           )}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs uppercase text-fg-muted">Admission :</span>
+            <SemestresAdmissionBadges semestres={programme.semestres_admission} />
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditing(true)}>Modifier le programme</Button>
@@ -77,6 +83,8 @@ export default function Page() {
           />
         </div>
       </div>
+
+      <ProgrammeCalendarPanel programmeId={programmeId} />
 
       <div>
         <h2 className="text-lg font-semibold text-fg mb-3">Étapes et cours</h2>

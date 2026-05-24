@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Trash2 } from "lucide-react";
 import { coursApi } from "@/lib/api/cours";
 import { cursusApi } from "@/lib/api/cursus";
 import type {
-  CategorieCours,
   CoursReadOnly,
   CursusItem,
 } from "@/lib/types/programmes";
-import { CATEGORIE_LABEL } from "@/lib/types/programmes";
 import { CursusAddDialog } from "./CursusAddDialog";
 import { CursusRemoveDialog } from "./CursusRemoveDialog";
 
@@ -20,12 +17,6 @@ interface Props {
   programmeId: number;
   etapeId: number;
   onChanged: () => void;
-}
-
-function CategorieBadge({ c }: { c: CategorieCours }) {
-  if (c === "obligatoire") return <Badge variant="default">{CATEGORIE_LABEL[c]}</Badge>;
-  if (c === "choix_francais") return <Badge variant="secondary">{CATEGORIE_LABEL[c]}</Badge>;
-  return <Badge variant="outline">{CATEGORIE_LABEL[c]}</Badge>;
 }
 
 export function CursusList({ programmeId, etapeId, onChanged }: Props) {
@@ -78,7 +69,6 @@ export function CursusList({ programmeId, etapeId, onChanged }: Props) {
             <tr>
               <th className="px-2 py-1 text-left">Code</th>
               <th className="px-2 py-1 text-left">Nom</th>
-              <th className="px-2 py-1 text-left">Catégorie</th>
               <th className="px-2 py-1 text-right"></th>
             </tr>
           </thead>
@@ -89,7 +79,6 @@ export function CursusList({ programmeId, etapeId, onChanged }: Props) {
                 <tr key={it.id}>
                   <td className="px-2 py-2 font-mono">{c?.code ?? "…"}</td>
                   <td className="px-2 py-2">{c?.nom ?? `Cours #${it.cours_id}`}</td>
-                  <td className="px-2 py-2"><CategorieBadge c={it.categorie} /></td>
                   <td className="px-2 py-2 text-right">
                     <Button
                       size="sm"

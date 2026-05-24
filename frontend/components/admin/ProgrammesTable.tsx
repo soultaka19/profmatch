@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Programme } from "@/lib/types/api";
 import { Pencil, Trash2, ArrowRight } from "lucide-react";
+import { SemestresAdmissionBadges } from "./SemestresAdmissionBadges";
 
 interface Props {
   programmes: Programme[];
@@ -23,6 +24,7 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
             <th className="px-4 py-2 text-left">Code</th>
             <th className="px-4 py-2 text-left">Nom</th>
             <th className="px-4 py-2 text-left">Département</th>
+            <th className="px-4 py-2 text-left">Admission</th>
             <th className="px-4 py-2 text-right">Actions</th>
           </tr>
         </thead>
@@ -32,6 +34,9 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
               <td className="px-4 py-3 font-mono">{p.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{p.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{p.departement ?? "—"}</td>
+              <td className="px-4 py-3">
+                <SemestresAdmissionBadges semestres={p.semestres_admission} />
+              </td>
               <td className="px-4 py-3 text-right space-x-1">
                 <Link href={`/dashboard/admin/programmes/${p.id}`}>
                   <Button size="sm" variant="ghost" title="Ouvrir">

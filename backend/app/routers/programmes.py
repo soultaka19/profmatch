@@ -1,15 +1,21 @@
 """Routes Admin pour la gestion des programmes académiques."""
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.programme import Programme
 from app.models.user import User
+from app.models.etape_programme import EtapeProgramme
 from app.schemas.affectation import ProgrammeCreate, ProgrammeOut
-from app.schemas.programme import ProgrammeUpdate
+from app.schemas.programme import ProgrammeCalendrierOut, ProgrammeUpdate
+from app.services.academic_calendar import (
+    rythme_for,
+    sessions_actives_for,
+    vacances_for,
+)
 
 router = APIRouter()
 
@@ -37,7 +43,12 @@ async def create_programme(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Programme {payload.code} existe déjà",
         )
-    prog = Programme(code=payload.code, nom=payload.nom, departement=payload.departement)
+    prog = Programme(
+        code=payload.code,
+        nom=payload.nom,
+        departement=payload.departement,
+        semestres_admission=payload.semestres_admission,
+    )
     db.add(prog)
     await db.commit()
     await db.refresh(prog)
@@ -72,6 +83,8 @@ async def update_programme(
         prog.nom = payload.nom
     if payload.departement is not None:
         prog.departement = payload.departement
+    if payload.semestres_admission is not None:
+        prog.semestres_admission = payload.semestres_admission
     await db.commit()
     await db.refresh(prog)
     return prog
@@ -90,3 +103,39 @@ async def delete_programme(
     await db.delete(prog)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# Ordre canonique pour exposer les semestres dans le calendrier.
+_ORDRE_SEMESTRES = ["automne", "hiver", "printemps", "ete"]
+
+
+def _tri_semestres(values: set) -> list:
+    return sorted(values, key=lambda s: _ORDRE_SEMESTRES.index(s.value))
+
+
+@router.get("/{programme_id}/calendrier", response_model=ProgrammeCalendrierOut)
+async def get_calendrier(
+    programme_id: int,
+    _: User = Depends(require_role("admin", "rh")),
+    db: AsyncSession = Depends(get_db),
+) -> ProgrammeCalendrierOut:
+    result = await db.execute(select(Programme).where(Programme.id == programme_id))
+    prog = result.scalar_one_or_none()
+    if not prog:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable"
+        )
+
+    nb_etapes = await db.scalar(
+        select(func.count(EtapeProgramme.id)).where(
+            EtapeProgramme.programme_id == programme_id
+        )
+    )
+
+    return ProgrammeCalendrierOut(
+        programme_id=prog.id,
+        rythme=rythme_for(prog),
+        sessions_actives=_tri_semestres(sessions_actives_for(prog)),
+        vacances=_tri_semestres(vacances_for(prog)),
+        etapes_total=int(nb_etapes or 0),
+    )

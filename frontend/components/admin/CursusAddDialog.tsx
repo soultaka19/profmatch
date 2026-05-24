@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,20 +14,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Plus, Loader2, Check, BookPlus } from "lucide-react";
 import { coursApi } from "@/lib/api/cours";
 import { cursusApi } from "@/lib/api/cursus";
-import type {
-  CategorieCours,
-  CoursReadOnly,
-} from "@/lib/types/programmes";
-import { CATEGORIE_LABEL } from "@/lib/types/programmes";
+import type { CoursReadOnly } from "@/lib/types/programmes";
 
 interface Props {
   programmeId: number;
@@ -35,42 +32,64 @@ interface Props {
   onAdded: () => void;
 }
 
+type Mode = "select" | "create";
+
 export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [mode, setMode] = useState<Mode>("select");
   const [cours, setCours] = useState<CoursReadOnly[]>([]);
   const [coursId, setCoursId] = useState<number | null>(null);
-  const [categorie, setCategorie] = useState<CategorieCours>("obligatoire");
+  const [search, setSearch] = useState("");
+
+  // Création inline
+  const [newCode, setNewCode] = useState("");
+  const [newNom, setNewNom] = useState("");
+  const [newCredits, setNewCredits] = useState<string>("");
+  const [newHeures, setNewHeures] = useState<string>("");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    coursApi.list(search).then((r) => {
+    coursApi.list().then((r) => {
       if (!cancelled) setCours(r);
     });
-    return () => { cancelled = true; };
-  }, [open, search]);
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
-  const options = useMemo(() => cours, [cours]);
-
-  function reset() {
-    setSearch("");
+  function resetAll() {
+    setMode("select");
     setCoursId(null);
-    setCategorie("obligatoire");
+    setSearch("");
+    setNewCode("");
+    setNewNom("");
+    setNewCredits("");
+    setNewHeures("");
     setError(null);
   }
 
-  async function handleSubmit() {
+  function switchToCreate(prefillNom?: string) {
+    setMode("create");
+    setNewCode("");
+    setNewNom(prefillNom ?? search.trim());
+    setNewCredits("");
+    setNewHeures("");
+    setError(null);
+  }
+
+  async function handleAttachExisting() {
     if (coursId === null) return;
     setSubmitting(true);
     setError(null);
     try {
-      await cursusApi.create(programmeId, etapeId, { cours_id: coursId, categorie });
+      await cursusApi.create(programmeId, etapeId, { cours_id: coursId });
       onAdded();
       setOpen(false);
-      reset();
+      resetAll();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
     } finally {
@@ -78,68 +97,215 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
     }
   }
 
+  async function handleCreateAndAttach() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const created = await coursApi.create({
+        code: newCode.trim(),
+        nom: newNom.trim(),
+        description: null,
+        credits: newCredits.trim() === "" ? null : Number(newCredits),
+        heures: newHeures.trim() === "" ? null : Number(newHeures),
+      });
+      await cursusApi.create(programmeId, etapeId, { cours_id: created.id });
+      onAdded();
+      setOpen(false);
+      resetAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const canAttach = coursId !== null;
+  const canCreate = newCode.trim().length > 0 && newNom.trim().length > 0;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) resetAll();
+      }}
+    >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <Plus className="mr-2 h-4 w-4" />Ajouter un cours
+          <Plus className="mr-2 h-4 w-4" />
+          Ajouter un cours
         </Button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Ajouter un cours à cette étape</DialogTitle>
-          <DialogDescription>Choisissez un cours existant dans le référentiel.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="search">Rechercher (code ou nom)</Label>
-            <Input
-              id="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="INF1001"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cours">Cours</Label>
-            <Select
-              value={coursId !== null ? String(coursId) : undefined}
-              onValueChange={(v) => setCoursId(Number(v))}
+
+      {mode === "select" ? (
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Ajouter un cours à cette étape</DialogTitle>
+            <DialogDescription>
+              Choisissez un cours existant ou créez-en un nouveau qui sera automatiquement rattaché.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-1">
+            {/* Bouton "Créer" en haut */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start border-dashed"
+              onClick={() => switchToCreate()}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={options.length === 0 ? "Aucun résultat" : "Choisir un cours"} />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.code} — {c.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <BookPlus className="mr-2 h-4 w-4 text-primary" />
+              <span className="font-medium">Créer un nouveau cours</span>
+              <span className="ml-2 text-fg-muted text-sm">— il sera rattaché automatiquement</span>
+            </Button>
+
+            <div className="flex items-center gap-3 text-xs uppercase text-fg-muted">
+              <div className="h-px flex-1 bg-border" />
+              <span>ou choisir un cours existant</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            {/* Liste filtrable */}
+            <Command className="rounded-md border" shouldFilter>
+              <CommandInput
+                placeholder="Rechercher par code ou nom…"
+                value={search}
+                onValueChange={setSearch}
+              />
+              <CommandList className="max-h-[300px]">
+                <CommandEmpty>
+                  <div className="py-6 text-center space-y-2">
+                    <p className="text-sm text-fg-muted">
+                      Aucun cours trouvé{search.trim() ? ` pour « ${search.trim()} »` : ""}.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      onClick={() => switchToCreate()}
+                    >
+                      <BookPlus className="mr-2 h-4 w-4" />
+                      Créer ce cours
+                    </Button>
+                  </div>
+                </CommandEmpty>
+                <CommandGroup>
+                  {cours.map((c) => (
+                    <CommandItem
+                      key={c.id}
+                      value={`${c.code} ${c.nom}`}
+                      onSelect={() => setCoursId(c.id)}
+                      className="gap-2"
+                    >
+                      <Check
+                        className={
+                          "h-4 w-4 shrink-0 " +
+                          (c.id === coursId ? "opacity-100 text-primary" : "opacity-0")
+                        }
+                      />
+                      <span className="font-mono shrink-0 text-xs text-fg-muted w-20">{c.code}</span>
+                      <span className="truncate flex-1">{c.nom}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="cat">Catégorie</Label>
-            <Select value={categorie} onValueChange={(v) => setCategorie(v as CategorieCours)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="obligatoire">{CATEGORIE_LABEL.obligatoire}</SelectItem>
-                <SelectItem value="choix_francais">{CATEGORIE_LABEL.choix_francais}</SelectItem>
-                <SelectItem value="choix_anglais">{CATEGORIE_LABEL.choix_anglais}</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                resetAll();
+                setOpen(false);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button onClick={handleAttachExisting} disabled={!canAttach || submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rattachement…
+                </>
+              ) : (
+                "Ajouter"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      ) : (
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer un nouveau cours</DialogTitle>
+            <DialogDescription>
+              Le cours sera créé dans le référentiel et automatiquement rattaché à cette étape.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="ncode">Code</Label>
+              <Input
+                id="ncode"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value)}
+                placeholder="INF1001"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nnom">Nom</Label>
+              <Input
+                id="nnom"
+                value={newNom}
+                onChange={(e) => setNewNom(e.target.value)}
+                placeholder="Introduction à la programmation"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="ncredits">Crédits (optionnel)</Label>
+                <Input
+                  id="ncredits"
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={newCredits}
+                  onChange={(e) => setNewCredits(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nheures">Heures (optionnel)</Label>
+                <Input
+                  id="nheures"
+                  type="number"
+                  min={0}
+                  max={999}
+                  value={newHeures}
+                  onChange={(e) => setNewHeures(e.target.value)}
+                />
+              </div>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={submitting || coursId === null}>
-            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Ajout…</> : "Ajouter"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMode("select")}>
+              Retour
+            </Button>
+            <Button onClick={handleCreateAndAttach} disabled={!canCreate || submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Création…
+                </>
+              ) : (
+                "Créer et rattacher"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }

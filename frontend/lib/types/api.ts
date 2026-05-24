@@ -143,6 +143,7 @@ export interface Programme {
   code: string;
   nom: string;
   departement: string | null;
+  semestres_admission: Semestre[];
 }
 
 // ── Pondérations ─────────────────────────────────────────────────────────────
