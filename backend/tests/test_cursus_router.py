@@ -118,3 +118,68 @@ async def test_list_cursus(
     data = r.json()
     assert len(data) == 1
     assert data[0]["cours_id"] == c.id
+
+
+@pytest.mark.asyncio
+async def test_update_cursus_categorie(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    p, e, c = await _seed(db_session)
+    lien = CoursEtapeProgramme(
+        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        categorie=CategorieCours.OBLIGATOIRE,
+    )
+    db_session.add(lien)
+    await db_session.commit()
+    await db_session.refresh(lien)
+    r = await client.put(
+        f"/api/programmes/{p.id}/etapes/{e.id}/cours/{lien.id}",
+        json={"categorie": "choix_francais"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    assert r.json()["categorie"] == "choix_francais"
+
+
+@pytest.mark.asyncio
+async def test_delete_cursus(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    from sqlalchemy import select as _select
+    p, e, c = await _seed(db_session)
+    lien = CoursEtapeProgramme(
+        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        categorie=CategorieCours.OBLIGATOIRE,
+    )
+    db_session.add(lien)
+    await db_session.commit()
+    await db_session.refresh(lien)
+    lid = lien.id
+    r = await client.delete(
+        f"/api/programmes/{p.id}/etapes/{e.id}/cours/{lid}",
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 204
+    found = await db_session.execute(
+        _select(CoursEtapeProgramme).where(CoursEtapeProgramme.id == lid)
+    )
+    assert found.scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_delete_cursus_refuse_rh(
+    client: AsyncClient, auth_headers_rh: dict, db_session: AsyncSession
+):
+    p, e, c = await _seed(db_session)
+    lien = CoursEtapeProgramme(
+        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        categorie=CategorieCours.OBLIGATOIRE,
+    )
+    db_session.add(lien)
+    await db_session.commit()
+    await db_session.refresh(lien)
+    r = await client.delete(
+        f"/api/programmes/{p.id}/etapes/{e.id}/cours/{lien.id}",
+        headers=auth_headers_rh,
+    )
+    assert r.status_code == 403

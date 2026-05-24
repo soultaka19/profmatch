@@ -101,3 +101,57 @@ async def list_cursus(
         .order_by(CoursEtapeProgramme.id)
     )
     return list(result.scalars().all())
+
+
+async def _get_lien_or_404(
+    programme_id: int, etape_id: int, lien_id: int, db: AsyncSession
+) -> CoursEtapeProgramme:
+    result = await db.execute(
+        select(CoursEtapeProgramme).where(
+            CoursEtapeProgramme.id == lien_id,
+            CoursEtapeProgramme.programme_id == programme_id,
+            CoursEtapeProgramme.etape_id == etape_id,
+        )
+    )
+    lien = result.scalar_one_or_none()
+    if lien is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lien cursus introuvable"
+        )
+    return lien
+
+
+@router.put(
+    "/{programme_id}/etapes/{etape_id}/cours/{lien_id}",
+    response_model=CursusOut,
+)
+async def update_cursus(
+    programme_id: int,
+    etape_id: int,
+    lien_id: int,
+    payload: CursusUpdate,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> CursusOut:
+    lien = await _get_lien_or_404(programme_id, etape_id, lien_id, db)
+    lien.categorie = payload.categorie
+    await db.commit()
+    await db.refresh(lien)
+    return lien
+
+
+@router.delete(
+    "/{programme_id}/etapes/{etape_id}/cours/{lien_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_cursus(
+    programme_id: int,
+    etape_id: int,
+    lien_id: int,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    lien = await _get_lien_or_404(programme_id, etape_id, lien_id, db)
+    await db.delete(lien)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
