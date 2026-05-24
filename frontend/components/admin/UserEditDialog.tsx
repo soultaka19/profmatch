@@ -32,7 +32,6 @@ interface Props {
 export function UserEditDialog({ user, onClose, onUpdated }: Props) {
   const [nom, setNom] = useState("");
   const [role, setRole] = useState<UserRole>("prof");
-  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +39,6 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
     if (user) {
       setNom(user.nom_complet);
       setRole(user.role);
-      setPassword("");
       setError(null);
     }
   }, [user]);
@@ -53,7 +51,6 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
       const payload: UserUpdateInput = {};
       if (nom !== user.nom_complet) payload.nom_complet = nom;
       if (role !== user.role) payload.role = role;
-      if (password.length >= 8) payload.password = password;
       await usersApi.update(user.id, payload);
       onUpdated();
       onClose();
@@ -75,7 +72,7 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
         <DialogHeader>
           <DialogTitle>Modifier l&apos;utilisateur</DialogTitle>
           <DialogDescription>
-            Laissez le mot de passe vide pour le conserver. L&apos;email n&apos;est pas modifiable.
+            Pour réinitialiser le mot de passe, utilisez le bouton « Réinitialiser le mot de passe » dans la table.
           </DialogDescription>
         </DialogHeader>
 
@@ -104,16 +101,6 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
                 <SelectItem value="admin">Administrateur</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pwd-edit">Nouveau mot de passe (optionnel)</Label>
-            <Input
-              id="pwd-edit"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Laissez vide pour ne pas changer"
-            />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

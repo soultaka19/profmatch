@@ -1,5 +1,10 @@
 import { apiClient } from "./client";
-import type { UserAdmin, UserCreateInput, UserUpdateInput } from "@/lib/types/api";
+import type {
+  UserAdmin,
+  UserCreateInput,
+  UserCreateResponse,
+  UserUpdateInput,
+} from "@/lib/types/api";
 
 export const usersApi = {
   list: (actif?: boolean): Promise<UserAdmin[]> => {
@@ -10,8 +15,8 @@ export const usersApi = {
   get: (id: number): Promise<UserAdmin> =>
     apiClient.get<UserAdmin>(`/api/admin/utilisateurs/${id}`),
 
-  create: (input: UserCreateInput): Promise<UserAdmin> =>
-    apiClient.post<UserAdmin>("/api/admin/utilisateurs/", input),
+  create: (input: UserCreateInput): Promise<UserCreateResponse> =>
+    apiClient.post<UserCreateResponse>("/api/admin/utilisateurs/", input),
 
   update: (id: number, input: UserUpdateInput): Promise<UserAdmin> =>
     apiClient.put<UserAdmin>(`/api/admin/utilisateurs/${id}`, input),
@@ -21,4 +26,10 @@ export const usersApi = {
 
   restore: (id: number): Promise<UserAdmin> =>
     apiClient.post<UserAdmin>(`/api/admin/utilisateurs/${id}/restaurer`, {}),
+
+  reinitPassword: (id: number): Promise<UserCreateResponse> =>
+    apiClient.post<UserCreateResponse>(
+      `/api/admin/utilisateurs/${id}/reinit-password`,
+      {}
+    ),
 };

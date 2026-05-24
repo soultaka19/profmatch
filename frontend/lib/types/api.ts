@@ -201,17 +201,29 @@ export interface UserAdmin {
   role: UserRole;
   nom_complet: string;
   actif: boolean;
+  est_active: boolean;
 }
+
+export type CreatableRole = "prof" | "rh";
 
 export interface UserCreateInput {
   email: string;
-  password: string;
-  role: UserRole;
+  role: CreatableRole;
   nom_complet: string;
 }
 
 export interface UserUpdateInput {
   nom_complet?: string;
   role?: UserRole;
-  password?: string;
+}
+
+export interface UserCreateResponse {
+  user: UserAdmin;
+  activation_token: string;
+  activation_url: string;
+}
+
+export interface ActivateRequest {
+  token: string;
+  password: string;
 }
