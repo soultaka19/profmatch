@@ -37,5 +37,8 @@ class Settings(BaseSettings):
     UPLOADS_DIR: Path = Path("/uploads")
     MAX_UPLOAD_SIZE_MB: int = 10
 
+    # Frontend (utilisé pour construire l'URL d'activation envoyée à l'admin)
+    FRONTEND_URL: str = "http://localhost:3000"
+
 
 settings = Settings()

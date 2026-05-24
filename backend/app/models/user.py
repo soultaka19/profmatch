@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import BigInteger, DateTime, String, func
+from sqlalchemy import BigInteger, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,9 +19,10 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(60), nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(String(60), nullable=True)
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, name="userrole"), nullable=False)
     nom_complet: Mapped[str] = mapped_column(String(255), nullable=False)
+    actif: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -29,3 +30,12 @@ class User(Base):
     professeur: Mapped["Professeur | None"] = relationship(
         "Professeur", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+
+    @property
+    def est_active(self) -> bool:
+        """Vrai si l'utilisateur a défini son mot de passe (compte activé).
+
+        Un compte fraîchement créé par l'admin a `password_hash IS NULL` et
+        attend l'activation via /api/auth/activate.
+        """
+        return self.password_hash is not None

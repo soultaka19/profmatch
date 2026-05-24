@@ -192,3 +192,38 @@ export interface GenerationResponse {
   task_id: string;
   message: string;
 }
+
+// ── Admin Utilisateurs ───────────────────────────────────────────────────────
+
+export interface UserAdmin {
+  id: number;
+  email: string;
+  role: UserRole;
+  nom_complet: string;
+  actif: boolean;
+  est_active: boolean;
+}
+
+export type CreatableRole = "prof" | "rh";
+
+export interface UserCreateInput {
+  email: string;
+  role: CreatableRole;
+  nom_complet: string;
+}
+
+export interface UserUpdateInput {
+  nom_complet?: string;
+  role?: UserRole;
+}
+
+export interface UserCreateResponse {
+  user: UserAdmin;
+  activation_token: string;
+  activation_url: string;
+}
+
+export interface ActivateRequest {
+  token: string;
+  password: string;
+}
