@@ -1,0 +1,54 @@
+"use client";
+
+import { useState } from "react";
+import useSWR from "swr";
+import { programmesApi } from "@/lib/api/programmes";
+import type { Programme } from "@/lib/types/api";
+import { ProgrammesTable } from "@/components/admin/ProgrammesTable";
+import { ProgrammeCreateDialog } from "@/components/admin/ProgrammeCreateDialog";
+import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
+import { ProgrammeDeleteDialog } from "@/components/admin/ProgrammeDeleteDialog";
+
+export default function Page() {
+  const { data: programmes, mutate, isLoading } = useSWR<Programme[]>(
+    "programmes:list",
+    () => programmesApi.list()
+  );
+  const [editing, setEditing] = useState<Programme | null>(null);
+  const [deleting, setDeleting] = useState<Programme | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-fg">Programmes</h1>
+          <p className="mt-1 text-sm text-fg-muted">
+            Référentiel des programmes académiques avec leurs étapes et le cursus.
+          </p>
+        </div>
+        <ProgrammeCreateDialog onCreated={() => mutate()} />
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+      ) : (
+        <ProgrammesTable
+          programmes={programmes ?? []}
+          onEdit={setEditing}
+          onDelete={setDeleting}
+        />
+      )}
+
+      <ProgrammeEditDialog
+        programme={editing}
+        onClose={() => setEditing(null)}
+        onUpdated={() => mutate()}
+      />
+      <ProgrammeDeleteDialog
+        programme={deleting}
+        onClose={() => setDeleting(null)}
+        onDone={() => mutate()}
+      />
+    </div>
+  );
+}
