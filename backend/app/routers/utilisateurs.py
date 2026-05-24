@@ -36,3 +36,29 @@ async def create_utilisateur(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.get("/", response_model=list[UserAdminOut])
+async def list_utilisateurs(
+    actif: bool | None = None,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> list[UserAdminOut]:
+    stmt = select(User).order_by(User.nom_complet)
+    if actif is not None:
+        stmt = stmt.where(User.actif.is_(actif))
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+@router.get("/{user_id}", response_model=UserAdminOut)
+async def get_utilisateur(
+    user_id: int,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminOut:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    return user
