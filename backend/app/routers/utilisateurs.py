@@ -8,7 +8,7 @@ from app.core.deps import require_role
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.users import UserAdminOut, UserCreate
+from app.schemas.users import UserAdminOut, UserCreate, UserUpdate
 
 router = APIRouter()
 
@@ -61,4 +61,28 @@ async def get_utilisateur(
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    return user
+
+
+@router.put("/{user_id}", response_model=UserAdminOut)
+async def update_utilisateur(
+    user_id: int,
+    payload: UserUpdate,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminOut:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+
+    if payload.nom_complet is not None:
+        user.nom_complet = payload.nom_complet
+    if payload.role is not None:
+        user.role = payload.role
+    if payload.password is not None:
+        user.password_hash = hash_password(payload.password)
+
+    await db.commit()
+    await db.refresh(user)
     return user

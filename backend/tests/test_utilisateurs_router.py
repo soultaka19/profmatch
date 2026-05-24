@@ -109,3 +109,39 @@ async def test_get_utilisateur_par_id(client: AsyncClient, auth_headers_admin: d
 async def test_get_utilisateur_404(client: AsyncClient, auth_headers_admin: dict):
     r = await client.get("/api/admin/utilisateurs/99999", headers=auth_headers_admin)
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_utilisateur_nom_et_role(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
+    r = await client.put(
+        f"/api/admin/utilisateurs/{test_user_prof.id}",
+        json={"nom_complet": "Renommé", "role": "rh"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["nom_complet"] == "Renommé"
+    assert data["role"] == "rh"
+
+
+@pytest.mark.asyncio
+async def test_update_utilisateur_password(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
+    from app.core.security import verify_password
+    r = await client.put(
+        f"/api/admin/utilisateurs/{test_user_prof.id}",
+        json={"password": "NouveauPass456"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    await db_session.refresh(test_user_prof)
+    assert verify_password("NouveauPass456", test_user_prof.password_hash)
+
+
+@pytest.mark.asyncio
+async def test_update_utilisateur_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.put(
+        "/api/admin/utilisateurs/99999",
+        json={"nom_complet": "X"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 404
