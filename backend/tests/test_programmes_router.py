@@ -167,3 +167,74 @@ async def test_create_programme_semestre_invalide_refuse(
         headers=auth_headers_admin,
     )
     assert r.status_code == 422
+
+
+# ── /calendrier ──────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_calendrier_programme_standard(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    p = Programme(
+        code="51046", nom="P", departement=None,
+        semestres_admission=[Semestre.AUTOMNE],
+    )
+    db_session.add(p)
+    await db_session.commit()
+    await db_session.refresh(p)
+    db_session.add_all([
+        EtapeProgramme(programme_id=p.id, ordre=1),
+        EtapeProgramme(programme_id=p.id, ordre=2),
+        EtapeProgramme(programme_id=p.id, ordre=3),
+        EtapeProgramme(programme_id=p.id, ordre=4),
+    ])
+    await db_session.commit()
+
+    r = await client.get(f"/api/programmes/{p.id}/calendrier", headers=auth_headers_admin)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["rythme"] == "standard"
+    assert data["sessions_actives"] == ["automne", "hiver"]
+    assert data["vacances"] == ["printemps"]
+    assert data["etapes_total"] == 4
+
+
+@pytest.mark.asyncio
+async def test_calendrier_programme_continu(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    p = Programme(
+        code="51047", nom="P2", departement=None,
+        semestres_admission=[Semestre.AUTOMNE, Semestre.HIVER, Semestre.PRINTEMPS],
+    )
+    db_session.add(p)
+    await db_session.commit()
+    await db_session.refresh(p)
+    r = await client.get(f"/api/programmes/{p.id}/calendrier", headers=auth_headers_admin)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["rythme"] == "continu"
+    assert data["sessions_actives"] == ["automne", "hiver", "printemps"]
+    assert data["vacances"] == []
+    assert data["etapes_total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_calendrier_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.get("/api/programmes/999/calendrier", headers=auth_headers_admin)
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_calendrier_rh_autorise(
+    client: AsyncClient, auth_headers_rh: dict, db_session: AsyncSession
+):
+    p = Programme(
+        code="51046", nom="P", departement=None,
+        semestres_admission=[Semestre.AUTOMNE],
+    )
+    db_session.add(p)
+    await db_session.commit()
+    await db_session.refresh(p)
+    r = await client.get(f"/api/programmes/{p.id}/calendrier", headers=auth_headers_rh)
+    assert r.status_code == 200

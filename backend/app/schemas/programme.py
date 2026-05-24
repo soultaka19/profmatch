@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.models.cours_etape_programme import CategorieCours
 from app.models.session import Semestre
+from app.services.academic_calendar import Rythme
 
 
 # ── Programme ────────────────────────────────────────────────────────────────
@@ -19,6 +20,16 @@ class ProgrammeUpdate(BaseModel):
     nom: Optional[str] = Field(None, max_length=200)
     departement: Optional[str] = Field(None, max_length=120)
     semestres_admission: Optional[list[Semestre]] = None
+
+
+class ProgrammeCalendrierOut(BaseModel):
+    """Calendrier dérivé du rythme d'admission d'un programme."""
+
+    programme_id: int
+    rythme: Rythme
+    sessions_actives: list[Semestre]
+    vacances: list[Semestre]
+    etapes_total: int
 
 
 # ── Étape ────────────────────────────────────────────────────────────────────
