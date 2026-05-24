@@ -60,3 +60,71 @@ async def test_me_rejects_invalid_token(client):
         "/api/auth/me", headers={"Authorization": "Bearer not-a-real-token"}
     )
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_compte_non_active_renvoie_403(client, db_session):
+    """Un compte créé par l'admin (password_hash NULL) ne peut pas se loger
+    tant qu'il n'a pas activé son mot de passe."""
+    from app.models.user import User, UserRole
+
+    user = User(email="aactiver@test.ca", password_hash=None,
+                role=UserRole.PROF, nom_complet="A Activer", actif=True)
+    db_session.add(user)
+    await db_session.commit()
+
+    response = await client.post(
+        "/api/auth/login",
+        json={"email": "aactiver@test.ca", "password": "n-importe-quoi"},
+    )
+    assert response.status_code == 403
+    assert "activ" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_activate_definit_password_et_retourne_token(client, db_session, auth_headers_admin):
+    """Workflow complet : admin crée → token → utilisateur active → login OK."""
+    # Étape 1 : admin crée un compte
+    r = await client.post(
+        "/api/admin/utilisateurs/",
+        json={"email": "nouveau@test.ca", "role": "prof", "nom_complet": "Nouveau"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 201
+    token = r.json()["activation_token"]
+
+    # Étape 2 : utilisateur active avec le token
+    r2 = await client.post(
+        "/api/auth/activate",
+        json={"token": token, "password": "MonNouveauPass456"},
+    )
+    assert r2.status_code == 200
+    data = r2.json()
+    assert data["role"] == "prof"
+    assert data["nom_complet"] == "Nouveau"
+    assert data["access_token"]
+
+    # Étape 3 : le même utilisateur peut désormais se loger normalement
+    r3 = await client.post(
+        "/api/auth/login",
+        json={"email": "nouveau@test.ca", "password": "MonNouveauPass456"},
+    )
+    assert r3.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_activate_refuse_token_invalide(client):
+    r = await client.post(
+        "/api/auth/activate",
+        json={"token": "token-inexistant", "password": "Password1234"},
+    )
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_activate_refuse_password_court(client):
+    r = await client.post(
+        "/api/auth/activate",
+        json={"token": "n-importe-quoi", "password": "abc"},
+    )
+    assert r.status_code == 422

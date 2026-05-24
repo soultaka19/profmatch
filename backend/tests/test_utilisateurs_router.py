@@ -13,7 +13,6 @@ async def test_create_utilisateur_admin(client: AsyncClient, auth_headers_admin:
         "/api/admin/utilisateurs/",
         json={
             "email": "newprof@test.ca",
-            "password": "MotDePasse123",
             "role": "prof",
             "nom_complet": "Nouveau Prof",
         },
@@ -21,11 +20,17 @@ async def test_create_utilisateur_admin(client: AsyncClient, auth_headers_admin:
     )
     assert r.status_code == 201
     data = r.json()
-    assert data["email"] == "newprof@test.ca"
-    assert data["role"] == "prof"
-    assert data["actif"] is True
-    assert "password" not in data
-    assert "password_hash" not in data
+    # La réponse contient maintenant {user, activation_token, activation_url}
+    assert "user" in data
+    assert data["user"]["email"] == "newprof@test.ca"
+    assert data["user"]["role"] == "prof"
+    assert data["user"]["actif"] is True
+    assert data["user"]["est_active"] is False  # compte créé sans mot de passe
+    assert "password" not in data["user"]
+    assert "password_hash" not in data["user"]
+    # Token d'activation présent
+    assert isinstance(data["activation_token"], str) and len(data["activation_token"]) > 10
+    assert data["activation_url"].endswith(f"?token={data['activation_token']}")
 
 
 @pytest.mark.asyncio
@@ -34,7 +39,6 @@ async def test_create_utilisateur_email_doublon(client: AsyncClient, auth_header
         "/api/admin/utilisateurs/",
         json={
             "email": "testprof@test.ca",
-            "password": "MotDePasse123",
             "role": "prof",
             "nom_complet": "Doublon",
         },
@@ -49,7 +53,6 @@ async def test_create_utilisateur_refuse_rh(client: AsyncClient, auth_headers_rh
         "/api/admin/utilisateurs/",
         json={
             "email": "x@test.ca",
-            "password": "MotDePasse123",
             "role": "prof",
             "nom_complet": "X",
         },
@@ -59,14 +62,14 @@ async def test_create_utilisateur_refuse_rh(client: AsyncClient, auth_headers_rh
 
 
 @pytest.mark.asyncio
-async def test_create_utilisateur_password_trop_court(client: AsyncClient, auth_headers_admin: dict):
+async def test_create_utilisateur_refuse_role_admin(client: AsyncClient, auth_headers_admin: dict):
+    """La création directe d'un compte admin est interdite (Literal['prof', 'rh'])."""
     r = await client.post(
         "/api/admin/utilisateurs/",
         json={
-            "email": "y@test.ca",
-            "password": "abc",
-            "role": "prof",
-            "nom_complet": "Y",
+            "email": "newadmin@test.ca",
+            "role": "admin",
+            "nom_complet": "Tentative",
         },
         headers=auth_headers_admin,
     )
@@ -102,7 +105,9 @@ async def test_list_utilisateurs_filtre_actif(client: AsyncClient, auth_headers_
 async def test_get_utilisateur_par_id(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
     r = await client.get(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
     assert r.status_code == 200
-    assert r.json()["email"] == "testprof@test.ca"
+    data = r.json()
+    assert data["email"] == "testprof@test.ca"
+    assert data["est_active"] is True  # fixture crée avec password_hash défini
 
 
 @pytest.mark.asyncio
@@ -122,19 +127,6 @@ async def test_update_utilisateur_nom_et_role(client: AsyncClient, auth_headers_
     data = r.json()
     assert data["nom_complet"] == "Renommé"
     assert data["role"] == "rh"
-
-
-@pytest.mark.asyncio
-async def test_update_utilisateur_password(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
-    from app.core.security import verify_password
-    r = await client.put(
-        f"/api/admin/utilisateurs/{test_user_prof.id}",
-        json={"password": "NouveauPass456"},
-        headers=auth_headers_admin,
-    )
-    assert r.status_code == 200
-    await db_session.refresh(test_user_prof)
-    assert verify_password("NouveauPass456", test_user_prof.password_hash)
 
 
 @pytest.mark.asyncio
@@ -180,3 +172,30 @@ async def test_admin_ne_peut_pas_se_desactiver(client: AsyncClient, auth_headers
     assert r.status_code == 403
     detail = r.json()["detail"].lower()
     assert "lui-même" in detail or "soi-même" in detail
+
+
+@pytest.mark.asyncio
+async def test_reinit_password_genere_nouveau_token(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
+    """Reinit password : efface le hash et émet un nouveau token d'activation."""
+    r = await client.post(
+        f"/api/admin/utilisateurs/{test_user_prof.id}/reinit-password",
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["user"]["est_active"] is False
+    assert isinstance(data["activation_token"], str)
+    assert "?token=" in data["activation_url"]
+
+    # Confirme côté DB : password_hash effacé
+    await db_session.refresh(test_user_prof)
+    assert test_user_prof.password_hash is None
+
+
+@pytest.mark.asyncio
+async def test_reinit_password_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.post(
+        "/api/admin/utilisateurs/99999/reinit-password",
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 404

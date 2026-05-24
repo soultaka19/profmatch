@@ -30,3 +30,12 @@ class User(Base):
     professeur: Mapped["Professeur | None"] = relationship(
         "Professeur", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+
+    @property
+    def est_active(self) -> bool:
+        """Vrai si l'utilisateur a défini son mot de passe (compte activé).
+
+        Un compte fraîchement créé par l'admin a `password_hash IS NULL` et
+        attend l'activation via /api/auth/activate.
+        """
+        return self.password_hash is not None
