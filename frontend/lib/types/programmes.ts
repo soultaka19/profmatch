@@ -73,3 +73,15 @@ export interface CursusCreateInput {
 export interface CursusUpdateInput {
   categorie: CategorieCours;
 }
+
+// ── Calendrier académique dérivé ──────────────────────────────────────────────
+
+export type Rythme = "standard" | "continu";
+
+export interface ProgrammeCalendrier {
+  programme_id: number;
+  rythme: Rythme;
+  sessions_actives: string[];
+  vacances: string[];
+  etapes_total: number;
+}

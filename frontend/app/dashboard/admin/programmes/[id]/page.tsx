@@ -15,6 +15,7 @@ import { EtapeAccordion } from "@/components/admin/EtapeAccordion";
 import { EtapeCreateDialog } from "@/components/admin/EtapeCreateDialog";
 import { EtapeDeleteDialog } from "@/components/admin/EtapeDeleteDialog";
 import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
+import { ProgrammeCalendarPanel } from "@/components/admin/ProgrammeCalendarPanel";
 import { SemestresAdmissionBadges } from "@/components/admin/SemestresAdmissionBadges";
 
 export default function Page() {
@@ -82,6 +83,8 @@ export default function Page() {
           />
         </div>
       </div>
+
+      <ProgrammeCalendarPanel programmeId={programmeId} />
 
       <div>
         <h2 className="text-lg font-semibold text-fg mb-3">Étapes et cours</h2>
