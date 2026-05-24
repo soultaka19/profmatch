@@ -214,3 +214,85 @@ async def test_delete_session_refuse_rh(
 async def test_delete_session_404(client: AsyncClient, auth_headers_admin: dict):
     r = await client.delete("/api/sessions/999", headers=auth_headers_admin)
     assert r.status_code == 404
+
+
+# ── GET /sessions/{id}/programmes-eligibles ──────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_programmes_eligibles_session_automne(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
+    """Session Automne — tous les programmes (STANDARD et CONTINU) sont éligibles."""
+    from app.models.programme import Programme
+
+    p_std = Programme(
+        code="51046", nom="Standard", departement=None,
+        semestres_admission=[Semestre.AUTOMNE],
+    )
+    p_cont = Programme(
+        code="51047", nom="Continu", departement=None,
+        semestres_admission=[Semestre.AUTOMNE, Semestre.HIVER, Semestre.PRINTEMPS],
+    )
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add_all([p_std, p_cont, sess])
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.get(
+        f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_admin
+    )
+    assert r.status_code == 200
+    codes = {p["code"] for p in r.json()}
+    assert codes == {"51046", "51047"}
+
+
+@pytest.mark.asyncio
+async def test_programmes_eligibles_session_printemps_filtre_standards(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
+    """Session Printemps — seuls les programmes CONTINU sont éligibles."""
+    from app.models.programme import Programme
+
+    p_std = Programme(
+        code="51046", nom="Standard", departement=None,
+        semestres_admission=[Semestre.AUTOMNE],
+    )
+    p_cont = Programme(
+        code="51047", nom="Continu", departement=None,
+        semestres_admission=[Semestre.AUTOMNE, Semestre.PRINTEMPS],
+    )
+    sess = Session(annee=2026, semestre=Semestre.PRINTEMPS)
+    db_session.add_all([p_std, p_cont, sess])
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.get(
+        f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_admin
+    )
+    assert r.status_code == 200
+    codes = {p["code"] for p in r.json()}
+    assert codes == {"51047"}
+
+
+@pytest.mark.asyncio
+async def test_programmes_eligibles_404(
+    client: AsyncClient, auth_headers_admin: dict
+):
+    r = await client.get(
+        "/api/sessions/999/programmes-eligibles", headers=auth_headers_admin
+    )
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_programmes_eligibles_rh_autorise(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_rh: dict
+):
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    r = await client.get(
+        f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_rh
+    )
+    assert r.status_code == 200
