@@ -12,6 +12,21 @@ interface Props {
   disabled?: boolean;
 }
 
+const ACTIVE_CLASSES: Record<SemestreAdmission, string> = {
+  automne:
+    "border-orange-400 bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-100 dark:border-orange-700",
+  hiver:
+    "border-sky-400 bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-100 dark:border-sky-700",
+  printemps:
+    "border-emerald-400 bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100 dark:border-emerald-700",
+};
+
+const ICON: Record<SemestreAdmission, string> = {
+  automne: "🍂",
+  hiver: "❄️",
+  printemps: "🌱",
+};
+
 export function SemestresAdmissionPicker({ value, onChange, disabled }: Props) {
   function toggle(s: SemestreAdmission) {
     if (disabled) return;
@@ -35,33 +50,29 @@ export function SemestresAdmissionPicker({ value, onChange, disabled }: Props) {
             className={
               "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors " +
               (checked
-                ? "border-primary bg-primary/10 text-primary"
+                ? ACTIVE_CLASSES[s]
                 : "border-border bg-bg text-fg-muted hover:bg-bg-muted") +
               (disabled ? " opacity-50 cursor-not-allowed" : " cursor-pointer")
             }
           >
-            <span
-              className={
-                "flex h-4 w-4 items-center justify-center rounded-sm border " +
-                (checked
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border")
-              }
-              aria-hidden="true"
-            >
-              {checked && (
-                <svg
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  className="h-3 w-3"
-                >
-                  <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </span>
+            <span aria-hidden="true">{ICON[s]}</span>
             {SEMESTRE_LABEL[s]}
+            {checked && (
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="h-3 w-3"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 8l3 3 7-7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
           </button>
         );
       })}
