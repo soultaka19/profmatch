@@ -6,6 +6,18 @@ export const CATEGORIE_LABEL: Record<CategorieCours, string> = {
   choix_anglais: "Choix anglais",
 };
 
+// Semestres exposés dans l'UI admin pour le rythme d'admission.
+// L'enum backend a aussi "ete" mais on ne l'expose pas dans le menu admin
+// (rarement utilisé au collégial — Printemps couvre la session estivale).
+export const SEMESTRES_ADMISSION = ["automne", "hiver", "printemps"] as const;
+export type SemestreAdmission = (typeof SEMESTRES_ADMISSION)[number];
+
+export const SEMESTRE_LABEL: Record<SemestreAdmission, string> = {
+  automne: "Automne",
+  hiver: "Hiver",
+  printemps: "Printemps",
+};
+
 export interface Etape {
   id: number;
   programme_id: number;
@@ -35,11 +47,13 @@ export interface ProgrammeCreateInput {
   code: string;
   nom: string;
   departement: string | null;
+  semestres_admission?: SemestreAdmission[];
 }
 
 export interface ProgrammeUpdateInput {
   nom?: string;
   departement?: string | null;
+  semestres_admission?: SemestreAdmission[];
 }
 
 export interface EtapeCreateInput {

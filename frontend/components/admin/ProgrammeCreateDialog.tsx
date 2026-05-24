@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
 import { programmesApi } from "@/lib/api/programmes";
+import type { SemestreAdmission } from "@/lib/types/programmes";
+import { SemestresAdmissionPicker } from "./SemestresAdmissionPicker";
 
 interface Props {
   onCreated: () => void;
@@ -25,6 +27,7 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
   const [code, setCode] = useState("");
   const [nom, setNom] = useState("");
   const [departement, setDepartement] = useState("");
+  const [semestres, setSemestres] = useState<SemestreAdmission[]>(["automne"]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +35,7 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
     setCode("");
     setNom("");
     setDepartement("");
+    setSemestres(["automne"]);
     setError(null);
   }
 
@@ -43,6 +47,7 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
         code: code.trim(),
         nom: nom.trim(),
         departement: departement.trim() || null,
+        semestres_admission: semestres,
       });
       onCreated();
       setOpen(false);
@@ -54,7 +59,8 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
     }
   }
 
-  const canSubmit = code.trim().length > 0 && nom.trim().length > 0;
+  const canSubmit =
+    code.trim().length > 0 && nom.trim().length > 0 && semestres.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
@@ -83,6 +89,16 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
           <div className="space-y-2">
             <Label htmlFor="dept">Département (optionnel)</Label>
             <Input id="dept" value={departement} onChange={(e) => setDepartement(e.target.value)} placeholder="Technologies de l'information" />
+          </div>
+          <div className="space-y-2">
+            <Label>Rythme d&apos;admission</Label>
+            <p className="text-xs text-fg-muted">
+              Sessions où une nouvelle cohorte entre dans le programme.
+            </p>
+            <SemestresAdmissionPicker value={semestres} onChange={setSemestres} />
+            {semestres.length === 0 && (
+              <p className="text-xs text-destructive">Sélectionnez au moins un semestre.</p>
+            )}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
