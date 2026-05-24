@@ -6,6 +6,7 @@ import { UsersTable } from "@/components/admin/UsersTable";
 import { UserCreateDialog } from "@/components/admin/UserCreateDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { UserToggleActifDialog } from "@/components/admin/UserToggleActifDialog";
+import { UserResetPasswordDialog } from "@/components/admin/UserResetPasswordDialog";
 import { usersApi } from "@/lib/api/utilisateurs";
 import type { UserAdmin } from "@/lib/types/api";
 import {
@@ -25,6 +26,7 @@ export default function Page() {
     user: UserAdmin;
     mode: "deactivate" | "restore";
   } | null>(null);
+  const [resetting, setResetting] = useState<UserAdmin | null>(null);
 
   const swrKey = `users:${filter}`;
   const { data: users, mutate, isLoading } = useSWR<UserAdmin[]>(swrKey, () => {
@@ -39,7 +41,7 @@ export default function Page() {
         <div>
           <h1 className="text-2xl font-semibold text-fg">Utilisateurs</h1>
           <p className="mt-1 text-sm text-fg-muted">
-            Gestion des comptes professeurs, RH et administrateurs.
+            Gestion des comptes professeurs et responsables RH. Chaque nouvel utilisateur reçoit un lien d&apos;activation pour définir son mot de passe.
           </p>
         </div>
         <UserCreateDialog onCreated={() => mutate()} />
@@ -67,6 +69,7 @@ export default function Page() {
           onEdit={setEditing}
           onDeactivate={(u) => setToggling({ user: u, mode: "deactivate" })}
           onRestore={(u) => setToggling({ user: u, mode: "restore" })}
+          onResetPassword={setResetting}
         />
       )}
 
@@ -79,6 +82,11 @@ export default function Page() {
         user={toggling?.user ?? null}
         mode={toggling?.mode ?? "deactivate"}
         onClose={() => setToggling(null)}
+        onDone={() => mutate()}
+      />
+      <UserResetPasswordDialog
+        user={resetting}
+        onClose={() => setResetting(null)}
         onDone={() => mutate()}
       />
     </div>

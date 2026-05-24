@@ -3,13 +3,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { UserAdmin } from "@/lib/types/api";
-import { Pencil, Power, RotateCcw } from "lucide-react";
+import { KeyRound, Pencil, Power, RotateCcw } from "lucide-react";
 
 interface UsersTableProps {
   users: UserAdmin[];
   onEdit: (u: UserAdmin) => void;
   onDeactivate: (u: UserAdmin) => void;
   onRestore: (u: UserAdmin) => void;
+  onResetPassword: (u: UserAdmin) => void;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -18,7 +19,13 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "Administrateur",
 };
 
-export function UsersTable({ users, onEdit, onDeactivate, onRestore }: UsersTableProps) {
+export function UsersTable({
+  users,
+  onEdit,
+  onDeactivate,
+  onRestore,
+  onResetPassword,
+}: UsersTableProps) {
   if (users.length === 0) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun utilisateur.</p>;
   }
@@ -40,21 +47,46 @@ export function UsersTable({ users, onEdit, onDeactivate, onRestore }: UsersTabl
               <td className="px-4 py-3 font-medium text-fg">{u.nom_complet}</td>
               <td className="px-4 py-3 text-fg-muted">{u.email}</td>
               <td className="px-4 py-3">{ROLE_LABEL[u.role] ?? u.role}</td>
-              <td className="px-4 py-3">
-                <Badge variant={u.actif ? "default" : "secondary"}>
-                  {u.actif ? "Actif" : "Inactif"}
-                </Badge>
+              <td className="px-4 py-3 space-x-2">
+                {u.actif ? (
+                  <Badge variant="default">Actif</Badge>
+                ) : (
+                  <Badge variant="secondary">Inactif</Badge>
+                )}
+                {!u.est_active && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-700">
+                    À activer
+                  </Badge>
+                )}
               </td>
               <td className="px-4 py-3 text-right space-x-1">
                 <Button size="sm" variant="ghost" onClick={() => onEdit(u)} title="Modifier">
                   <Pencil className="h-4 w-4" />
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onResetPassword(u)}
+                  title="Réinitialiser le mot de passe (nouveau lien d'activation)"
+                >
+                  <KeyRound className="h-4 w-4" />
+                </Button>
                 {u.actif ? (
-                  <Button size="sm" variant="ghost" onClick={() => onDeactivate(u)} title="Désactiver">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onDeactivate(u)}
+                    title="Désactiver"
+                  >
                     <Power className="h-4 w-4 text-destructive" />
                   </Button>
                 ) : (
-                  <Button size="sm" variant="ghost" onClick={() => onRestore(u)} title="Réactiver">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onRestore(u)}
+                    title="Réactiver"
+                  >
                     <RotateCcw className="h-4 w-4 text-primary" />
                   </Button>
                 )}

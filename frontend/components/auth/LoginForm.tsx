@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/api/client";
 
 const schema = z.object({
   email: z.string().email("Email invalide"),
@@ -31,6 +32,7 @@ export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [notActivated, setNotActivated] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -39,11 +41,16 @@ export function LoginForm() {
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
+    setNotActivated(false);
     try {
       const user = await login(values.email, values.password);
       router.push(`/dashboard/${user.role}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur de connexion");
+      if (e instanceof ApiError && e.status === 403) {
+        setNotActivated(true);
+      } else {
+        toast.error(e instanceof Error ? e.message : "Erreur de connexion");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -95,6 +102,11 @@ export function LoginForm() {
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Se connecter"}
         </Button>
+        {notActivated && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Votre compte n&apos;est pas encore activé. Utilisez le lien d&apos;activation que l&apos;administrateur vous a transmis, ou demandez-lui d&apos;en générer un nouveau.
+          </div>
+        )}
       </form>
     </Form>
   );
