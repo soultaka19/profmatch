@@ -86,3 +86,35 @@ async def update_utilisateur(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}", response_model=UserAdminOut)
+async def desactiver_utilisateur(
+    user_id: int,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminOut:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user.actif = False
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.post("/{user_id}/restaurer", response_model=UserAdminOut)
+async def restaurer_utilisateur(
+    user_id: int,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminOut:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user.actif = True
+    await db.commit()
+    await db.refresh(user)
+    return user

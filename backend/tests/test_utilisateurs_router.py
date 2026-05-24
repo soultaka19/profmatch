@@ -145,3 +145,30 @@ async def test_update_utilisateur_404(client: AsyncClient, auth_headers_admin: d
         headers=auth_headers_admin,
     )
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_utilisateur_soft(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
+    r = await client.delete(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
+    assert r.status_code == 200
+    assert r.json()["actif"] is False
+
+    r2 = await client.get(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
+    assert r2.status_code == 200
+    assert r2.json()["actif"] is False
+
+
+@pytest.mark.asyncio
+async def test_restaurer_utilisateur(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
+    test_user_prof.actif = False
+    await db_session.commit()
+
+    r = await client.post(f"/api/admin/utilisateurs/{test_user_prof.id}/restaurer", headers=auth_headers_admin)
+    assert r.status_code == 200
+    assert r.json()["actif"] is True
+
+
+@pytest.mark.asyncio
+async def test_delete_utilisateur_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.delete("/api/admin/utilisateurs/99999", headers=auth_headers_admin)
+    assert r.status_code == 404
