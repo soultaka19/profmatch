@@ -1,0 +1,114 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Loader2 } from "lucide-react";
+import { coursApi } from "@/lib/api/cours";
+
+interface Props {
+  onCreated: () => void;
+}
+
+export function CoursCreateDialog({ onCreated }: Props) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [nom, setNom] = useState("");
+  const [description, setDescription] = useState("");
+  const [credits, setCredits] = useState<string>("");
+  const [heures, setHeures] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function reset() {
+    setCode("");
+    setNom("");
+    setDescription("");
+    setCredits("");
+    setHeures("");
+    setError(null);
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await coursApi.create({
+        code: code.trim(),
+        nom: nom.trim(),
+        description: description.trim() || null,
+        credits: credits.trim() === "" ? null : Number(credits),
+        heures: heures.trim() === "" ? null : Number(heures),
+      });
+      onCreated();
+      setOpen(false);
+      reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const canSubmit = code.trim().length > 0 && nom.trim().length > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau cours
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nouveau cours</DialogTitle>
+          <DialogDescription>
+            Le code est unique (ex. INF1001). Il ne pourra plus être modifié après création.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="code">Code</Label>
+            <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="INF1001" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nom">Nom</Label>
+            <Input id="nom" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Introduction à la programmation" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optionnel)</Label>
+            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="credits">Crédits</Label>
+              <Input id="credits" type="number" min={0} max={20} value={credits} onChange={(e) => setCredits(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="heures">Heures</Label>
+              <Input id="heures" type="number" min={0} max={999} value={heures} onChange={(e) => setHeures(e.target.value)} />
+            </div>
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>
+          <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
+            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création…</> : "Créer"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
