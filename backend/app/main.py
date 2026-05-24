@@ -5,6 +5,7 @@ from app.routers import auth, cv, extraction
 from app.routers import sessions as sessions_router
 from app.routers import programmes as programmes_router
 from app.routers import etapes as etapes_router
+from app.routers import cours_readonly as cours_readonly_router
 from app.routers import affectations as affectations_router
 from app.routers import utilisateurs as utilisateurs_router
 
@@ -30,6 +31,7 @@ app.include_router(extraction.router, prefix="/api/cv", tags=["extraction"])
 app.include_router(sessions_router.router, prefix="/api/sessions", tags=["sessions"])
 app.include_router(programmes_router.router, prefix="/api/programmes", tags=["programmes"])
 app.include_router(etapes_router.router, prefix="/api/programmes", tags=["etapes"])
+app.include_router(cours_readonly_router.router, prefix="/api/cours", tags=["cours"])
 app.include_router(affectations_router.router, prefix="/api/affectations", tags=["affectations"])
 app.include_router(utilisateurs_router.router, prefix="/api/admin/utilisateurs", tags=["admin-utilisateurs"])
 
