@@ -192,3 +192,26 @@ export interface GenerationResponse {
   task_id: string;
   message: string;
 }
+
+// ── Admin Utilisateurs ───────────────────────────────────────────────────────
+
+export interface UserAdmin {
+  id: number;
+  email: string;
+  role: UserRole;
+  nom_complet: string;
+  actif: boolean;
+}
+
+export interface UserCreateInput {
+  email: string;
+  password: string;
+  role: UserRole;
+  nom_complet: string;
+}
+
+export interface UserUpdateInput {
+  nom_complet?: string;
+  role?: UserRole;
+  password?: string;
+}
