@@ -1,6 +1,6 @@
 """Routes Admin pour la gestion des programmes académiques."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -75,3 +75,18 @@ async def update_programme(
     await db.commit()
     await db.refresh(prog)
     return prog
+
+
+@router.delete("/{programme_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_programme(
+    programme_id: int,
+    _: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    result = await db.execute(select(Programme).where(Programme.id == programme_id))
+    prog = result.scalar_one_or_none()
+    if not prog:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable")
+    await db.delete(prog)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
