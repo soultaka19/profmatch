@@ -34,9 +34,7 @@ function fileTypeLabel(mime: string): string {
   return mime;
 }
 
-/** Affiche un nom de fichier de manière propre — tronque les hash longs. */
 function prettyFileName(name: string): string {
-  // Si le nom ressemble à un hash (32+ chars hex avant l'extension), tronquer.
   const m = name.match(/^([0-9a-f]{16,})(\.\w+)$/i);
   if (m) return `${m[1].slice(0, 8)}…${m[2]}`;
   return name;
@@ -45,7 +43,11 @@ function prettyFileName(name: string): string {
 export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
   if (!data) return null;
 
-  const meta = `Téléversé le ${formatDate(data.televerse_le)} · ${formatBytes(data.taille_octets)} · ${fileTypeLabel(data.mime_type)}`;
+  const isManual = data.source === "manual";
+
+  const meta = isManual
+    ? `Créé manuellement le ${formatDate(data.televerse_le)}`
+    : `Téléversé le ${formatDate(data.televerse_le)} · ${formatBytes(data.taille_octets)} · ${fileTypeLabel(data.mime_type)}`;
 
   if (data.statut === "en_attente" || data.statut === "en_cours") {
     return (
@@ -98,9 +100,11 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
         className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary"
       >
         <FileText className="h-5 w-5" strokeWidth={1.75} />
-        <span className="absolute -bottom-1 right-0 rounded bg-primary px-1 text-[8px] font-bold tracking-wide text-primary-foreground">
-          {fileTypeLabel(data.mime_type)}
-        </span>
+        {!isManual && (
+          <span className="absolute -bottom-1 right-0 rounded bg-primary px-1 text-[8px] font-bold tracking-wide text-primary-foreground">
+            {fileTypeLabel(data.mime_type)}
+          </span>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2.5">
@@ -115,7 +119,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
             aria-label="Analysé"
           >
             <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
-            Analysé
+            {isManual ? "Manuel" : "Analysé"}
           </span>
         </div>
         <p className="mt-0.5 text-xs text-fg-subtle">{meta}</p>
@@ -126,7 +130,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
           onClick={onReplace}
           className="flex-shrink-0 rounded-md border border-border bg-canvas-pure px-3.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:border-primary/40 hover:bg-primary-soft/40 hover:text-primary"
         >
-          Remplacer
+          {isManual ? "Importer un fichier CV" : "Remplacer"}
         </button>
       )}
     </div>
