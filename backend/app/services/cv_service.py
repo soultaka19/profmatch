@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.cv import CV, CVStatut
+from app.models.cv import CV, CVSource, CVStatut
 from app.models.professeur import Professeur
 from app.models.user import User
 from app.services.cv_extraction_service import extract_cv_text
@@ -63,15 +63,17 @@ async def upload(file: UploadFile, current_user: User, db: AsyncSession) -> CV:
 
     # 5. UPSERT row.
     if existing:
-        old_path = settings.UPLOADS_DIR / existing.chemin_fichier
-        if old_path.exists():
-            old_path.unlink()
+        if existing.source != CVSource.MANUAL:
+            old_path = settings.UPLOADS_DIR / existing.chemin_fichier
+            if old_path.exists():
+                old_path.unlink()
 
         existing.nom_original = file.filename
         existing.chemin_fichier = new_relative
         existing.taille_octets = size
         existing.mime_type = mime
         existing.statut = CVStatut.EN_ATTENTE
+        existing.source = CVSource.UPLOAD
         existing.texte_brut = None
         existing.message_erreur = None
         existing.traite_le = None
@@ -84,6 +86,7 @@ async def upload(file: UploadFile, current_user: User, db: AsyncSession) -> CV:
             taille_octets=size,
             mime_type=mime,
             statut=CVStatut.EN_ATTENTE,
+            source=CVSource.UPLOAD,
         )
         db.add(cv)
 
@@ -101,3 +104,47 @@ async def get_my_cv(current_user: User, db: AsyncSession) -> CV | None:
         select(CV).join(Professeur).where(Professeur.user_id == current_user.id)
     )
     return result.scalar_one_or_none()
+
+
+async def create_manual(current_user: User, db: AsyncSession) -> CV:
+    result = await db.execute(
+        select(Professeur).where(Professeur.user_id == current_user.id)
+    )
+    professeur = result.scalar_one()
+
+    result = await db.execute(select(CV).where(CV.professeur_id == professeur.id))
+    existing = result.scalar_one_or_none()
+
+    _ACTIVE = {CVStatut.TRAITE, CVStatut.EN_ATTENTE, CVStatut.EN_COURS}
+    if existing is not None and existing.statut in _ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Un CV actif existe déjà.",
+        )
+
+    if existing is not None:
+        existing.nom_original = "CV Manuel"
+        existing.chemin_fichier = "manual"
+        existing.taille_octets = 0
+        existing.mime_type = "manual"
+        existing.statut = CVStatut.TRAITE
+        existing.source = CVSource.MANUAL
+        existing.texte_brut = None
+        existing.message_erreur = None
+        existing.traite_le = None
+        cv = existing
+    else:
+        cv = CV(
+            professeur_id=professeur.id,
+            nom_original="CV Manuel",
+            chemin_fichier="manual",
+            taille_octets=0,
+            mime_type="manual",
+            statut=CVStatut.TRAITE,
+            source=CVSource.MANUAL,
+        )
+        db.add(cv)
+
+    await db.commit()
+    await db.refresh(cv)
+    return cv

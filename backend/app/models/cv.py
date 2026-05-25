@@ -14,6 +14,11 @@ class CVStatut(str, Enum):
     ERREUR = "erreur"
 
 
+class CVSource(str, Enum):
+    UPLOAD = "upload"
+    MANUAL = "manual"
+
+
 class CV(Base):
     __tablename__ = "cvs"
 
@@ -37,6 +42,16 @@ class CV(Base):
         nullable=False,
         default=CVStatut.EN_ATTENTE,
         index=True,
+    )
+    source: Mapped[CVSource] = mapped_column(
+        SQLEnum(
+            CVSource,
+            name="cvsource",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+        default=CVSource.UPLOAD,
+        server_default=CVSource.UPLOAD.value,
     )
     texte_brut: Mapped[str | None] = mapped_column(Text, nullable=True)
     message_erreur: Mapped[str | None] = mapped_column(Text, nullable=True)

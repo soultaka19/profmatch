@@ -111,6 +111,7 @@ export interface CVResponse {
   id: number;
   nom_original: string;
   statut: CVStatut;
+  source: "upload" | "manual";
   taille_octets: number;
   mime_type: string;
   televerse_le: string;
