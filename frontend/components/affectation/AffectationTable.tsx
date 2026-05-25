@@ -1,6 +1,7 @@
 "use client";
 
 import { AffectationCard } from "./AffectationCard";
+import { ManualAssignDialog } from "./ManualAssignDialog";
 import type { AffectationOut } from "@/lib/types/api";
 
 interface Poids {
@@ -17,6 +18,10 @@ interface AffectationTableProps {
   poids: Poids;
   onValidate: (id: number) => void;
   onReject: (id: number) => void;
+  // Présents uniquement en phase de révision active : activent l'affectation
+  // manuelle (REV-04). Omis en lecture seule (historique).
+  sessionId?: number;
+  onManualAssigned?: () => void;
 }
 
 export function AffectationTable({
@@ -26,6 +31,8 @@ export function AffectationTable({
   poids,
   onValidate,
   onReject,
+  sessionId,
+  onManualAssigned,
 }: AffectationTableProps) {
   if (affectations.length === 0) {
     return (
@@ -60,11 +67,20 @@ export function AffectationTable({
 
         return (
           <section key={coursId}>
-            <div className="mb-3 flex items-baseline gap-2">
-              <h3 className="text-base font-semibold text-fg">{coursName}</h3>
-              <span className="text-xs text-fg-muted">
-                {n} candidat{n > 1 ? "s" : ""}
-              </span>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-base font-semibold text-fg">{coursName}</h3>
+                <span className="text-xs text-fg-muted">
+                  {n} candidat{n > 1 ? "s" : ""}
+                </span>
+              </div>
+              {sessionId !== undefined && onManualAssigned && (
+                <ManualAssignDialog
+                  sessionId={sessionId}
+                  coursId={coursId}
+                  onAssigned={onManualAssigned}
+                />
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {group.map((aff) => (
