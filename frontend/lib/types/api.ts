@@ -228,3 +228,11 @@ export interface ActivateRequest {
   token: string;
   password: string;
 }
+
+// ── Étapes de programme ──────────────────────────────────────────────────────
+
+export interface EtapeProgramme {
+  id: number;
+  ordre: number;
+  nom: string | null;
+}
