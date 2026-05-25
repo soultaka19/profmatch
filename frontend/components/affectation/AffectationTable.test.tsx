@@ -15,6 +15,7 @@ const makeAff = (id: number, cours_id: number, score: number): AffectationOut =>
   score_sem: 0.85,
   justification: `Justification ${id}`,
   statut: "proposee",
+  origine: "algo",
   valide_par_user_id: null,
   valide_le: null,
   cree_le: "2026-05-22T00:00:00Z",
@@ -48,8 +49,10 @@ describe("AffectationTable", () => {
         coursNames={coursNames}
         professorNames={professorNames}
         poids={poids}
+        sessionId={1}
         onValidate={vi.fn()}
         onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
       />
     );
     expect(screen.getByRole("heading", { name: "PI-301 Algorithmes" })).toBeInTheDocument();
@@ -63,8 +66,10 @@ describe("AffectationTable", () => {
         coursNames={coursNames}
         professorNames={professorNames}
         poids={poids}
+        sessionId={1}
         onValidate={vi.fn()}
         onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
       />
     );
     expect(screen.getByText("2 candidats")).toBeInTheDocument();
@@ -78,8 +83,10 @@ describe("AffectationTable", () => {
         coursNames={{}}
         professorNames={{}}
         poids={poids}
+        sessionId={1}
         onValidate={vi.fn()}
         onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
       />
     );
     expect(screen.getByText(/aucune proposition/i)).toBeInTheDocument();

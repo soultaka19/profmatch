@@ -249,12 +249,14 @@ export default function AffectationsPage() {
             coursNames={coursNames}
             professorNames={professorNames}
             poids={poids}
+            sessionId={sessionId!}
             onValidate={handleValidate}
             onReject={handleReject}
             pendingActionId={pendingActionId}
             pendingAction={pendingAction}
             actionFeedback={actionFeedback}
             focusCandidateId={focusCandidateId}
+            onManualAssigned={() => mutateAffectations()}
           />
         </div>
       )}

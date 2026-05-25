@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.affectation import Affectation, AffectationStatut
+from app.models.affectation import Affectation, AffectationOrigine, AffectationStatut
 from app.models.affectation_feedback import AffectationFeedback
 from app.models.cours import Cours
 from app.models.cours_competence import CoursCompetence
@@ -154,6 +154,70 @@ def _score_comp_pondere(
     return Decimal(str(score_pondere / total_importance))
 
 
+async def _scorer_paire(
+    prof: Professeur,
+    cours: Cours,
+    competences_cours: list[CoursCompetence],
+    poids: PoidsScoring,
+    session_id: int,
+    db: AsyncSession,
+) -> tuple[Decimal, ScoresComposants, str]:
+    """Calcule (score_total, composants W1–W4, justification statique) pour un
+    couple (prof, cours). Extrait de generer_affectations pour réutilisation par
+    l'affectation manuelle (REV-04). Le prof doit avoir competences/experiences/
+    user/embedding chargés."""
+    from datetime import date as _date
+
+    competences_prof = {c.nom for c in prof.competences}
+    sc_comp = _score_comp_pondere(competences_prof, competences_cours)
+
+    annee_courante = _date.today().year
+    annees_exp = sum(
+        ((exp.annee_fin or annee_courante) - exp.annee_debut)
+        for exp in prof.experiences
+    ) if prof.experiences else 0
+    annees_exp = max(0, annees_exp)
+    sc_exp = score_experience(float(annees_exp))
+
+    bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
+    sc_hist = score_historique(bonus_hist)
+
+    sim = 0.0
+    if prof.embedding and cours.embedding:
+        sim = cosine_similarity(prof.embedding, cours.embedding)
+    sc_sem = score_semantique(sim)
+
+    composants = ScoresComposants(
+        score_comp=sc_comp,
+        score_exp=sc_exp,
+        score_hist=sc_hist,
+        score_sem=sc_sem,
+    )
+    score_total = calculer_score_composite(poids, sc_comp, sc_exp, sc_hist, sc_sem)
+
+    nb_comp_couvertes = sum(
+        1 for cc in competences_cours
+        if cc.nom.lower() in {c.lower() for c in competences_prof}
+    )
+    ctx = ContexteJustification(
+        nom_professeur=prof.user.nom_complet if prof.user else f"Prof {prof.id}",
+        code_cours=cours.code,
+        titre_cours=cours.nom,
+        nb_comp_couvertes=nb_comp_couvertes,
+        nb_comp_requises=len(competences_cours),
+        competences_maitrisees=sorted(competences_prof)[:5],
+        annees_experience=int(annees_exp),
+        nb_sessions_precedentes=0,
+        note_rh_moyenne=0.0,
+        similarite_semantique=sim,
+        score_global_pct=float(score_total) * 100,
+        poids=poids,
+        composants=composants,
+    )
+    justification = generer_justification_statique(ctx)
+    return score_total, composants, justification
+
+
 async def generer_affectations(
     session_id: int,
     programme_ids: list[int],
@@ -211,70 +275,18 @@ async def generer_affectations(
         scores_par_prof: list[tuple[float, Affectation]] = []
 
         for prof in professeurs:
-            # W1 — compétences pondérées par importance
-            competences_prof = {c.nom for c in prof.competences}
-            sc_comp = _score_comp_pondere(competences_prof, competences_cours)
-
-            # W2 — expérience totale en années
-            from datetime import date as _date
-            annee_courante = _date.today().year
-            annees_exp = sum(
-                ((exp.annee_fin or annee_courante) - exp.annee_debut)
-                for exp in prof.experiences
-            ) if prof.experiences else 0
-            annees_exp = max(0, annees_exp)
-            sc_exp = score_experience(float(annees_exp))
-
-            # W3 — bonus historique
-            bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
-            sc_hist = score_historique(bonus_hist)
-
-            # W4 — similarité cosinus embeddings
-            sim = 0.0
-            if prof.embedding and cours.embedding:
-                sim = cosine_similarity(prof.embedding, cours.embedding)
-            sc_sem = score_semantique(sim)
-
-            composants = ScoresComposants(
-                score_comp=sc_comp,
-                score_exp=sc_exp,
-                score_hist=sc_hist,
-                score_sem=sc_sem,
+            score_total, composants, justification = await _scorer_paire(
+                prof, cours, competences_cours, poids, session_id, db
             )
-            score_total = calculer_score_composite(
-                poids, sc_comp, sc_exp, sc_hist, sc_sem
-            )
-
-            nb_comp_couvertes = sum(
-                1 for cc in competences_cours
-                if cc.nom.lower() in {c.lower() for c in competences_prof}
-            )
-            ctx = ContexteJustification(
-                nom_professeur=prof.user.nom_complet if prof.user else f"Prof {prof.id}",
-                code_cours=cours.code,
-                titre_cours=cours.nom,
-                nb_comp_couvertes=nb_comp_couvertes,
-                nb_comp_requises=len(competences_cours),
-                competences_maitrisees=sorted(competences_prof)[:5],
-                annees_experience=int(annees_exp),
-                nb_sessions_precedentes=0,
-                note_rh_moyenne=0.0,
-                similarite_semantique=sim,
-                score_global_pct=float(score_total) * 100,
-                poids=poids,
-                composants=composants,
-            )
-            justification = generer_justification_statique(ctx)
-
             aff = Affectation(
                 session_id=session_id,
                 professeur_id=prof.id,
                 cours_id=cours.id,
                 score_total=score_total,
-                score_comp=sc_comp.quantize(Decimal("0.001")),
-                score_exp=sc_exp.quantize(Decimal("0.001")),
-                score_hist=sc_hist.quantize(Decimal("0.001")),
-                score_sem=sc_sem.quantize(Decimal("0.001")),
+                score_comp=composants.score_comp.quantize(Decimal("0.001")),
+                score_exp=composants.score_exp.quantize(Decimal("0.001")),
+                score_hist=composants.score_hist.quantize(Decimal("0.001")),
+                score_sem=composants.score_sem.quantize(Decimal("0.001")),
                 justification=justification,
                 statut=AffectationStatut.PROPOSEE,
             )
@@ -313,6 +325,107 @@ async def valider_affectation(
     await db.commit()
     await db.refresh(aff)
     return aff
+
+
+async def creer_affectation_manuelle(
+    session_id: int,
+    professeur_id: int,
+    cours_id: int,
+    user_id: int,
+    db: AsyncSession,
+) -> Affectation:
+    """Affecte manuellement un prof à un cours (REV-04) : score réel calculé,
+    statut VALIDEE, origine MANUEL, auteur = RH. Upsert sur (session, prof, cours)."""
+    import datetime
+    from app.models.cv import CVStatut
+
+    prof = (await db.execute(
+        select(Professeur).where(Professeur.id == professeur_id).options(
+            selectinload(Professeur.user),
+            selectinload(Professeur.competences),
+            selectinload(Professeur.experiences),
+            selectinload(Professeur.cv),
+        )
+    )).scalar_one_or_none()
+    if prof is None:
+        raise ValueError("Professeur introuvable")
+    if prof.cv is None or prof.cv.statut != CVStatut.TRAITE:
+        raise ValueError("CV non traité")
+
+    cours = (await db.execute(
+        select(Cours).where(Cours.id == cours_id)
+    )).scalar_one_or_none()
+    if cours is None:
+        raise ValueError("Cours introuvable")
+
+    competences_cours = (await _charger_competences_cours([cours_id], db)).get(cours_id, [])
+    poids = await _charger_ponderations(session_id, db)
+
+    score_total, composants, justification = await _scorer_paire(
+        prof, cours, competences_cours, poids, session_id, db
+    )
+
+    aff = (await db.execute(
+        select(Affectation).where(
+            Affectation.session_id == session_id,
+            Affectation.professeur_id == professeur_id,
+            Affectation.cours_id == cours_id,
+        )
+    )).scalar_one_or_none()
+    if aff is None:
+        aff = Affectation(session_id=session_id, professeur_id=professeur_id, cours_id=cours_id)
+        db.add(aff)
+
+    aff.score_total = score_total
+    aff.score_comp = composants.score_comp.quantize(Decimal("0.001"))
+    aff.score_exp = composants.score_exp.quantize(Decimal("0.001"))
+    aff.score_hist = composants.score_hist.quantize(Decimal("0.001"))
+    aff.score_sem = composants.score_sem.quantize(Decimal("0.001"))
+    aff.justification = justification
+    aff.statut = AffectationStatut.VALIDEE
+    aff.origine = AffectationOrigine.MANUEL
+    aff.valide_par_user_id = user_id
+    aff.valide_le = datetime.datetime.now(datetime.timezone.utc)
+
+    await db.commit()
+    await db.refresh(aff)
+    return aff
+
+
+async def lister_professeurs_disponibles(
+    session_id: int,
+    cours_id: int,
+    db: AsyncSession,
+) -> list[tuple[int, str]]:
+    """Profs avec CV traité n'ayant PAS déjà d'affectation *active* (proposée ou
+    validée) pour ce (session, cours). Les profs rejetés restent disponibles : le
+    RH peut revenir sur un rejet via l'affectation manuelle (upsert côté service).
+    Retourne [(professeur_id, nom_complet)] trié par nom."""
+    from app.models.cv import CV, CVStatut
+
+    deja = (await db.execute(
+        select(Affectation.professeur_id).where(
+            Affectation.session_id == session_id,
+            Affectation.cours_id == cours_id,
+            Affectation.statut != AffectationStatut.REJETEE,
+        )
+    )).all()
+    deja_ids = {row[0] for row in deja}
+
+    profs = (await db.execute(
+        select(Professeur)
+        .join(CV, CV.professeur_id == Professeur.id)
+        .where(CV.statut == CVStatut.TRAITE)
+        .options(selectinload(Professeur.user))
+    )).scalars().all()
+
+    out = [
+        (p.id, p.user.nom_complet if p.user else f"Prof {p.id}")
+        for p in profs
+        if p.id not in deja_ids
+    ]
+    out.sort(key=lambda t: t[1])
+    return out
 
 
 async def ajouter_feedback(

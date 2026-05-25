@@ -15,6 +15,7 @@ const aff: AffectationOut = {
   score_sem: 0.92,
   justification: "• Compétences : Maîtrise de React. • Expérience : 9 ans.",
   statut: "proposee",
+  origine: "algo",
   valide_par_user_id: null,
   valide_le: null,
   cree_le: "2026-05-22T00:00:00Z",
@@ -141,5 +142,31 @@ describe("AffectationCard", () => {
     );
     expect(screen.queryByRole("button", { name: /Valider/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Rejeter/i })).toBeNull();
+  });
+
+  it("affiche le badge Manuel quand origine = manuel", () => {
+    render(
+      <AffectationCard
+        aff={{ ...aff, origine: "manuel" }}
+        poids={poids}
+        professorName="Ahmed Diallo"
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Manuel")).toBeInTheDocument();
+  });
+
+  it("n'affiche pas le badge Manuel quand origine = algo", () => {
+    render(
+      <AffectationCard
+        aff={aff}
+        poids={poids}
+        professorName="Ahmed Diallo"
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+    expect(screen.queryByText("Manuel")).not.toBeInTheDocument();
   });
 });

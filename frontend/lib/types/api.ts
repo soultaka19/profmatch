@@ -175,12 +175,18 @@ export interface AffectationOut {
   score_sem: number;
   justification: string | null;
   statut: AffectationStatut;
+  origine: "algo" | "manuel";
   valide_par_user_id: number | null;
   valide_le: string | null;
   cree_le: string;
   cours_nom: string | null;
   cours_code: string | null;
   professeur_nom: string | null;
+}
+
+export interface ProfesseurDisponibleOut {
+  professeur_id: number;
+  nom_complet: string;
 }
 
 // ── Génération ────────────────────────────────────────────────────────────────

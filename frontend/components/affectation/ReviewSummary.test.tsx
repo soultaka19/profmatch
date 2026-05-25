@@ -15,6 +15,7 @@ const item = (id: number, coursId: number, total: number, statut: AffectationOut
   score_sem: total,
   justification: null,
   statut,
+  origine: "algo",
   valide_par_user_id: null,
   valide_le: null,
   cree_le: "2026-05-25T00:00:00Z",

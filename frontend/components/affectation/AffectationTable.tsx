@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { AffectationCard } from "./AffectationCard";
 import { ScoreBreakdown } from "./ScoreBreakdown";
+import { ManualAssignDialog } from "./ManualAssignDialog";
 import { getRecommendationFilter, type RecommendationFilter } from "./recommendation";
 import type { ActionFeedback } from "./types";
 import type { AffectationOut } from "@/lib/types/api";
@@ -34,6 +35,10 @@ interface AffectationTableProps {
   pendingAction?: "validate" | "reject" | null;
   actionFeedback?: Record<number, ActionFeedback>;
   focusCandidateId?: number | null;
+  // Présents uniquement en phase de révision active : activent l'affectation
+  // manuelle (REV-04). Omis en lecture seule (historique).
+  sessionId?: number;
+  onManualAssigned?: () => void;
 }
 
 export function AffectationTable({
@@ -47,6 +52,8 @@ export function AffectationTable({
   pendingAction = null,
   actionFeedback = {},
   focusCandidateId = null,
+  sessionId,
+  onManualAssigned,
 }: AffectationTableProps) {
   const [recommendationFilter, setRecommendationFilter] =
     useState<RecommendationFilter>("all");
@@ -152,11 +159,20 @@ export function AffectationTable({
           const coursName = coursNames[coursId] ?? `Cours #${coursId}`;
           return (
             <section key={coursId}>
-              <div className="mb-3 flex items-baseline gap-2">
-                <h3 className="text-base font-semibold text-fg">{coursName}</h3>
-                <span className="text-xs text-fg-muted">
-                  {group.length} candidat{group.length > 1 ? "s" : ""}
-                </span>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-base font-semibold text-fg">{coursName}</h3>
+                  <span className="text-xs text-fg-muted">
+                    {group.length} candidat{group.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                {sessionId !== undefined && onManualAssigned && (
+                  <ManualAssignDialog
+                    sessionId={sessionId}
+                    coursId={coursId}
+                    onAssigned={onManualAssigned}
+                  />
+                )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.map((aff) => (
