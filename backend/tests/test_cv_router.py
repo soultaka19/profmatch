@@ -82,3 +82,52 @@ async def test_get_texte_returns_text_when_processed(
     resp = await client.get("/api/cv/me/texte", headers=auth_headers_prof)
     assert resp.status_code == 200
     assert "Jean Dupont" in resp.json()["texte_brut"]
+
+
+@pytest.mark.asyncio
+async def test_create_manual_returns_201(
+    client: AsyncClient,
+    auth_headers_prof: dict[str, str],
+):
+    resp = await client.post("/api/cv/manual", headers=auth_headers_prof)
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["statut"] == "traite"
+    assert body["source"] == "manual"
+    assert body["nom_original"] == "CV Manuel"
+
+
+@pytest.mark.asyncio
+async def test_create_manual_requires_prof_role(
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+):
+    resp = await client.post("/api/cv/manual", headers=auth_headers_rh)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_create_manual_conflict_when_already_active(
+    client: AsyncClient,
+    auth_headers_prof: dict[str, str],
+):
+    await client.post("/api/cv/manual", headers=auth_headers_prof)
+    resp = await client.post("/api/cv/manual", headers=auth_headers_prof)
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_get_me_includes_source_field(
+    client: AsyncClient,
+    auth_headers_prof: dict[str, str],
+    tmp_uploads_dir: Path,
+    cv_sample_pdf_bytes: bytes,
+    celery_eager,
+):
+    files = {"file": ("cv.pdf", cv_sample_pdf_bytes, "application/pdf")}
+    await client.post("/api/cv/upload", files=files, headers=auth_headers_prof)
+
+    resp = await client.get("/api/cv/me", headers=auth_headers_prof)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["source"] == "upload"

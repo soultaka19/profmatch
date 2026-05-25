@@ -41,3 +41,12 @@ async def get_my_cv_texte(
     if cv is None or cv.statut != CVStatut.TRAITE:
         raise HTTPException(status_code=404, detail="Texte non disponible.")
     return CVTexteResponse(texte_brut=cv.texte_brut)
+
+
+@router.post("/manual", response_model=CVResponse, status_code=status.HTTP_201_CREATED)
+async def create_manual_cv(
+    current_user: User = Depends(require_role("prof")),
+    db: AsyncSession = Depends(get_db),
+) -> CVResponse:
+    cv = await cv_service.create_manual(current_user, db)
+    return CVResponse.model_validate(cv)
