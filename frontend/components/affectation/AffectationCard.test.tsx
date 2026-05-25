@@ -51,7 +51,8 @@ describe("AffectationCard", () => {
     expect(screen.getByText("84%")).toBeInTheDocument();
   });
 
-  it("ouvre la justification XAI au clic", () => {
+  it("demande l'ouverture de la justification sans agrandir la carte", () => {
+    const onViewJustification = vi.fn();
     render(
       <AffectationCard
         aff={aff}
@@ -59,10 +60,12 @@ describe("AffectationCard", () => {
         professorName="Ahmed Diallo"
         onValidate={vi.fn()}
         onReject={vi.fn()}
+        onViewJustification={onViewJustification}
       />
     );
-    fireEvent.click(screen.getByText(/Justification IA/i));
-    expect(screen.getByText(/Maîtrise de React/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Voir la justification/i }));
+    expect(onViewJustification).toHaveBeenCalledWith(aff);
+    expect(screen.queryByText(/Maîtrise de React/i)).not.toBeInTheDocument();
   });
 
   it("appelle onValidate au clic Valider", () => {
@@ -94,6 +97,21 @@ describe("AffectationCard", () => {
 
     expect(screen.getByRole("button", { name: /Validation/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /Rejeter/i })).toBeDisabled();
+  });
+
+  it("affiche le feedback inline de la derniere action", () => {
+    render(
+      <AffectationCard
+        aff={{ ...aff, statut: "validee" }}
+        poids={poids}
+        professorName="Ahmed Diallo"
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        actionFeedback={{ tone: "success", message: "Affectation validée." }}
+      />
+    );
+
+    expect(screen.getByText("Affectation validée.")).toBeInTheDocument();
   });
 
   it("appelle onReject au clic Rejeter", () => {

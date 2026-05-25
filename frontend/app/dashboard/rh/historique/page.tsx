@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
 import type { AffectationOut, PonderationsOut, Session } from "@/lib/types/api";
+import { STATUT_LABEL } from "@/lib/types/sessions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ChevronRight, Loader2 } from "lucide-react";
@@ -124,7 +125,7 @@ export default function HistoriquePage() {
               <div className="flex items-center gap-3">
                 <span className="font-medium text-fg">{sess.nom}</span>
                 <Badge variant={STATUT_BADGE[sess.statut] ?? "outline"}>
-                  {sess.statut}
+                  {STATUT_LABEL[sess.statut]}
                 </Badge>
               </div>
               <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
@@ -153,7 +154,7 @@ export default function HistoriquePage() {
             <Badge
               variant={STATUT_BADGE[selectedSession.statut] ?? "outline"}
             >
-              {selectedSession.statut}
+              {STATUT_LABEL[selectedSession.statut]}
             </Badge>
           </div>
 

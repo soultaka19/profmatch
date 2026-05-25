@@ -185,7 +185,7 @@ export interface AffectationOut {
 
 // ── Génération ────────────────────────────────────────────────────────────────
 
-export type GenerationPhase = "queued" | "processing" | "done" | "error";
+export type GenerationPhase = "pending" | "queued" | "processing" | "done" | "error";
 
 export interface GenerationStatus {
   status: GenerationPhase;

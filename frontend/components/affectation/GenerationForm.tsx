@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { WeightSliders } from "./WeightSliders";
 import type { Weights } from "./WeightSliders";
+import type { GenerationScope } from "./types";
 import {
   affectationsApi,
   etapesApi,
@@ -22,22 +23,28 @@ import type { EtapeProgramme, PonderationsOut, Programme, Session } from "@/lib/
 import { AlertCircle, Check, Loader2, Sparkles } from "lucide-react";
 
 interface GenerationFormProps {
-  onTaskStarted: (taskId: string, sessionId: number) => void;
+  onTaskStarted: (taskId: string, sessionId: number, scope: GenerationScope) => void;
 }
 
 function ProgrammeEtapesSection({
   programme,
   selectedEtapeIds,
   onToggleEtape,
+  onEtapesLoaded,
 }: {
   programme: Programme;
   selectedEtapeIds: number[];
   onToggleEtape: (etapeId: number) => void;
+  onEtapesLoaded: (programmeId: number, etapes: EtapeProgramme[]) => void;
 }) {
   const { data: etapes } = useSWR<EtapeProgramme[]>(
     `/api/programmes/${programme.id}/etapes`,
     () => etapesApi.list(programme.id)
   );
+
+  useEffect(() => {
+    if (etapes) onEtapesLoaded(programme.id, etapes);
+  }, [etapes, onEtapesLoaded, programme.id]);
 
   if (!etapes || etapes.length === 0) return null;
 
@@ -78,6 +85,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   const [weights, setWeights] = useState<Weights>({ w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 });
   const [isSaving, setIsSaving] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
+  const [etapesByProgramme, setEtapesByProgramme] = useState<Record<number, EtapeProgramme[]>>({});
 
   // Programmes éligibles pour la session sélectionnée
   const {
@@ -114,7 +122,12 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   useEffect(() => {
     setSelectedProgrammeIds(new Set());
     setSelectedEtapeIds([]);
+    setEtapesByProgramme({});
   }, [selectedSessionId]);
+
+  const handleEtapesLoaded = useCallback((programmeId: number, etapes: EtapeProgramme[]) => {
+    setEtapesByProgramme((previous) => ({ ...previous, [programmeId]: etapes }));
+  }, []);
 
   const sumValid =
     Math.abs(weights.w1 + weights.w2 + weights.w3 + weights.w4 - 1) <= 0.001;
@@ -128,7 +141,13 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   function toggleProgramme(id: number) {
     setSelectedProgrammeIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        const removedIds = new Set((etapesByProgramme[id] ?? []).map((etape) => etape.id));
+        setSelectedEtapeIds((selected) => selected.filter((etapeId) => !removedIds.has(etapeId)));
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -154,7 +173,28 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
         Array.from(selectedProgrammeIds),
         etapeIds
       );
-      onTaskStarted(res.task_id, selectedSessionId);
+      const selectedProgrammes = (programmes ?? [])
+        .filter((programme) => selectedProgrammeIds.has(programme.id))
+        .map(({ id, code, nom }) => ({ id, code, nom }));
+      const selectedEtapes = selectedProgrammes.flatMap((programme) =>
+        (etapesByProgramme[programme.id] ?? [])
+          .filter((etape) => selectedEtapeIds.includes(etape.id))
+          .map((etape) => ({
+            ...etape,
+            programmeId: programme.id,
+            programmeCode: programme.code,
+          }))
+      );
+      const selectedSession = sessions?.find((session) => session.id === selectedSessionId);
+      onTaskStarted(res.task_id, selectedSessionId, {
+        session: {
+          id: selectedSessionId,
+          nom: selectedSession?.nom ?? `Session #${selectedSessionId}`,
+        },
+        programmes: selectedProgrammes,
+        etapes: selectedEtapes,
+        weights,
+      });
     } catch (err) {
       setLaunchError(
         err instanceof Error ? err.message : "Erreur lors du lancement"
@@ -252,6 +292,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
                         programme={p}
                         selectedEtapeIds={selectedEtapeIds}
                         onToggleEtape={toggleEtape}
+                        onEtapesLoaded={handleEtapesLoaded}
                       />
                     )}
                   </div>
@@ -286,7 +327,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
         {isSaving ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {"Enregistrement…"}
+            {"Préparation de la génération…"}
           </>
         ) : (
           <>
@@ -295,6 +336,11 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
           </>
         )}
       </Button>
+      {isSaving && (
+        <p role="status" aria-live="polite" className="text-xs text-fg-muted">
+          Paramètres verrouillés temporairement pendant le lancement.
+        </p>
+      )}
     </div>
   );
 }

@@ -38,6 +38,7 @@ describe("HistoriquePage", () => {
   it("présente une action explicite et un état vide pour une session sans validation", () => {
     render(<HistoriquePage />);
 
+    expect(screen.getByText("Fermée")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Voir les affectations/i }));
 
     expect(
