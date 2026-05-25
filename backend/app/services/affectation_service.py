@@ -55,15 +55,20 @@ async def _charger_ponderations(session_id: int, db: AsyncSession) -> PoidsScori
 
 
 async def _charger_cours_par_programmes(
-    programme_ids: list[int], db: AsyncSession
+    programme_ids: list[int],
+    db: AsyncSession,
+    etape_ids: list[int] | None = None,
 ) -> list[Cours]:
-    result = await db.execute(
+    query = (
         select(Cours)
         .join(CoursEtapeProgramme, CoursEtapeProgramme.cours_id == Cours.id)
         .where(CoursEtapeProgramme.programme_id.in_(programme_ids))
         .options(selectinload(Cours.liens_cursus))
         .distinct()
     )
+    if etape_ids:
+        query = query.where(CoursEtapeProgramme.etape_id.in_(etape_ids))
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 
