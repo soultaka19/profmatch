@@ -529,3 +529,29 @@ async def test_lister_profs_dispo_exclut_non_traites(db_session, professeur_prof
     ids = [pid for pid, _ in dispo]
     assert pt.id in ids
     assert professeur_prof.id not in ids
+
+
+@pytest.mark.asyncio
+async def test_lister_profs_dispo_inclut_rejetes(db_session):
+    """Un prof rejeté pour ce cours reste disponible (le RH peut revenir sur un rejet)."""
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.session import Session, Semestre
+
+    pr = await _make_prof_traite(db_session, "rej@test.ca", "Rejete", ["Python"])
+    cours = Cours(code="D-003", nom="Dispo3")
+    sess = Session(annee=2037, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=pr.id, cours_id=cours.id,
+        score_total=Decimal("0.4"), score_comp=Decimal("0.4"), score_exp=Decimal("0.4"),
+        score_hist=Decimal("0.4"), score_sem=Decimal("0.4"), statut=AffectationStatut.REJETEE,
+    ))
+    await db_session.commit()
+
+    dispo = await lister_professeurs_disponibles(sess.id, cours.id, db_session)
+    ids = [pid for pid, _ in dispo]
+    assert pr.id in ids

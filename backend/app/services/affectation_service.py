@@ -397,7 +397,9 @@ async def lister_professeurs_disponibles(
     cours_id: int,
     db: AsyncSession,
 ) -> list[tuple[int, str]]:
-    """Profs avec CV traité n'ayant PAS déjà d'affectation pour ce (session, cours).
+    """Profs avec CV traité n'ayant PAS déjà d'affectation *active* (proposée ou
+    validée) pour ce (session, cours). Les profs rejetés restent disponibles : le
+    RH peut revenir sur un rejet via l'affectation manuelle (upsert côté service).
     Retourne [(professeur_id, nom_complet)] trié par nom."""
     from app.models.cv import CV, CVStatut
 
@@ -405,6 +407,7 @@ async def lister_professeurs_disponibles(
         select(Affectation.professeur_id).where(
             Affectation.session_id == session_id,
             Affectation.cours_id == cours_id,
+            Affectation.statut != AffectationStatut.REJETEE,
         )
     )).all()
     deja_ids = {row[0] for row in deja}
