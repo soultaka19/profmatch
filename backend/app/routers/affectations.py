@@ -17,6 +17,7 @@ from app.schemas.affectation import (
     GenererAffectationsResponse,
 )
 from app.services.affectation_service import ajouter_feedback, valider_affectation
+from app.tasks.affectation_tasks import generer_affectations_task
 
 router = APIRouter()
 
@@ -31,9 +32,9 @@ async def generer_affectations(
     current_user: User = Depends(require_role("rh")),
 ) -> GenererAffectationsResponse:
     """Lance la génération asynchrone des affectations via Celery."""
-    from app.tasks.affectation_tasks import generer_affectations_task
-
-    task = generer_affectations_task.delay(payload.session_id, payload.programme_ids)
+    task = generer_affectations_task.delay(
+        payload.session_id, payload.programme_ids, payload.etape_ids
+    )
     return GenererAffectationsResponse(task_id=task.id)
 
 
