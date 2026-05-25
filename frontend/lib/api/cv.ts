@@ -5,7 +5,6 @@ export const cvApi = {
   upload: (file: File): Promise<CVResponse> => {
     const form = new FormData();
     form.append("file", file);
-    // postForm laisse le navigateur poser le boundary multipart.
     return apiClient.postForm<CVResponse>("/api/cv/upload", form);
   },
 
@@ -20,4 +19,7 @@ export const cvApi = {
 
   texte: (): Promise<CVTexteResponse> =>
     apiClient.get<CVTexteResponse>("/api/cv/me/texte"),
+
+  createManual: (): Promise<CVResponse> =>
+    apiClient.post<CVResponse>("/api/cv/manual", undefined),
 };

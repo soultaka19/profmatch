@@ -6,6 +6,7 @@ import type { CVResponse } from "@/lib/types/api";
 const baseCV: CVResponse = {
   id: 1,
   nom_original: "cv-jean.pdf",
+  source: "upload",
   taille_octets: 287000,
   mime_type: "application/pdf",
   statut: "traite",
