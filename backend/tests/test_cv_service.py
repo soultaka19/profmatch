@@ -6,7 +6,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.cv import CV, CVStatut
+from app.models.cv import CV, CVSource, CVStatut
 from app.models.professeur import Professeur
 from app.models.user import User
 from app.services import cv_service
@@ -129,3 +129,53 @@ async def test_upload_rejects_wrong_extension(
     with pytest.raises(HTTPException) as exc:
         await cv_service.upload(upload, test_user_prof, db_session)
     assert exc.value.status_code == 415
+
+
+@pytest.mark.asyncio
+async def test_create_manual_cv(
+    db_session: AsyncSession,
+    test_user_prof: User,
+    professeur_prof: Professeur,
+):
+    cv = await cv_service.create_manual(test_user_prof, db_session)
+
+    assert cv.statut == CVStatut.TRAITE
+    assert cv.source == CVSource.MANUAL
+    assert cv.nom_original == "CV Manuel"
+    assert cv.chemin_fichier == "manual"
+    assert cv.taille_octets == 0
+    assert cv.mime_type == "manual"
+
+
+@pytest.mark.asyncio
+async def test_create_manual_cv_conflict_when_traite(
+    db_session: AsyncSession,
+    test_user_prof: User,
+    professeur_prof: Professeur,
+):
+    await cv_service.create_manual(test_user_prof, db_session)
+
+    with pytest.raises(HTTPException) as exc:
+        await cv_service.create_manual(test_user_prof, db_session)
+    assert exc.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_upload_replaces_manual_cv_no_unlink_error(
+    db_session: AsyncSession,
+    test_user_prof: User,
+    professeur_prof: Professeur,
+    tmp_uploads_dir: Path,
+    cv_sample_pdf_bytes: bytes,
+    monkeypatch,
+):
+    monkeypatch.setattr("app.services.cv_service.extract_cv_text", _DummyTask)
+    await cv_service.create_manual(test_user_prof, db_session)
+
+    upload = _make_upload("cv.pdf", cv_sample_pdf_bytes, "application/pdf")
+    cv = await cv_service.upload(upload, test_user_prof, db_session)
+
+    assert cv.source == CVSource.UPLOAD
+    assert cv.nom_original == "cv.pdf"
+    physical = tmp_uploads_dir / cv.chemin_fichier
+    assert physical.exists()
