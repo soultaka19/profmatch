@@ -179,3 +179,26 @@ async def test_upload_replaces_manual_cv_no_unlink_error(
     assert cv.nom_original == "cv.pdf"
     physical = tmp_uploads_dir / cv.chemin_fichier
     assert physical.exists()
+
+
+@pytest.mark.asyncio
+async def test_create_manual_cv_replaces_erreur_status(
+    db_session: AsyncSession,
+    test_user_prof: User,
+    professeur_prof: Professeur,
+):
+    cv_error = CV(
+        professeur_id=professeur_prof.id,
+        nom_original="broken.pdf",
+        chemin_fichier="broken",
+        taille_octets=100,
+        mime_type="application/pdf",
+        statut=CVStatut.ERREUR,
+        source=CVSource.UPLOAD,
+    )
+    db_session.add(cv_error)
+    await db_session.commit()
+
+    cv = await cv_service.create_manual(test_user_prof, db_session)
+    assert cv.statut == CVStatut.TRAITE
+    assert cv.source == CVSource.MANUAL
