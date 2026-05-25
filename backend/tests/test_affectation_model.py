@@ -129,3 +129,18 @@ async def test_affectation_valide_par_set_null(
     await db_session.commit()
     await db_session.refresh(aff)
     assert aff.valide_par_user_id is None
+
+
+@pytest.mark.asyncio
+async def test_affectation_origine_defaut_algo(db_session: AsyncSession, professeur_prof: Professeur):
+    from app.models.affectation import Affectation, AffectationOrigine
+    sess, cours = await _setup(db_session, professeur_prof)
+    aff = Affectation(
+        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
+        score_total=Decimal("0.5"), score_comp=Decimal("0.5"),
+        score_exp=Decimal("0.5"), score_hist=Decimal("0.5"), score_sem=Decimal("0.5"),
+    )
+    db_session.add(aff)
+    await db_session.commit()
+    await db_session.refresh(aff)
+    assert aff.origine == AffectationOrigine.ALGO
