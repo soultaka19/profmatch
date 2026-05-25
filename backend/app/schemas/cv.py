@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -11,6 +12,7 @@ class CVResponse(BaseModel):
     id: int
     nom_original: str
     statut: CVStatut
+    source: Literal["upload", "manual"]
     taille_octets: int
     mime_type: str
     televerse_le: datetime
