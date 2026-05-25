@@ -6,6 +6,7 @@ import type {
   GenerationResponse,
   GenerationStatus,
   PonderationsOut,
+  ProfesseurDisponibleOut,
   Programme,
   Session,
 } from "@/lib/types/api";
@@ -80,4 +81,19 @@ export const affectationsApi = {
     commentaire?: string
   ): Promise<{ id: number; note: number }> =>
     apiClient.post(`/api/affectations/${id}/feedback`, { note, commentaire }),
+
+  createManuelle: (payload: {
+    session_id: number;
+    professeur_id: number;
+    cours_id: number;
+  }): Promise<AffectationOut> =>
+    apiClient.post<AffectationOut>("/api/affectations/manuelle", payload),
+
+  listProfesseursDisponibles: (
+    sessionId: number,
+    coursId: number
+  ): Promise<ProfesseurDisponibleOut[]> =>
+    apiClient.get<ProfesseurDisponibleOut[]>(
+      `/api/affectations/professeurs-disponibles?session_id=${sessionId}&cours_id=${coursId}`
+    ),
 };

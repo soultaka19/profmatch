@@ -31,6 +31,11 @@ class AffectationStatut(str, Enum):
     REJETEE = "rejetee"
 
 
+class AffectationOrigine(str, Enum):
+    ALGO = "algo"       # proposée par l'algorithme de scoring
+    MANUEL = "manuel"   # affectée manuellement par le RH
+
+
 class Affectation(Base):
     """Proposition d'affectation Professeur ↔ Cours pour une Session donnée.
 
@@ -84,6 +89,16 @@ class Affectation(Base):
         nullable=False,
         default=AffectationStatut.PROPOSEE,
         server_default=AffectationStatut.PROPOSEE.value,
+    )
+    origine: Mapped[AffectationOrigine] = mapped_column(
+        SQLEnum(
+            AffectationOrigine,
+            name="affectation_origine",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+        default=AffectationOrigine.ALGO,
+        server_default=AffectationOrigine.ALGO.value,
     )
     valide_par_user_id: Mapped[int | None] = mapped_column(
         BigInteger,

@@ -17,8 +17,11 @@ from app.services.affectation_service import (
     _bonus_historique,
     _charger_cours_par_programmes,
     _score_comp_pondere,
+    _scorer_paire,
     ajouter_feedback,
+    creer_affectation_manuelle,
     generer_affectations,
+    lister_professeurs_disponibles,
     update_ponderations,
     valider_affectation,
 )
@@ -314,3 +317,241 @@ async def test_generer_programme_ineligible_exclu(db_session: AsyncSession):
 
     assert prog_standard.id in exclus
     assert prog_continu.id not in exclus
+
+
+# ── _scorer_paire (refactor) ─────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_scorer_paire_competence_totale(db_session: AsyncSession, professeur_prof):
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload
+    from app.models.competence import Competence, CompetenceNiveau
+    from app.models.cours import Cours
+    from app.models.cours_competence import CoursCompetence
+    from app.models.professeur import Professeur
+
+    db_session.add(Competence(professeur_id=professeur_prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE))
+    cours = Cours(code="SC-01", nom="Cours Scoring")
+    db_session.add(cours)
+    await db_session.commit()
+    await db_session.refresh(cours)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    prof = (await db_session.execute(
+        _sel(Professeur).where(Professeur.id == professeur_prof.id).options(
+            selectinload(Professeur.user),
+            selectinload(Professeur.competences),
+            selectinload(Professeur.experiences),
+        )
+    )).scalar_one()
+    ccs = (await db_session.execute(
+        _sel(CoursCompetence).where(CoursCompetence.cours_id == cours.id)
+    )).scalars().all()
+
+    poids = PoidsScoring(w1=Decimal("1"), w2=Decimal("0"), w3=Decimal("0"), w4=Decimal("0"))
+    score_total, composants, justification = await _scorer_paire(
+        prof, cours, list(ccs), poids, 999, db_session
+    )
+    assert float(composants.score_comp) == pytest.approx(1.0, abs=0.001)
+    assert float(score_total) == pytest.approx(1.0, abs=0.001)
+    assert isinstance(justification, str) and justification
+
+
+# ── Helper : prof avec CV traité ─────────────────────────────────────────────
+
+
+async def _make_prof_traite(db, email, nom, comps):
+    from app.core.security import hash_password
+    from app.models.user import User, UserRole
+    from app.models.professeur import Professeur
+    from app.models.cv import CV, CVStatut
+    from app.models.competence import Competence, CompetenceNiveau
+    from sqlalchemy import select as _sel
+
+    user = User(email=email, password_hash=hash_password("Test@1234"),
+                role=UserRole.PROF, nom_complet=nom)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    prof = (await db.execute(_sel(Professeur).where(Professeur.user_id == user.id))).scalar_one()
+    db.add(CV(professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
+              taille_octets=1, mime_type="application/pdf", statut=CVStatut.TRAITE))
+    for c in comps:
+        db.add(Competence(professeur_id=prof.id, nom=c, niveau=CompetenceNiveau.AVANCE))
+    await db.commit()
+    return prof
+
+
+# ── creer_affectation_manuelle ───────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_creer_affectation_manuelle_cree_validee(db_session, test_user_rh):
+    from app.models.affectation import AffectationOrigine, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.cours_competence import CoursCompetence
+    from app.models.session import Session, Semestre
+
+    prof = await _make_prof_traite(db_session, "p1@test.ca", "Prof Un", ["Python"])
+    cours = Cours(code="M-001", nom="Manuel")
+    sess = Session(annee=2031, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    aff = await creer_affectation_manuelle(sess.id, prof.id, cours.id, test_user_rh.id, db_session)
+    assert aff.statut == AffectationStatut.VALIDEE
+    assert aff.origine == AffectationOrigine.MANUEL
+    assert aff.valide_par_user_id == test_user_rh.id
+    assert aff.valide_le is not None
+    assert aff.score_total is not None
+
+
+@pytest.mark.asyncio
+async def test_creer_affectation_manuelle_upsert_sur_existante(db_session, test_user_rh):
+    from sqlalchemy import func, select as _sel
+    from app.models.affectation import Affectation, AffectationOrigine, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.cours_competence import CoursCompetence
+    from app.models.session import Session, Semestre
+
+    prof = await _make_prof_traite(db_session, "p2@test.ca", "Prof Deux", ["Python"])
+    cours = Cours(code="M-002", nom="Manuel2")
+    sess = Session(annee=2032, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
+        score_total=Decimal("0.3"), score_comp=Decimal("0.3"), score_exp=Decimal("0.3"),
+        score_hist=Decimal("0.3"), score_sem=Decimal("0.3"), statut=AffectationStatut.PROPOSEE,
+    ))
+    await db_session.commit()
+
+    aff = await creer_affectation_manuelle(sess.id, prof.id, cours.id, test_user_rh.id, db_session)
+    assert aff.statut == AffectationStatut.VALIDEE
+    assert aff.origine == AffectationOrigine.MANUEL
+    nb = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.professeur_id == prof.id,
+            Affectation.cours_id == cours.id,
+        )
+    )).scalar_one()
+    assert nb == 1
+
+
+@pytest.mark.asyncio
+async def test_creer_affectation_manuelle_prof_introuvable(db_session, test_user_rh):
+    from app.models.session import Session, Semestre
+    from app.models.cours import Cours
+    cours = Cours(code="M-003", nom="X")
+    sess = Session(annee=2033, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    with pytest.raises(ValueError, match="introuvable"):
+        await creer_affectation_manuelle(sess.id, 99999, cours.id, test_user_rh.id, db_session)
+
+
+@pytest.mark.asyncio
+async def test_creer_affectation_manuelle_cv_non_traite(db_session, test_user_rh, professeur_prof):
+    from app.models.cv import CV, CVStatut
+    from app.models.cours import Cours
+    from app.models.session import Session, Semestre
+    db_session.add(CV(professeur_id=professeur_prof.id, nom_original="cv.pdf", chemin_fichier="x",
+                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.EN_ATTENTE))
+    cours = Cours(code="M-004", nom="Y")
+    sess = Session(annee=2034, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    with pytest.raises(ValueError, match="non traité"):
+        await creer_affectation_manuelle(sess.id, professeur_prof.id, cours.id, test_user_rh.id, db_session)
+
+
+# ── lister_professeurs_disponibles ───────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_lister_profs_dispo_exclut_deja_affectes(db_session):
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.session import Session, Semestre
+
+    pa = await _make_prof_traite(db_session, "a@test.ca", "Alice", ["Python"])
+    pb = await _make_prof_traite(db_session, "b@test.ca", "Bob", ["Java"])
+    cours = Cours(code="D-001", nom="Dispo")
+    sess = Session(annee=2035, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=pa.id, cours_id=cours.id,
+        score_total=Decimal("0.5"), score_comp=Decimal("0.5"), score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.5"), score_sem=Decimal("0.5"), statut=AffectationStatut.PROPOSEE,
+    ))
+    await db_session.commit()
+
+    dispo = await lister_professeurs_disponibles(sess.id, cours.id, db_session)
+    ids = [pid for pid, _ in dispo]
+    assert pb.id in ids
+    assert pa.id not in ids
+
+
+@pytest.mark.asyncio
+async def test_lister_profs_dispo_exclut_non_traites(db_session, professeur_prof):
+    from app.models.cv import CV, CVStatut
+    from app.models.cours import Cours
+    from app.models.session import Session, Semestre
+
+    db_session.add(CV(professeur_id=professeur_prof.id, nom_original="cv.pdf", chemin_fichier="x",
+                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.EN_ATTENTE))
+    pt = await _make_prof_traite(db_session, "t@test.ca", "Traite", ["SQL"])
+    cours = Cours(code="D-002", nom="Dispo2")
+    sess = Session(annee=2036, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+
+    dispo = await lister_professeurs_disponibles(sess.id, cours.id, db_session)
+    ids = [pid for pid, _ in dispo]
+    assert pt.id in ids
+    assert professeur_prof.id not in ids
+
+
+@pytest.mark.asyncio
+async def test_lister_profs_dispo_inclut_rejetes(db_session):
+    """Un prof rejeté pour ce cours reste disponible (le RH peut revenir sur un rejet)."""
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.session import Session, Semestre
+
+    pr = await _make_prof_traite(db_session, "rej@test.ca", "Rejete", ["Python"])
+    cours = Cours(code="D-003", nom="Dispo3")
+    sess = Session(annee=2037, semestre=Semestre.AUTOMNE)
+    db_session.add_all([cours, sess])
+    await db_session.commit()
+    await db_session.refresh(cours)
+    await db_session.refresh(sess)
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=pr.id, cours_id=cours.id,
+        score_total=Decimal("0.4"), score_comp=Decimal("0.4"), score_exp=Decimal("0.4"),
+        score_hist=Decimal("0.4"), score_sem=Decimal("0.4"), statut=AffectationStatut.REJETEE,
+    ))
+    await db_session.commit()
+
+    dispo = await lister_professeurs_disponibles(sess.id, cours.id, db_session)
+    ids = [pid for pid, _ in dispo]
+    assert pr.id in ids

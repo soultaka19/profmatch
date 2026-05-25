@@ -11,14 +11,21 @@ from app.models.affectation import Affectation, AffectationStatut
 from app.models.professeur import Professeur
 from app.models.user import User
 from app.schemas.affectation import (
+    AffectationManuelleCreate,
     AffectationOut,
     AffectationValidateRequest,
     FeedbackCreate,
     FeedbackOut,
     GenererAffectationsRequest,
     GenererAffectationsResponse,
+    ProfesseurDisponibleOut,
 )
-from app.services.affectation_service import ajouter_feedback, valider_affectation
+from app.services.affectation_service import (
+    ajouter_feedback,
+    creer_affectation_manuelle,
+    lister_professeurs_disponibles,
+    valider_affectation,
+)
 from app.tasks.affectation_tasks import generer_affectations_task
 
 router = APIRouter()
@@ -96,6 +103,54 @@ async def list_affectations(
     query = query.order_by(Affectation.score_total.desc())
     result = await db.execute(query)
     return [_to_out(aff) for aff in result.scalars().all()]
+
+
+@router.post(
+    "/manuelle",
+    response_model=AffectationOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def creer_affectation_manuelle_endpoint(
+    payload: AffectationManuelleCreate,
+    current_user: User = Depends(require_role("rh")),
+    db: AsyncSession = Depends(get_db),
+) -> AffectationOut:
+    """REV-04 : le RH affecte manuellement un professeur à un cours."""
+    try:
+        aff = await creer_affectation_manuelle(
+            payload.session_id, payload.professeur_id, payload.cours_id, current_user.id, db
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        code = (
+            status.HTTP_409_CONFLICT
+            if "non traité" in msg
+            else status.HTTP_404_NOT_FOUND
+        )
+        raise HTTPException(status_code=code, detail=msg)
+
+    result = await db.execute(
+        select(Affectation).options(*_RELATIONS).where(Affectation.id == aff.id)
+    )
+    return _to_out(result.scalar_one())
+
+
+@router.get(
+    "/professeurs-disponibles",
+    response_model=list[ProfesseurDisponibleOut],
+)
+async def professeurs_disponibles(
+    session_id: int,
+    cours_id: int,
+    current_user: User = Depends(require_role("rh")),
+    db: AsyncSession = Depends(get_db),
+) -> list[ProfesseurDisponibleOut]:
+    """Profs avec CV traité non encore affectés à ce (session, cours)."""
+    profs = await lister_professeurs_disponibles(session_id, cours_id, db)
+    return [
+        ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom)
+        for pid, nom in profs
+    ]
 
 
 @router.get("/{affectation_id}", response_model=AffectationOut)

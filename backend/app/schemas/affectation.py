@@ -8,7 +8,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.models.affectation import AffectationStatut
+from app.models.affectation import AffectationOrigine, AffectationStatut
 from app.models.session import Semestre, SessionStatut
 
 
@@ -97,6 +97,7 @@ class AffectationOut(BaseModel):
     score_sem: float
     justification: Optional[str]
     statut: AffectationStatut
+    origine: AffectationOrigine
     valide_par_user_id: Optional[int]
     valide_le: Optional[datetime]
     cree_le: datetime
@@ -117,6 +118,17 @@ class GenererAffectationsRequest(BaseModel):
 class GenererAffectationsResponse(BaseModel):
     task_id: str
     message: str = "Génération des affectations en cours"
+
+
+class AffectationManuelleCreate(BaseModel):
+    session_id: int
+    professeur_id: int
+    cours_id: int
+
+
+class ProfesseurDisponibleOut(BaseModel):
+    professeur_id: int
+    nom_complet: str
 
 
 class AffectationValidateRequest(BaseModel):

@@ -167,8 +167,10 @@ export default function AffectationsPage() {
             coursNames={coursNames}
             professorNames={professorNames}
             poids={poids}
+            sessionId={sessionId!}
             onValidate={handleValidate}
             onReject={handleReject}
+            onManualAssigned={() => mutateAffectations()}
           />
         </div>
       )}
