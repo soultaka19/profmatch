@@ -7,6 +7,7 @@ import { CVStatusCard } from "@/components/cv/CVStatusCard";
 import { CVExtractionPanel } from "@/components/cv/extraction/CVExtractionPanel";
 import { useCVPolling } from "@/lib/hooks/useCVPolling";
 import { cvApi } from "@/lib/api/cv";
+import { toast } from "sonner";
 
 const TITLE_BY_STATUT: Record<string, string> = {
   vide: "Téléverser votre CV",
@@ -52,6 +53,10 @@ export default function ProfDashboardPage() {
     try {
       await cvApi.createManual();
       await mutate();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Impossible de créer le CV manuel.";
+      toast.error(message);
     } finally {
       setIsCreatingManual(false);
     }
