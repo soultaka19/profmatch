@@ -28,7 +28,9 @@ from app.models.cours_competence import CoursCompetence
 from app.models.cours_etape_programme import CoursEtapeProgramme
 from app.models.ponderations_session import PonderationsSession
 from app.models.professeur import Professeur
+from app.models.programme import Programme
 from app.models.session import Session
+from app.services.academic_calendar import programme_actif_pour_session
 from app.services.embeddings import build_cours_text, build_professeur_text, cosine_similarity
 from app.services.scoring import (
     ContexteJustification,
@@ -156,21 +158,40 @@ async def generer_affectations(
     session_id: int,
     programme_ids: list[int],
     db: AsyncSession,
-) -> list[Affectation]:
-    """Génère et persiste le top-3 d'affectations pour chaque cours des programmes.
+    etape_ids: list[int] | None = None,
+) -> tuple[list[Affectation], list[int]]:
+    """Génère et persiste le top-3 d'affectations pour chaque cours des programmes éligibles.
 
-    Supprime les propositions existantes avant de regénérer.
+    Supprime les propositions PROPOSEE existantes avant de regénérer.
+    Retourne (affectations, programmes_exclus_ids).
     """
     poids = await _charger_ponderations(session_id, db)
-    cours_list = await _charger_cours_par_programmes(programme_ids, db)
+
+    sess_result = await db.execute(select(Session).where(Session.id == session_id))
+    session = sess_result.scalar_one_or_none()
+    if session is None:
+        return [], list(programme_ids)
+
+    progs_result = await db.execute(
+        select(Programme).where(Programme.id.in_(programme_ids))
+    )
+    progs = list(progs_result.scalars().all())
+    eligibles = [p for p in progs if programme_actif_pour_session(p, session)]
+    exclus_ids = [p.id for p in progs if not programme_actif_pour_session(p, session)]
+
+    if not eligibles:
+        return [], exclus_ids
+
+    eligible_ids = [p.id for p in eligibles]
+    cours_list = await _charger_cours_par_programmes(eligible_ids, db, etape_ids)
     if not cours_list:
-        return []
+        return [], exclus_ids
 
     cours_ids = [c.id for c in cours_list]
     competences_par_cours = await _charger_competences_cours(cours_ids, db)
     professeurs = await _charger_professeurs_traites(db)
     if not professeurs:
-        return []
+        return [], exclus_ids
 
     # Supprimer les affectations PROPOSEE existantes pour cette session
     existing = await db.execute(
@@ -194,7 +215,7 @@ async def generer_affectations(
             competences_prof = {c.nom for c in prof.competences}
             sc_comp = _score_comp_pondere(competences_prof, competences_cours)
 
-            # W2 — expérience totale en années (annee_fin - annee_debut, en cours = année actuelle)
+            # W2 — expérience totale en années
             from datetime import date as _date
             annee_courante = _date.today().year
             annees_exp = sum(
@@ -204,7 +225,7 @@ async def generer_affectations(
             annees_exp = max(0, annees_exp)
             sc_exp = score_experience(float(annees_exp))
 
-            # W3 — bonus historique (sessions validées précédentes)
+            # W3 — bonus historique
             bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
             sc_hist = score_historique(bonus_hist)
 
@@ -224,7 +245,6 @@ async def generer_affectations(
                 poids, sc_comp, sc_exp, sc_hist, sc_sem
             )
 
-            # Justification statique (remplacée par LLM si xai_actif dans F3)
             nb_comp_couvertes = sum(
                 1 for cc in competences_cours
                 if cc.nom.lower() in {c.lower() for c in competences_prof}
@@ -260,7 +280,6 @@ async def generer_affectations(
             )
             scores_par_prof.append((float(score_total), aff))
 
-        # Top N par cours (minimum 3, ou tous si < 3 profs)
         top = sorted(scores_par_prof, key=lambda x: x[0], reverse=True)[:TOP_N_PAR_COURS]
         for _, aff in top:
             db.add(aff)
@@ -270,7 +289,7 @@ async def generer_affectations(
     for aff in nouvelles_affectations:
         await db.refresh(aff)
 
-    return nouvelles_affectations
+    return nouvelles_affectations, exclus_ids
 
 
 async def valider_affectation(
