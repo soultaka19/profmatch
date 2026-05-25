@@ -50,6 +50,10 @@ class SessionCreate(BaseModel):
     statut: SessionStatut = SessionStatut.PLANIFIEE
 
 
+class SessionUpdate(BaseModel):
+    statut: SessionStatut
+
+
 # ── Pondérations ─────────────────────────────────────────────────────────────
 
 class PonderationsOut(BaseModel):

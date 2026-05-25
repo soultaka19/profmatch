@@ -8,14 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_role
 from app.db.session import get_db
+from app.models.programme import Programme
 from app.models.session import Session
 from app.models.user import User
 from app.schemas.affectation import (
     PonderationsOut,
     PonderationsUpdate,
+    ProgrammeOut,
     SessionCreate,
     SessionOut,
+    SessionUpdate,
 )
+from app.services.academic_calendar import programme_actif_pour_session
 from app.services.affectation_service import update_ponderations
 
 router = APIRouter()
@@ -65,6 +69,53 @@ async def get_session(
     if not sess:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
     return sess
+
+
+@router.put("/{session_id}", response_model=SessionOut)
+async def update_session(
+    session_id: int,
+    payload: SessionUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    sess.statut = payload.statut
+    await db.commit()
+    await db.refresh(sess)
+    return sess
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(
+    session_id: int,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    await db.delete(sess)
+    await db.commit()
+
+
+@router.get("/{session_id}/programmes-eligibles", response_model=list[ProgrammeOut])
+async def list_programmes_eligibles(
+    session_id: int,
+    current_user: User = Depends(require_role("admin", "rh")),
+    db: AsyncSession = Depends(get_db),
+) -> list[Programme]:
+    """Programmes dont le rythme d'admission permet de dispenser des étapes
+    durant cette session (dérivé de Programme.semestres_admission)."""
+    sess_row = await db.execute(select(Session).where(Session.id == session_id))
+    sess = sess_row.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    progs = (await db.execute(select(Programme).order_by(Programme.code))).scalars().all()
+    return [p for p in progs if programme_actif_pour_session(p, sess)]
 
 
 @router.get("/{session_id}/ponderations", response_model=PonderationsOut)
