@@ -3,10 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.affectation import Affectation, AffectationStatut
+from app.models.professeur import Professeur
 from app.models.user import User
 from app.schemas.affectation import (
     AffectationOut,
@@ -20,6 +22,27 @@ from app.services.affectation_service import ajouter_feedback, valider_affectati
 from app.tasks.affectation_tasks import generer_affectations_task
 
 router = APIRouter()
+
+# Chargement eager des relations utilisées pour enrichir AffectationOut
+_RELATIONS = (
+    selectinload(Affectation.cours),
+    selectinload(Affectation.professeur).selectinload(Professeur.user),
+)
+
+
+def _to_out(aff: Affectation) -> AffectationOut:
+    """Convertit une Affectation ORM en AffectationOut en résolvant les noms.
+
+    Les relations `cours` et `professeur.user` doivent être chargées au préalable
+    (via `_RELATIONS`) pour éviter tout lazy-load en contexte async.
+    """
+    out = AffectationOut.model_validate(aff)
+    if aff.cours is not None:
+        out.cours_nom = aff.cours.nom
+        out.cours_code = aff.cours.code
+    if aff.professeur is not None and aff.professeur.user is not None:
+        out.professeur_nom = aff.professeur.user.nom_complet
+    return out
 
 
 @router.post(
@@ -63,7 +86,7 @@ async def list_affectations(
     current_user: User = Depends(require_role("rh", "admin")),
     db: AsyncSession = Depends(get_db),
 ) -> list[AffectationOut]:
-    query = select(Affectation)
+    query = select(Affectation).options(*_RELATIONS)
     if session_id is not None:
         query = query.where(Affectation.session_id == session_id)
     if cours_id is not None:
@@ -72,7 +95,7 @@ async def list_affectations(
         query = query.where(Affectation.statut == statut)
     query = query.order_by(Affectation.score_total.desc())
     result = await db.execute(query)
-    return list(result.scalars().all())
+    return [_to_out(aff) for aff in result.scalars().all()]
 
 
 @router.get("/{affectation_id}", response_model=AffectationOut)
@@ -82,14 +105,13 @@ async def get_affectation(
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
     result = await db.execute(
-        select(Affectation).where(Affectation.id == affectation_id)
+        select(Affectation).options(*_RELATIONS).where(Affectation.id == affectation_id)
     )
     aff = result.scalar_one_or_none()
     if not aff:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Affectation introuvable")
     # Prof : peut voir uniquement ses propres affectations
     if current_user.role.value == "prof":
-        from app.models.professeur import Professeur
         from sqlalchemy import select as sa_select
         prof_result = await db.execute(
             sa_select(Professeur).where(Professeur.user_id == current_user.id)
@@ -97,7 +119,7 @@ async def get_affectation(
         prof = prof_result.scalar_one_or_none()
         if not prof or aff.professeur_id != prof.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
-    return aff
+    return _to_out(aff)
 
 
 @router.patch("/{affectation_id}", response_model=AffectationOut)
