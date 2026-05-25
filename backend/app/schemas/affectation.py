@@ -100,6 +100,10 @@ class AffectationOut(BaseModel):
     valide_par_user_id: Optional[int]
     valide_le: Optional[datetime]
     cree_le: datetime
+    # Champs enrichis (résolus via les relations) pour l'affichage RH/Admin
+    cours_nom: Optional[str] = None
+    cours_code: Optional[str] = None
+    professeur_nom: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -107,6 +111,7 @@ class AffectationOut(BaseModel):
 class GenererAffectationsRequest(BaseModel):
     session_id: int
     programme_ids: list[int] = Field(min_length=1)
+    etape_ids: list[int] | None = None
 
 
 class GenererAffectationsResponse(BaseModel):

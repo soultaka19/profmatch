@@ -177,6 +177,9 @@ export interface AffectationOut {
   valide_par_user_id: number | null;
   valide_le: string | null;
   cree_le: string;
+  cours_nom: string | null;
+  cours_code: string | null;
+  professeur_nom: string | null;
 }
 
 // ── Génération ────────────────────────────────────────────────────────────────
@@ -227,4 +230,12 @@ export interface UserCreateResponse {
 export interface ActivateRequest {
   token: string;
   password: string;
+}
+
+// ── Étapes de programme ──────────────────────────────────────────────────────
+
+export interface EtapeProgramme {
+  id: number;
+  ordre: number;
+  nom: string | null;
 }

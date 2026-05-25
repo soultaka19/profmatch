@@ -7,13 +7,20 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.affectation import AffectationStatut
+from app.models.cours import Cours
+from app.models.cours_etape_programme import CategorieCours, CoursEtapeProgramme
+from app.models.etape_programme import EtapeProgramme
 from app.models.ponderations_session import PonderationsSession
+from app.models.programme import Programme
+from app.models.session import Semestre, Session, SessionStatut
 from app.services.affectation_service import (
     _bonus_historique,
+    _charger_cours_par_programmes,
     _score_comp_pondere,
-    valider_affectation,
     ajouter_feedback,
+    generer_affectations,
     update_ponderations,
+    valider_affectation,
 )
 from app.services.scoring import PoidsScoring
 
@@ -175,3 +182,135 @@ async def test_update_ponderations_session_inexistante(db_session: AsyncSession)
             w3=Decimal("0.2"), w4=Decimal("0.1"),
             db=db_session,
         )
+
+
+# ── Helpers intégration ───────────────────────────────────────────────────────
+
+
+async def _make_programme_int(
+    db: AsyncSession, code: str, semestres: list[Semestre]
+) -> Programme:
+    prog = Programme(code=code, nom=f"Programme {code}", semestres_admission=semestres)
+    db.add(prog)
+    await db.flush()
+    return prog
+
+
+async def _make_session_int(db: AsyncSession, semestre: Semestre) -> Session:
+    sess = Session(annee=2030, semestre=semestre, statut=SessionStatut.PLANIFIEE)
+    db.add(sess)
+    await db.flush()
+    return sess
+
+
+async def _make_cours_int(db: AsyncSession, code: str) -> Cours:
+    cours = Cours(code=code, nom=f"Cours {code}")
+    db.add(cours)
+    await db.flush()
+    return cours
+
+
+async def _make_etape_int(
+    db: AsyncSession, programme_id: int, ordre: int
+) -> EtapeProgramme:
+    etape = EtapeProgramme(programme_id=programme_id, ordre=ordre)
+    db.add(etape)
+    await db.flush()
+    return etape
+
+
+async def _make_lien_int(
+    db: AsyncSession, programme_id: int, etape_id: int, cours_id: int
+) -> CoursEtapeProgramme:
+    lien = CoursEtapeProgramme(
+        programme_id=programme_id,
+        etape_id=etape_id,
+        cours_id=cours_id,
+        categorie=CategorieCours.OBLIGATOIRE,
+    )
+    db.add(lien)
+    await db.flush()
+    return lien
+
+
+# ── Tests _charger_cours_par_programmes ──────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_charger_cours_avec_etape_ids(db_session: AsyncSession):
+    """Avec etape_ids, seuls les cours de ces étapes sont retournés."""
+    prog = await _make_programme_int(db_session, "T-01", [Semestre.AUTOMNE])
+    etape1 = await _make_etape_int(db_session, prog.id, 1)
+    etape2 = await _make_etape_int(db_session, prog.id, 2)
+    cours1 = await _make_cours_int(db_session, "C-001")
+    cours2 = await _make_cours_int(db_session, "C-002")
+    await _make_lien_int(db_session, prog.id, etape1.id, cours1.id)
+    await _make_lien_int(db_session, prog.id, etape2.id, cours2.id)
+    await db_session.commit()
+
+    result = await _charger_cours_par_programmes(
+        [prog.id], db_session, etape_ids=[etape1.id]
+    )
+
+    assert len(result) == 1
+    assert result[0].id == cours1.id
+
+
+@pytest.mark.asyncio
+async def test_charger_cours_sans_etape_ids_retourne_tout(db_session: AsyncSession):
+    """Sans etape_ids (None), tous les cours des programmes sont retournés."""
+    prog = await _make_programme_int(db_session, "T-02", [Semestre.AUTOMNE])
+    etape1 = await _make_etape_int(db_session, prog.id, 1)
+    etape2 = await _make_etape_int(db_session, prog.id, 2)
+    cours1 = await _make_cours_int(db_session, "C-003")
+    cours2 = await _make_cours_int(db_session, "C-004")
+    await _make_lien_int(db_session, prog.id, etape1.id, cours1.id)
+    await _make_lien_int(db_session, prog.id, etape2.id, cours2.id)
+    await db_session.commit()
+
+    result = await _charger_cours_par_programmes(
+        [prog.id], db_session, etape_ids=None
+    )
+
+    assert len(result) == 2
+
+
+# ── Tests filtre programmes inéligibles ──────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_generer_tous_ineligibles(db_session: AsyncSession):
+    """Programme STANDARD (Automne) en session ÉTÉ : inéligible.
+    generer_affectations doit retourner ([], [prog_id]).
+    ÉTÉ n'est dans aucun sessions_actives_for (AUTOMNE+HIVER pour STANDARD).
+    """
+    prog = await _make_programme_int(db_session, "T-03", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.ETE)
+    await db_session.commit()
+
+    affectations, exclus = await generer_affectations(sess.id, [prog.id], db_session)
+
+    assert affectations == []
+    assert prog.id in exclus
+
+
+@pytest.mark.asyncio
+async def test_generer_programme_ineligible_exclu(db_session: AsyncSession):
+    """Programme STANDARD inéligible pour PRINTEMPS, CONTINU éligible.
+    exclus_ids contient seulement le STANDARD.
+    """
+    prog_standard = await _make_programme_int(db_session, "T-04", [Semestre.AUTOMNE])
+    prog_continu = await _make_programme_int(
+        db_session,
+        "T-05",
+        [Semestre.AUTOMNE, Semestre.HIVER, Semestre.PRINTEMPS],
+    )
+    sess = await _make_session_int(db_session, Semestre.PRINTEMPS)
+    await db_session.commit()
+
+    _, exclus = await generer_affectations(
+        sess.id, [prog_standard.id, prog_continu.id], db_session
+    )
+
+    assert prog_standard.id in exclus
+    assert prog_continu.id not in exclus

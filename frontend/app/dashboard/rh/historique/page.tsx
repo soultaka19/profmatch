@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
@@ -52,6 +52,27 @@ export default function HistoriquePage() {
         w4: ponderations.w4,
       }
     : { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 };
+
+  // Maps id → nom dérivées des champs enrichis renvoyés par l'API
+  const coursNames = useMemo(() => {
+    const m: Record<number, string> = {};
+    for (const a of affectations ?? []) {
+      if (a.cours_nom) {
+        m[a.cours_id] = a.cours_code
+          ? `${a.cours_code} — ${a.cours_nom}`
+          : a.cours_nom;
+      }
+    }
+    return m;
+  }, [affectations]);
+
+  const professorNames = useMemo(() => {
+    const m: Record<number, string> = {};
+    for (const a of affectations ?? []) {
+      if (a.professeur_nom) m[a.professeur_id] = a.professeur_nom;
+    }
+    return m;
+  }, [affectations]);
 
   return (
     <div className="space-y-8">
@@ -123,8 +144,8 @@ export default function HistoriquePage() {
 
           <AffectationTable
             affectations={affectations ?? []}
-            coursNames={{}}
-            professorNames={{}}
+            coursNames={coursNames}
+            professorNames={professorNames}
             poids={poids}
             onValidate={() => {}}
             onReject={() => {}}

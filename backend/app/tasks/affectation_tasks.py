@@ -28,10 +28,11 @@ def generer_affectations_task(
     self,
     session_id: int,
     programme_ids: list[int],
+    etape_ids: list[int] | None = None,
 ) -> dict:
     """Génère les affectations en arrière-plan et retourne le résumé.
 
-    Retourne un dict `{session_id, nb_affectations, cours_sans_candidat: []}`.
+    Retourne un dict `{session_id, nb_affectations, programmes_exclus: []}`.
     """
     import asyncio
 
@@ -40,10 +41,13 @@ def generer_affectations_task(
 
         SessionLocal = _async_session_factory()
         async with SessionLocal() as db:
-            affectations = await generer_affectations(session_id, programme_ids, db)
+            affectations, programmes_exclus = await generer_affectations(
+                session_id, programme_ids, db, etape_ids
+            )
             return {
                 "session_id": session_id,
                 "nb_affectations": len(affectations),
+                "programmes_exclus": programmes_exclus,
             }
 
     try:

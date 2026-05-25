@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import type {
   AffectationOut,
   AffectationStatut,
+  EtapeProgramme,
   GenerationResponse,
   GenerationStatus,
   PonderationsOut,
@@ -24,6 +25,11 @@ export const sessionsApi = {
       `/api/sessions/${sessionId}/ponderations`,
       weights
     ),
+
+  programmesEligibles: (sessionId: number): Promise<Programme[]> =>
+    apiClient.get<Programme[]>(
+      `/api/sessions/${sessionId}/programmes-eligibles`
+    ),
 };
 
 export const programmesApi = {
@@ -31,14 +37,21 @@ export const programmesApi = {
     apiClient.get<Programme[]>("/api/programmes/"),
 };
 
+export const etapesApi = {
+  list: (programmeId: number): Promise<EtapeProgramme[]> =>
+    apiClient.get<EtapeProgramme[]>(`/api/programmes/${programmeId}/etapes`),
+};
+
 export const affectationsApi = {
   generer: (
     sessionId: number,
-    programmeIds: number[]
+    programmeIds: number[],
+    etapeIds?: number[]
   ): Promise<GenerationResponse> =>
     apiClient.post<GenerationResponse>("/api/affectations/generer", {
       session_id: sessionId,
       programme_ids: programmeIds,
+      etape_ids: etapeIds ?? null,
     }),
 
   getGenerationStatus: (taskId: string): Promise<GenerationStatus> =>

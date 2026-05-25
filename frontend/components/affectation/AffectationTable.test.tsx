@@ -18,6 +18,9 @@ const makeAff = (id: number, cours_id: number, score: number): AffectationOut =>
   valide_par_user_id: null,
   valide_le: null,
   cree_le: "2026-05-22T00:00:00Z",
+  cours_nom: null,
+  cours_code: null,
+  professeur_nom: null,
 });
 
 const affectations = [
