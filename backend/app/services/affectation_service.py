@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.affectation import Affectation, AffectationStatut
+from app.models.affectation import Affectation, AffectationOrigine, AffectationStatut
 from app.models.affectation_feedback import AffectationFeedback
 from app.models.cours import Cours
 from app.models.cours_competence import CoursCompetence
@@ -325,6 +325,104 @@ async def valider_affectation(
     await db.commit()
     await db.refresh(aff)
     return aff
+
+
+async def creer_affectation_manuelle(
+    session_id: int,
+    professeur_id: int,
+    cours_id: int,
+    user_id: int,
+    db: AsyncSession,
+) -> Affectation:
+    """Affecte manuellement un prof à un cours (REV-04) : score réel calculé,
+    statut VALIDEE, origine MANUEL, auteur = RH. Upsert sur (session, prof, cours)."""
+    import datetime
+    from app.models.cv import CVStatut
+
+    prof = (await db.execute(
+        select(Professeur).where(Professeur.id == professeur_id).options(
+            selectinload(Professeur.user),
+            selectinload(Professeur.competences),
+            selectinload(Professeur.experiences),
+            selectinload(Professeur.cv),
+        )
+    )).scalar_one_or_none()
+    if prof is None:
+        raise ValueError("Professeur introuvable")
+    if prof.cv is None or prof.cv.statut != CVStatut.TRAITE:
+        raise ValueError("CV non traité")
+
+    cours = (await db.execute(
+        select(Cours).where(Cours.id == cours_id)
+    )).scalar_one_or_none()
+    if cours is None:
+        raise ValueError("Cours introuvable")
+
+    competences_cours = (await _charger_competences_cours([cours_id], db)).get(cours_id, [])
+    poids = await _charger_ponderations(session_id, db)
+
+    score_total, composants, justification = await _scorer_paire(
+        prof, cours, competences_cours, poids, session_id, db
+    )
+
+    aff = (await db.execute(
+        select(Affectation).where(
+            Affectation.session_id == session_id,
+            Affectation.professeur_id == professeur_id,
+            Affectation.cours_id == cours_id,
+        )
+    )).scalar_one_or_none()
+    if aff is None:
+        aff = Affectation(session_id=session_id, professeur_id=professeur_id, cours_id=cours_id)
+        db.add(aff)
+
+    aff.score_total = score_total
+    aff.score_comp = composants.score_comp.quantize(Decimal("0.001"))
+    aff.score_exp = composants.score_exp.quantize(Decimal("0.001"))
+    aff.score_hist = composants.score_hist.quantize(Decimal("0.001"))
+    aff.score_sem = composants.score_sem.quantize(Decimal("0.001"))
+    aff.justification = justification
+    aff.statut = AffectationStatut.VALIDEE
+    aff.origine = AffectationOrigine.MANUEL
+    aff.valide_par_user_id = user_id
+    aff.valide_le = datetime.datetime.now(datetime.timezone.utc)
+
+    await db.commit()
+    await db.refresh(aff)
+    return aff
+
+
+async def lister_professeurs_disponibles(
+    session_id: int,
+    cours_id: int,
+    db: AsyncSession,
+) -> list[tuple[int, str]]:
+    """Profs avec CV traité n'ayant PAS déjà d'affectation pour ce (session, cours).
+    Retourne [(professeur_id, nom_complet)] trié par nom."""
+    from app.models.cv import CV, CVStatut
+
+    deja = (await db.execute(
+        select(Affectation.professeur_id).where(
+            Affectation.session_id == session_id,
+            Affectation.cours_id == cours_id,
+        )
+    )).all()
+    deja_ids = {row[0] for row in deja}
+
+    profs = (await db.execute(
+        select(Professeur)
+        .join(CV, CV.professeur_id == Professeur.id)
+        .where(CV.statut == CVStatut.TRAITE)
+        .options(selectinload(Professeur.user))
+    )).scalars().all()
+
+    out = [
+        (p.id, p.user.nom_complet if p.user else f"Prof {p.id}")
+        for p in profs
+        if p.id not in deja_ids
+    ]
+    out.sort(key=lambda t: t[1])
+    return out
 
 
 async def ajouter_feedback(
