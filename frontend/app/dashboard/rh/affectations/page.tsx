@@ -1,18 +1,21 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
 import { GenerationForm } from "@/components/affectation/GenerationForm";
+import { GenerationProgress } from "@/components/affectation/GenerationProgress";
+import { GenerationScopeSummary } from "@/components/affectation/GenerationScopeSummary";
+import { NewGenerationButton } from "@/components/affectation/NewGenerationButton";
+import { ReviewSummary } from "@/components/affectation/ReviewSummary";
+import type { ActionFeedback, GenerationScope } from "@/components/affectation/types";
 import { useGenerationPoller } from "@/lib/hooks/useGenerationPoller";
 import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import type { AffectationOut, PonderationsOut } from "@/lib/types/api";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   AlertCircle,
-  CheckCircle2,
-  Loader2,
-  RotateCcw,
 } from "lucide-react";
 
 type Phase = "configure" | "generating" | "review" | "error";
@@ -22,6 +25,11 @@ export default function AffectationsPage() {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pendingActionId, setPendingActionId] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<"validate" | "reject" | null>(null);
+  const [scope, setScope] = useState<GenerationScope | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<Record<number, ActionFeedback>>({});
+  const [focusCandidateId, setFocusCandidateId] = useState<number | null>(null);
 
   // Polling génération
   const { data: genStatus } = useGenerationPoller(
@@ -29,14 +37,15 @@ export default function AffectationsPage() {
   );
 
   // Transition generating → review / error
-  if (phase === "generating" && genStatus) {
+  useEffect(() => {
+    if (phase !== "generating" || !genStatus) return;
     if (genStatus.status === "done") {
       setPhase("review");
     } else if (genStatus.status === "error") {
       setErrorMsg(genStatus.detail ?? "Erreur de génération");
       setPhase("error");
     }
-  }
+  }, [genStatus, phase]);
 
   // Affectations en phase review
   const { data: affectations, mutate: mutateAffectations } =
@@ -85,26 +94,91 @@ export default function AffectationsPage() {
     return m;
   }, [affectations]);
 
-  const handleTaskStarted = useCallback((tid: string, sid: number) => {
+  const handleTaskStarted = useCallback((tid: string, sid: number, nextScope: GenerationScope) => {
     setTaskId(tid);
     setSessionId(sid);
+    setScope(nextScope);
     setPhase("generating");
   }, []);
 
   const handleValidate = useCallback(
     async (id: number) => {
-      await affectationsApi.validate(id, "validee");
-      mutateAffectations();
+      const current = affectations?.find((affectation) => affectation.id === id);
+      const nextCandidate = affectations?.find(
+        (affectation) =>
+          affectation.cours_id === current?.cours_id &&
+          affectation.id !== id &&
+          affectation.statut === "proposee"
+      );
+      setActionFeedback((previous) => {
+        const next = { ...previous };
+        delete next[id];
+        return next;
+      });
+      setPendingActionId(id);
+      setPendingAction("validate");
+      try {
+        await affectationsApi.validate(id, "validee");
+        await mutateAffectations();
+        setActionFeedback((previous) => ({
+          ...previous,
+          [id]: { tone: "success", message: "Affectation validée." },
+        }));
+        setFocusCandidateId(nextCandidate?.id ?? null);
+        toast.success("Affectation validée.");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Validation impossible.";
+        setActionFeedback((previous) => ({
+          ...previous,
+          [id]: { tone: "error", message },
+        }));
+        toast.error(message);
+      } finally {
+        setPendingActionId(null);
+        setPendingAction(null);
+      }
     },
-    [mutateAffectations]
+    [affectations, mutateAffectations]
   );
 
   const handleReject = useCallback(
     async (id: number) => {
-      await affectationsApi.validate(id, "rejetee");
-      mutateAffectations();
+      const current = affectations?.find((affectation) => affectation.id === id);
+      const nextCandidate = affectations?.find(
+        (affectation) =>
+          affectation.cours_id === current?.cours_id &&
+          affectation.id !== id &&
+          affectation.statut === "proposee"
+      );
+      setActionFeedback((previous) => {
+        const next = { ...previous };
+        delete next[id];
+        return next;
+      });
+      setPendingActionId(id);
+      setPendingAction("reject");
+      try {
+        await affectationsApi.validate(id, "rejetee");
+        await mutateAffectations();
+        setActionFeedback((previous) => ({
+          ...previous,
+          [id]: { tone: "success", message: "Affectation rejetée." },
+        }));
+        setFocusCandidateId(nextCandidate?.id ?? null);
+        toast.success("Affectation rejetée.");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Rejet impossible.";
+        setActionFeedback((previous) => ({
+          ...previous,
+          [id]: { tone: "error", message },
+        }));
+        toast.error(message);
+      } finally {
+        setPendingActionId(null);
+        setPendingAction(null);
+      }
     },
-    [mutateAffectations]
+    [affectations, mutateAffectations]
   );
 
   const reset = () => {
@@ -112,7 +186,14 @@ export default function AffectationsPage() {
     setTaskId(null);
     setSessionId(null);
     setErrorMsg(null);
+    setScope(null);
+    setActionFeedback({});
+    setFocusCandidateId(null);
   };
+
+  const hasPendingProposals = (affectations ?? []).some(
+    (affectation) => affectation.statut === "proposee"
+  );
 
   return (
     <div className="space-y-8">
@@ -129,10 +210,15 @@ export default function AffectationsPage() {
             {phase === "error" && "Une erreur est survenue lors de la génération."}
           </p>
         </div>
-        {(phase === "review" || phase === "error") && (
+        {phase === "review" && (
+          <NewGenerationButton
+            hasPendingProposals={hasPendingProposals}
+            onReset={reset}
+          />
+        )}
+        {phase === "error" && (
           <Button variant="outline" size="sm" onClick={reset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Nouvelle génération
+            Réessayer
           </Button>
         )}
       </div>
@@ -144,24 +230,20 @@ export default function AffectationsPage() {
 
       {/* Phase generating */}
       {phase === "generating" && (
-        <div className="flex flex-col items-center gap-4 py-16">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-fg-muted">
-            Calcul des scores W1–W4 pour toutes les paires professeur-cours…
-          </p>
-          <p className="text-xs text-fg-muted">
-            Statut : {genStatus?.status ?? "en attente"}
-          </p>
+        <div className="space-y-5">
+          {scope && <GenerationScopeSummary scope={scope} />}
+          <GenerationProgress status={genStatus?.status} />
         </div>
       )}
 
       {/* Phase review */}
       {phase === "review" && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm text-green-700">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>{affectations?.length ?? 0} propositions générées</span>
-          </div>
+        <div className="space-y-5">
+          {scope && <GenerationScopeSummary scope={scope} />}
+          <p role="status" aria-live="polite" className="sr-only">
+            Génération terminée. {(affectations ?? []).length} propositions disponibles.
+          </p>
+          <ReviewSummary affectations={affectations ?? []} />
           <AffectationTable
             affectations={affectations ?? []}
             coursNames={coursNames}
@@ -170,6 +252,10 @@ export default function AffectationsPage() {
             sessionId={sessionId!}
             onValidate={handleValidate}
             onReject={handleReject}
+            pendingActionId={pendingActionId}
+            pendingAction={pendingAction}
+            actionFeedback={actionFeedback}
+            focusCandidateId={focusCandidateId}
             onManualAssigned={() => mutateAffectations()}
           />
         </div>

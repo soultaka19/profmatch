@@ -48,6 +48,9 @@ export function WeightSliders({
           {sum.toFixed(3)}
         </Badge>
       </div>
+      <p className="text-xs text-fg-muted">
+        La somme des pondérations doit rester exactement à 1.000 pour lancer la génération.
+      </p>
       {!isValid && (
         <p className="text-xs text-destructive">
           La somme doit être égale à 1.000 (± 0.001)

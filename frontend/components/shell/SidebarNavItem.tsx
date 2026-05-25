@@ -11,9 +11,17 @@ interface Props {
   icon: LucideIcon;
   disabled?: boolean;
   onDisabledClick?: () => void;
+  onNavigate?: () => void;
 }
 
-export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledClick }: Props) {
+export function SidebarNavItem({
+  href,
+  label,
+  icon: Icon,
+  disabled,
+  onDisabledClick,
+  onNavigate,
+}: Props) {
   const pathname = usePathname();
   const active = !disabled && pathname === href;
 
@@ -46,6 +54,7 @@ export function SidebarNavItem({ href, label, icon: Icon, disabled, onDisabledCl
       href={href}
       data-active={active ? "true" : "false"}
       className={cn(baseClasses, stateClasses)}
+      onClick={onNavigate}
     >
       <Icon className={cn("h-[18px] w-[18px]", active ? "text-primary" : "opacity-80")} />
       <span>{label}</span>
