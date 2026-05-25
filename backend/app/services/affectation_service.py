@@ -154,6 +154,70 @@ def _score_comp_pondere(
     return Decimal(str(score_pondere / total_importance))
 
 
+async def _scorer_paire(
+    prof: Professeur,
+    cours: Cours,
+    competences_cours: list[CoursCompetence],
+    poids: PoidsScoring,
+    session_id: int,
+    db: AsyncSession,
+) -> tuple[Decimal, ScoresComposants, str]:
+    """Calcule (score_total, composants W1–W4, justification statique) pour un
+    couple (prof, cours). Extrait de generer_affectations pour réutilisation par
+    l'affectation manuelle (REV-04). Le prof doit avoir competences/experiences/
+    user/embedding chargés."""
+    from datetime import date as _date
+
+    competences_prof = {c.nom for c in prof.competences}
+    sc_comp = _score_comp_pondere(competences_prof, competences_cours)
+
+    annee_courante = _date.today().year
+    annees_exp = sum(
+        ((exp.annee_fin or annee_courante) - exp.annee_debut)
+        for exp in prof.experiences
+    ) if prof.experiences else 0
+    annees_exp = max(0, annees_exp)
+    sc_exp = score_experience(float(annees_exp))
+
+    bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
+    sc_hist = score_historique(bonus_hist)
+
+    sim = 0.0
+    if prof.embedding and cours.embedding:
+        sim = cosine_similarity(prof.embedding, cours.embedding)
+    sc_sem = score_semantique(sim)
+
+    composants = ScoresComposants(
+        score_comp=sc_comp,
+        score_exp=sc_exp,
+        score_hist=sc_hist,
+        score_sem=sc_sem,
+    )
+    score_total = calculer_score_composite(poids, sc_comp, sc_exp, sc_hist, sc_sem)
+
+    nb_comp_couvertes = sum(
+        1 for cc in competences_cours
+        if cc.nom.lower() in {c.lower() for c in competences_prof}
+    )
+    ctx = ContexteJustification(
+        nom_professeur=prof.user.nom_complet if prof.user else f"Prof {prof.id}",
+        code_cours=cours.code,
+        titre_cours=cours.nom,
+        nb_comp_couvertes=nb_comp_couvertes,
+        nb_comp_requises=len(competences_cours),
+        competences_maitrisees=sorted(competences_prof)[:5],
+        annees_experience=int(annees_exp),
+        nb_sessions_precedentes=0,
+        note_rh_moyenne=0.0,
+        similarite_semantique=sim,
+        score_global_pct=float(score_total) * 100,
+        poids=poids,
+        composants=composants,
+    )
+    justification = generer_justification_statique(ctx)
+    return score_total, composants, justification
+
+
 async def generer_affectations(
     session_id: int,
     programme_ids: list[int],
@@ -211,70 +275,18 @@ async def generer_affectations(
         scores_par_prof: list[tuple[float, Affectation]] = []
 
         for prof in professeurs:
-            # W1 — compétences pondérées par importance
-            competences_prof = {c.nom for c in prof.competences}
-            sc_comp = _score_comp_pondere(competences_prof, competences_cours)
-
-            # W2 — expérience totale en années
-            from datetime import date as _date
-            annee_courante = _date.today().year
-            annees_exp = sum(
-                ((exp.annee_fin or annee_courante) - exp.annee_debut)
-                for exp in prof.experiences
-            ) if prof.experiences else 0
-            annees_exp = max(0, annees_exp)
-            sc_exp = score_experience(float(annees_exp))
-
-            # W3 — bonus historique
-            bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
-            sc_hist = score_historique(bonus_hist)
-
-            # W4 — similarité cosinus embeddings
-            sim = 0.0
-            if prof.embedding and cours.embedding:
-                sim = cosine_similarity(prof.embedding, cours.embedding)
-            sc_sem = score_semantique(sim)
-
-            composants = ScoresComposants(
-                score_comp=sc_comp,
-                score_exp=sc_exp,
-                score_hist=sc_hist,
-                score_sem=sc_sem,
+            score_total, composants, justification = await _scorer_paire(
+                prof, cours, competences_cours, poids, session_id, db
             )
-            score_total = calculer_score_composite(
-                poids, sc_comp, sc_exp, sc_hist, sc_sem
-            )
-
-            nb_comp_couvertes = sum(
-                1 for cc in competences_cours
-                if cc.nom.lower() in {c.lower() for c in competences_prof}
-            )
-            ctx = ContexteJustification(
-                nom_professeur=prof.user.nom_complet if prof.user else f"Prof {prof.id}",
-                code_cours=cours.code,
-                titre_cours=cours.nom,
-                nb_comp_couvertes=nb_comp_couvertes,
-                nb_comp_requises=len(competences_cours),
-                competences_maitrisees=sorted(competences_prof)[:5],
-                annees_experience=int(annees_exp),
-                nb_sessions_precedentes=0,
-                note_rh_moyenne=0.0,
-                similarite_semantique=sim,
-                score_global_pct=float(score_total) * 100,
-                poids=poids,
-                composants=composants,
-            )
-            justification = generer_justification_statique(ctx)
-
             aff = Affectation(
                 session_id=session_id,
                 professeur_id=prof.id,
                 cours_id=cours.id,
                 score_total=score_total,
-                score_comp=sc_comp.quantize(Decimal("0.001")),
-                score_exp=sc_exp.quantize(Decimal("0.001")),
-                score_hist=sc_hist.quantize(Decimal("0.001")),
-                score_sem=sc_sem.quantize(Decimal("0.001")),
+                score_comp=composants.score_comp.quantize(Decimal("0.001")),
+                score_exp=composants.score_exp.quantize(Decimal("0.001")),
+                score_hist=composants.score_hist.quantize(Decimal("0.001")),
+                score_sem=composants.score_sem.quantize(Decimal("0.001")),
                 justification=justification,
                 statut=AffectationStatut.PROPOSEE,
             )

@@ -17,6 +17,7 @@ from app.services.affectation_service import (
     _bonus_historique,
     _charger_cours_par_programmes,
     _score_comp_pondere,
+    _scorer_paire,
     ajouter_feedback,
     generer_affectations,
     update_ponderations,
@@ -314,3 +315,43 @@ async def test_generer_programme_ineligible_exclu(db_session: AsyncSession):
 
     assert prog_standard.id in exclus
     assert prog_continu.id not in exclus
+
+
+# ── _scorer_paire (refactor) ─────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_scorer_paire_competence_totale(db_session: AsyncSession, professeur_prof):
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload
+    from app.models.competence import Competence, CompetenceNiveau
+    from app.models.cours import Cours
+    from app.models.cours_competence import CoursCompetence
+    from app.models.professeur import Professeur
+
+    db_session.add(Competence(professeur_id=professeur_prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE))
+    cours = Cours(code="SC-01", nom="Cours Scoring")
+    db_session.add(cours)
+    await db_session.commit()
+    await db_session.refresh(cours)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    prof = (await db_session.execute(
+        _sel(Professeur).where(Professeur.id == professeur_prof.id).options(
+            selectinload(Professeur.user),
+            selectinload(Professeur.competences),
+            selectinload(Professeur.experiences),
+        )
+    )).scalar_one()
+    ccs = (await db_session.execute(
+        _sel(CoursCompetence).where(CoursCompetence.cours_id == cours.id)
+    )).scalars().all()
+
+    poids = PoidsScoring(w1=Decimal("1"), w2=Decimal("0"), w3=Decimal("0"), w4=Decimal("0"))
+    score_total, composants, justification = await _scorer_paire(
+        prof, cours, list(ccs), poids, 999, db_session
+    )
+    assert float(composants.score_comp) == pytest.approx(1.0, abs=0.001)
+    assert float(score_total) == pytest.approx(1.0, abs=0.001)
+    assert isinstance(justification, str) and justification
