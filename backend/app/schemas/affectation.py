@@ -107,6 +107,7 @@ class AffectationOut(BaseModel):
 class GenererAffectationsRequest(BaseModel):
     session_id: int
     programme_ids: list[int] = Field(min_length=1)
+    etape_ids: list[int] | None = None
 
 
 class GenererAffectationsResponse(BaseModel):
