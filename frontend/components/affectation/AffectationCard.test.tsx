@@ -18,6 +18,9 @@ const aff: AffectationOut = {
   valide_par_user_id: null,
   valide_le: null,
   cree_le: "2026-05-22T00:00:00Z",
+  cours_nom: null,
+  cours_code: null,
+  professeur_nom: null,
 };
 const poids = { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 };
 
