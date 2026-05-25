@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
 import { GenerationForm } from "@/components/affectation/GenerationForm";
@@ -8,6 +8,7 @@ import { useGenerationPoller } from "@/lib/hooks/useGenerationPoller";
 import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import type { AffectationOut, PonderationsOut } from "@/lib/types/api";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   AlertCircle,
   CheckCircle2,
@@ -22,6 +23,8 @@ export default function AffectationsPage() {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pendingActionId, setPendingActionId] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<"validate" | "reject" | null>(null);
 
   // Polling génération
   const { data: genStatus } = useGenerationPoller(
@@ -29,14 +32,15 @@ export default function AffectationsPage() {
   );
 
   // Transition generating → review / error
-  if (phase === "generating" && genStatus) {
+  useEffect(() => {
+    if (phase !== "generating" || !genStatus) return;
     if (genStatus.status === "done") {
       setPhase("review");
     } else if (genStatus.status === "error") {
       setErrorMsg(genStatus.detail ?? "Erreur de génération");
       setPhase("error");
     }
-  }
+  }, [genStatus, phase]);
 
   // Affectations en phase review
   const { data: affectations, mutate: mutateAffectations } =
@@ -93,16 +97,38 @@ export default function AffectationsPage() {
 
   const handleValidate = useCallback(
     async (id: number) => {
-      await affectationsApi.validate(id, "validee");
-      mutateAffectations();
+      setPendingActionId(id);
+      setPendingAction("validate");
+      try {
+        await affectationsApi.validate(id, "validee");
+        await mutateAffectations();
+        toast.success("Affectation validée.");
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Validation impossible."
+        );
+      } finally {
+        setPendingActionId(null);
+        setPendingAction(null);
+      }
     },
     [mutateAffectations]
   );
 
   const handleReject = useCallback(
     async (id: number) => {
-      await affectationsApi.validate(id, "rejetee");
-      mutateAffectations();
+      setPendingActionId(id);
+      setPendingAction("reject");
+      try {
+        await affectationsApi.validate(id, "rejetee");
+        await mutateAffectations();
+        toast.success("Affectation rejetée.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Rejet impossible.");
+      } finally {
+        setPendingActionId(null);
+        setPendingAction(null);
+      }
     },
     [mutateAffectations]
   );
@@ -169,6 +195,8 @@ export default function AffectationsPage() {
             poids={poids}
             onValidate={handleValidate}
             onReject={handleReject}
+            pendingActionId={pendingActionId}
+            pendingAction={pendingAction}
           />
         </div>
       )}

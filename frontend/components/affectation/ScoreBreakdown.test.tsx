@@ -33,4 +33,12 @@ describe("ScoreBreakdown", () => {
     render(<ScoreBreakdown scores={scores} poids={poids} total={0.45} />);
     expect(screen.getByText(/À examiner/i)).toBeInTheDocument();
   });
+  it("affiche des libellés complets pour les dimensions W1-W4", () => {
+    render(<ScoreBreakdown scores={scores} poids={poids} total={0.84} />);
+
+    expect(screen.getByText(/Compétences/i)).toBeInTheDocument();
+    expect(screen.getByText(/Expérience/i)).toBeInTheDocument();
+    expect(screen.getByText(/Historique/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sémantique/i)).toBeInTheDocument();
+  });
 });

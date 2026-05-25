@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ScoreBreakdown } from "./ScoreBreakdown";
-import { Check, Sparkles, X } from "lucide-react";
+import { Check, Loader2, Sparkles, X } from "lucide-react";
 import type { AffectationOut, AffectationStatut } from "@/lib/types/api";
 
 interface Poids {
@@ -25,6 +25,7 @@ interface AffectationCardProps {
   professorName: string;
   onValidate: (id: number) => void;
   onReject: (id: number) => void;
+  pendingAction?: "validate" | "reject" | null;
 }
 
 const STATUT_BADGE: Record<
@@ -42,8 +43,10 @@ export function AffectationCard({
   professorName,
   onValidate,
   onReject,
+  pendingAction = null,
 }: AffectationCardProps) {
   const statut = STATUT_BADGE[aff.statut];
+  const isPending = pendingAction !== null;
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-canvas-pure p-4 shadow-sm">
@@ -90,18 +93,32 @@ export function AffectationCard({
       {/* Actions */}
       {aff.statut === "proposee" && (
         <div className="flex gap-2 pt-1">
-          <Button size="sm" className="flex-1" onClick={() => onValidate(aff.id)}>
-            <Check className="mr-1 h-4 w-4" />
-            Valider
+          <Button
+            size="sm"
+            className="flex-1"
+            disabled={isPending}
+            onClick={() => onValidate(aff.id)}
+          >
+            {pendingAction === "validate" ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="mr-1 h-4 w-4" />
+            )}
+            {pendingAction === "validate" ? "Validation..." : "Valider"}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            disabled={isPending}
             onClick={() => onReject(aff.id)}
           >
-            <X className="mr-1 h-4 w-4" />
-            Rejeter
+            {pendingAction === "reject" ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <X className="mr-1 h-4 w-4" />
+            )}
+            {pendingAction === "reject" ? "Rejet..." : "Rejeter"}
           </Button>
         </div>
       )}

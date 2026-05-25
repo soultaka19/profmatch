@@ -80,6 +80,22 @@ describe("AffectationCard", () => {
     expect(onValidate).toHaveBeenCalledWith(1);
   });
 
+  it("désactive les actions pendant une validation en cours", () => {
+    render(
+      <AffectationCard
+        aff={aff}
+        poids={poids}
+        professorName="Ahmed Diallo"
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        pendingAction="validate"
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Validation/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Rejeter/i })).toBeDisabled();
+  });
+
   it("appelle onReject au clic Rejeter", () => {
     const onReject = vi.fn();
     render(

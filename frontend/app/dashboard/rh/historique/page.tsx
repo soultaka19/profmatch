@@ -7,7 +7,7 @@ import { AffectationTable } from "@/components/affectation/AffectationTable";
 import type { AffectationOut, PonderationsOut, Session } from "@/lib/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { AlertCircle, ChevronRight, Loader2 } from "lucide-react";
 
 const STATUT_BADGE: Record<
   string,
@@ -19,14 +19,18 @@ const STATUT_BADGE: Record<
 };
 
 export default function HistoriquePage() {
-  const { data: sessions, isLoading } = useSWR<Session[]>(
+  const { data: sessions, error: sessionsError, isLoading } = useSWR<Session[]>(
     "/api/sessions/",
     sessionsApi.list
   );
 
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-  const { data: affectations } = useSWR<AffectationOut[]>(
+  const {
+    data: affectations,
+    error: affectationsError,
+    isLoading: affectationsLoading,
+  } = useSWR<AffectationOut[]>(
     selectedSession
       ? `/api/affectations/?session_id=${selectedSession.id}&statut=validee`
       : null,
@@ -35,7 +39,11 @@ export default function HistoriquePage() {
       : null
   );
 
-  const { data: ponderations } = useSWR<PonderationsOut>(
+  const {
+    data: ponderations,
+    error: ponderationsError,
+    isLoading: ponderationsLoading,
+  } = useSWR<PonderationsOut>(
     selectedSession
       ? `/api/sessions/${selectedSession.id}/ponderations`
       : null,
@@ -86,7 +94,17 @@ export default function HistoriquePage() {
       </div>
 
       {isLoading && (
-        <p className="text-sm text-fg-muted">Chargement des sessions…</p>
+        <p className="flex items-center gap-2 text-sm text-fg-muted">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Chargement des sessions...
+        </p>
+      )}
+
+      {sessionsError && (
+        <p className="flex items-center gap-2 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          Impossible de charger les sessions.
+        </p>
       )}
 
       {/* Liste des sessions */}
@@ -101,7 +119,7 @@ export default function HistoriquePage() {
             <button
               key={sess.id}
               onClick={() => setSelectedSession(sess)}
-              className="flex w-full items-center justify-between rounded-lg border border-border bg-canvas-pure px-4 py-3 text-left transition-colors hover:bg-canvas"
+              className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-canvas-pure px-4 py-3 text-left transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <div className="flex items-center gap-3">
                 <span className="font-medium text-fg">{sess.nom}</span>
@@ -109,7 +127,10 @@ export default function HistoriquePage() {
                   {sess.statut}
                 </Badge>
               </div>
-              <ChevronRight className="h-4 w-4 text-fg-muted" />
+              <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                Voir les affectations
+                <ChevronRight className="h-4 w-4" />
+              </span>
             </button>
           ))}
         </div>
@@ -136,20 +157,52 @@ export default function HistoriquePage() {
             </Badge>
           </div>
 
-          <p className="text-sm text-fg-muted">
-            {affectations?.length ?? 0} affectation
-            {(affectations?.length ?? 0) > 1 ? "s" : ""} validée
-            {(affectations?.length ?? 0) > 1 ? "s" : ""}
-          </p>
+          {!affectationsLoading && !affectationsError && (
+            <p className="text-sm text-fg-muted">
+              {affectations?.length ?? 0} affectation
+              {(affectations?.length ?? 0) > 1 ? "s" : ""} validée
+              {(affectations?.length ?? 0) > 1 ? "s" : ""}
+            </p>
+          )}
 
-          <AffectationTable
-            affectations={affectations ?? []}
-            coursNames={coursNames}
-            professorNames={professorNames}
-            poids={poids}
-            onValidate={() => {}}
-            onReject={() => {}}
-          />
+          {(affectationsLoading || ponderationsLoading) && (
+            <p className="flex items-center gap-2 text-sm text-fg-muted">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Chargement des affectations validées...
+            </p>
+          )}
+
+          {(affectationsError || ponderationsError) && (
+            <p className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              Impossible de charger les affectations de cette session.
+            </p>
+          )}
+
+          {!affectationsLoading &&
+            !ponderationsLoading &&
+            !affectationsError &&
+            !ponderationsError &&
+            (affectations ?? []).length === 0 && (
+              <div className="rounded-md border border-border bg-canvas-pure px-5 py-6 text-sm text-fg-muted">
+                Aucune affectation validée pour cette session.
+              </div>
+            )}
+
+          {!affectationsLoading &&
+            !ponderationsLoading &&
+            !affectationsError &&
+            !ponderationsError &&
+            (affectations ?? []).length > 0 && (
+              <AffectationTable
+                affectations={affectations ?? []}
+                coursNames={coursNames}
+                professorNames={professorNames}
+                poids={poids}
+                onValidate={() => {}}
+                onReject={() => {}}
+              />
+            )}
         </div>
       )}
     </div>

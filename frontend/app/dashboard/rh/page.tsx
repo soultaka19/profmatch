@@ -1,45 +1,93 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { RoadmapPlaceholder } from "@/components/dashboard/RoadmapPlaceholder";
-import { Sparkles, ListChecks, Users, Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, ListChecks, Sparkles, Users } from "lucide-react";
 
 export default function Page() {
   const { user } = useAuth();
+
   return (
-    <RoadmapPlaceholder
-      title={`Bienvenue, ${user?.nom_complet ?? "Responsable"}`}
-      lead="Cet espace vous permettra de générer les propositions d'affectation, de les réviser avec leurs justifications IA, et de gérer l'historique des sessions."
-      heroIcon={<Sparkles className="h-6 w-6 text-primary" />}
-      heroTitle="Module en cours de développement"
-      heroSub="L'algorithme d'affectation W1–W4 et la pipeline d'extraction LLM sont en cours d'intégration. Disponible avant la démo finale."
-      heroEta="4 juin 2026"
-      cards={[
-        {
-          icon: <Sparkles className="h-4 w-4 text-primary" />,
-          title: "Générer affectations",
-          description:
-            "Lance le calcul des scores W1–W4 sur tous les profs ayant un CV traité. Top 3 par cours avec justifications IA.",
-        },
-        {
-          icon: <ListChecks className="h-4 w-4 text-primary" />,
-          title: "Historique des sessions",
-          description:
-            "Liste paginée des sessions d'affectation passées. Filtres par date, statut, validations RH.",
-        },
-        {
-          icon: <Users className="h-4 w-4 text-primary" />,
-          title: "CV des profs",
-          description:
-            "Liste des profs avec statut d'extraction, accès au texte extrait, données structurées.",
-        },
-        {
-          icon: <Lightbulb className="h-4 w-4 text-primary" />,
-          title: "Justifications XAI",
-          description:
-            "Chaque proposition est accompagnée d'une justification narrative en 4 critères générée par le LLM.",
-        },
-      ]}
-    />
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-display font-semibold text-fg">
+          Bienvenue, {user?.nom_complet ?? "Responsable"}
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-fg-muted">
+          Pilotez les propositions d&apos;affectation, révisez les justifications IA
+          et retrouvez les validations par session académique.
+        </p>
+      </div>
+
+      <div className="rounded-md border border-border bg-canvas-pure p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-fg">Flux RH recommandé</h2>
+            <p className="mt-1 text-sm leading-relaxed text-fg-muted">
+              Choisir une session, sélectionner les programmes, ajuster les
+              pondérations W1-W4, générer les propositions puis valider les
+              affectations à retenir.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Link
+          href="/dashboard/rh/affectations"
+          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <h2 className="font-semibold text-fg">Générer des affectations</h2>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+            Lancez le scoring W1-W4 et révisez les propositions par cours.
+          </p>
+          <span className="mt-4 inline-flex items-center text-sm font-medium text-primary">
+            Commencer <ArrowRight className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        <Link
+          href="/dashboard/rh/historique"
+          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <ListChecks className="h-4 w-4" />
+            </span>
+            <h2 className="font-semibold text-fg">Consulter l&apos;historique</h2>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+            Retrouvez les affectations validées pour chaque session.
+          </p>
+          <span className="mt-4 inline-flex items-center text-sm font-medium text-primary">
+            Voir les sessions <ArrowRight className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        <div className="rounded-md border border-border bg-canvas-pure p-5 opacity-75 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-surface text-fg-muted">
+              <Users className="h-4 w-4" />
+            </span>
+            <h2 className="font-semibold text-fg">Suivre les CV profs</h2>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+            La vue consolidée des CV professeurs sera ajoutée à cet espace.
+          </p>
+          <Button disabled variant="outline" className="mt-4">
+            Bientôt disponible
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

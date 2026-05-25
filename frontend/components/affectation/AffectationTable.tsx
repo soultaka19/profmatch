@@ -17,6 +17,8 @@ interface AffectationTableProps {
   poids: Poids;
   onValidate: (id: number) => void;
   onReject: (id: number) => void;
+  pendingActionId?: number | null;
+  pendingAction?: "validate" | "reject" | null;
 }
 
 export function AffectationTable({
@@ -26,6 +28,8 @@ export function AffectationTable({
   poids,
   onValidate,
   onReject,
+  pendingActionId = null,
+  pendingAction = null,
 }: AffectationTableProps) {
   if (affectations.length === 0) {
     return (
@@ -78,6 +82,9 @@ export function AffectationTable({
                   }
                   onValidate={onValidate}
                   onReject={onReject}
+                  pendingAction={
+                    pendingActionId === aff.id ? pendingAction : null
+                  }
                 />
               ))}
             </div>
