@@ -53,7 +53,10 @@ export function AffectationCard({
           <p className="font-semibold text-fg">{professorName}</p>
           <p className="text-xs text-fg-muted">Prof #{aff.professeur_id}</p>
         </div>
-        <Badge variant={statut.variant}>{statut.label}</Badge>
+        <div className="flex items-center gap-1.5">
+          {aff.origine === "manuel" && <Badge variant="outline">Manuel</Badge>}
+          <Badge variant={statut.variant}>{statut.label}</Badge>
+        </div>
       </div>
 
       {/* Score */}
