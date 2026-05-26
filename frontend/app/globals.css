@@ -21,6 +21,12 @@
   --warning-bg: #FEF3C7;
   --info: #3B82F6;
 
+  /* Scores d'affectation : dimensions analytiques stables entre themes */
+  --score-competences: #2563EB;
+  --score-experience: #059669;
+  --score-historique: #D97706;
+  --score-semantique: #7C3AED;
+
   /* Texte primaire et bordures neutres */
   --fg: #111827;
   --border: #E5E7EB;

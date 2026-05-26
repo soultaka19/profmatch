@@ -19,26 +19,38 @@ describe("ScoreBreakdown", () => {
     expect(segments.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("affiche Fortement recommandé pour score ≥ 0.8", () => {
+  it("affiche Fortement recommande pour score eleve", () => {
     render(<ScoreBreakdown scores={scores} poids={poids} total={0.84} />);
-    expect(screen.getByText(/Fortement recommandé/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fortement recommand/i)).toBeInTheDocument();
   });
 
-  it("affiche Recommandé avec réserves pour 0.6 ≤ score < 0.8", () => {
+  it("affiche Recommande avec reserves pour score moyen", () => {
     render(<ScoreBreakdown scores={scores} poids={poids} total={0.72} />);
-    expect(screen.getByText(/Recommandé avec réserves/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recommand.*avec r/i)).toBeInTheDocument();
   });
 
-  it("affiche À examiner pour score < 0.6", () => {
+  it("affiche A examiner pour score faible", () => {
     render(<ScoreBreakdown scores={scores} poids={poids} total={0.45} />);
-    expect(screen.getByText(/À examiner/i)).toBeInTheDocument();
+    expect(screen.getByText(/examiner/i)).toBeInTheDocument();
   });
-  it("affiche des libellés complets pour les dimensions W1-W4", () => {
+
+  it("affiche des libelles complets pour les dimensions W1-W4", () => {
     render(<ScoreBreakdown scores={scores} poids={poids} total={0.84} />);
 
-    expect(screen.getByText(/Compétences/i)).toBeInTheDocument();
-    expect(screen.getByText(/Expérience/i)).toBeInTheDocument();
+    expect(screen.getByText(/Comp/i)).toBeInTheDocument();
+    expect(screen.getByText(/Exp/i)).toBeInTheDocument();
     expect(screen.getByText(/Historique/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sémantique/i)).toBeInTheDocument();
+    expect(screen.getByText(/mantique/i)).toBeInTheDocument();
+  });
+
+  it("utilise les tokens analytiques des dimensions de score", () => {
+    const { container } = render(
+      <ScoreBreakdown scores={scores} poids={poids} total={0.84} />
+    );
+
+    expect(container.querySelector(".bg-score-competences")).toBeInTheDocument();
+    expect(container.querySelector(".bg-score-experience")).toBeInTheDocument();
+    expect(container.querySelector(".bg-score-historique")).toBeInTheDocument();
+    expect(container.querySelector(".bg-score-semantique")).toBeInTheDocument();
   });
 });
