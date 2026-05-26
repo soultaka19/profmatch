@@ -15,6 +15,7 @@ Flux :
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -470,3 +471,88 @@ async def update_ponderations(
     await db.commit()
     await db.refresh(pond)
     return pond
+
+
+@dataclass
+class EtapeStatut:
+    """Statut d'affectation d'une étape pour une session donnée."""
+
+    id: int
+    programme_id: int
+    ordre: int
+    nom: str | None
+    total_cours: int
+    cours_couverts: int
+    affectation_complete: bool
+
+
+async def _nb_professeurs_traites(db: AsyncSession) -> int:
+    from app.models.cv import CV, CVStatut
+
+    result = await db.execute(
+        select(func.count(func.distinct(Professeur.id)))
+        .select_from(Professeur)
+        .join(CV, CV.professeur_id == Professeur.id)
+        .where(CV.statut == CVStatut.TRAITE)
+    )
+    return int(result.scalar_one() or 0)
+
+
+async def lister_etapes_avec_statut(
+    session_id: int,
+    programme_id: int,
+    db: AsyncSession,
+) -> list[EtapeStatut]:
+    """Statut d'affectation de chaque étape d'un programme pour une session.
+
+    Une étape est `affectation_complete` quand elle possède au moins un cours et
+    que TOUS ses cours sont couverts. Un cours est couvert s'il a au moins une
+    affectation VALIDEE pour la session, ou s'il n'existe aucun candidat éligible
+    (aucun professeur au CV traité — cas neutralisé). Une affectation REJETEE ne
+    couvre jamais un cours.
+    """
+    from app.models.etape_programme import EtapeProgramme
+
+    etapes = (await db.execute(
+        select(EtapeProgramme)
+        .where(EtapeProgramme.programme_id == programme_id)
+        .order_by(EtapeProgramme.ordre)
+    )).scalars().all()
+
+    liens = (await db.execute(
+        select(CoursEtapeProgramme.etape_id, CoursEtapeProgramme.cours_id)
+        .where(CoursEtapeProgramme.programme_id == programme_id)
+    )).all()
+    cours_par_etape: dict[int, list[int]] = {}
+    for etape_id, cours_id in liens:
+        cours_par_etape.setdefault(etape_id, []).append(cours_id)
+
+    cours_valides = {
+        row[0]
+        for row in (await db.execute(
+            select(Affectation.cours_id).where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.VALIDEE,
+            )
+        )).all()
+    }
+
+    aucun_candidat = (await _nb_professeurs_traites(db)) == 0
+
+    resultats: list[EtapeStatut] = []
+    for etape in etapes:
+        cours_ids = cours_par_etape.get(etape.id, [])
+        total = len(cours_ids)
+        couverts = sum(
+            1 for cid in cours_ids if cid in cours_valides or aucun_candidat
+        )
+        resultats.append(EtapeStatut(
+            id=etape.id,
+            programme_id=programme_id,
+            ordre=etape.ordre,
+            nom=etape.nom,
+            total_cours=total,
+            cours_couverts=couverts,
+            affectation_complete=total > 0 and couverts == total,
+        ))
+    return resultats
