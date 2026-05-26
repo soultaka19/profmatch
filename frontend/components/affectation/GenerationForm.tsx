@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -16,10 +17,9 @@ import type { Weights } from "./WeightSliders";
 import type { GenerationScope } from "./types";
 import {
   affectationsApi,
-  etapesApi,
   sessionsApi,
 } from "@/lib/api/affectations";
-import type { EtapeProgramme, PonderationsOut, Programme, Session } from "@/lib/types/api";
+import type { EtapeStatut, PonderationsOut, Programme, Session } from "@/lib/types/api";
 import { AlertCircle, Check, Loader2, Sparkles } from "lucide-react";
 
 interface GenerationFormProps {
@@ -28,18 +28,20 @@ interface GenerationFormProps {
 
 function ProgrammeEtapesSection({
   programme,
+  sessionId,
   selectedEtapeIds,
   onToggleEtape,
   onEtapesLoaded,
 }: {
   programme: Programme;
+  sessionId: number;
   selectedEtapeIds: number[];
   onToggleEtape: (etapeId: number) => void;
-  onEtapesLoaded: (programmeId: number, etapes: EtapeProgramme[]) => void;
+  onEtapesLoaded: (programmeId: number, etapes: EtapeStatut[]) => void;
 }) {
-  const { data: etapes } = useSWR<EtapeProgramme[]>(
-    `/api/programmes/${programme.id}/etapes`,
-    () => etapesApi.list(programme.id)
+  const { data: etapes } = useSWR<EtapeStatut[]>(
+    `/api/sessions/${sessionId}/programmes/${programme.id}/etapes-statut`,
+    () => sessionsApi.etapesStatut(sessionId, programme.id)
   );
 
   useEffect(() => {
@@ -56,16 +58,22 @@ function ProgrammeEtapesSection({
       {etapes.map((etape) => (
         <label
           key={etape.id}
-          className="flex cursor-pointer items-center gap-2 text-sm"
+          className={`flex items-center gap-2 text-sm ${
+            etape.affectation_complete ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+          }`}
         >
           <Checkbox
             checked={selectedEtapeIds.includes(etape.id)}
+            disabled={etape.affectation_complete}
             onCheckedChange={() => onToggleEtape(etape.id)}
           />
           <span>
             {"Étape"} {etape.ordre}
             {etape.nom ? ` — ${etape.nom}` : ""}
           </span>
+          {etape.affectation_complete && (
+            <Badge variant="secondary">Déjà affectée</Badge>
+          )}
         </label>
       ))}
     </div>
@@ -85,7 +93,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   const [weights, setWeights] = useState<Weights>({ w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 });
   const [isSaving, setIsSaving] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
-  const [etapesByProgramme, setEtapesByProgramme] = useState<Record<number, EtapeProgramme[]>>({});
+  const [etapesByProgramme, setEtapesByProgramme] = useState<Record<number, EtapeStatut[]>>({});
 
   // Programmes éligibles pour la session sélectionnée
   const {
@@ -125,7 +133,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
     setEtapesByProgramme({});
   }, [selectedSessionId]);
 
-  const handleEtapesLoaded = useCallback((programmeId: number, etapes: EtapeProgramme[]) => {
+  const handleEtapesLoaded = useCallback((programmeId: number, etapes: EtapeStatut[]) => {
     setEtapesByProgramme((previous) => ({ ...previous, [programmeId]: etapes }));
   }, []);
 
@@ -153,6 +161,10 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   }
 
   function toggleEtape(etapeId: number) {
+    const complete = Object.values(etapesByProgramme)
+      .flat()
+      .find((etape) => etape.id === etapeId)?.affectation_complete;
+    if (complete) return;
     setSelectedEtapeIds((prev) =>
       prev.includes(etapeId)
         ? prev.filter((id) => id !== etapeId)
@@ -180,7 +192,9 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
         (etapesByProgramme[programme.id] ?? [])
           .filter((etape) => selectedEtapeIds.includes(etape.id))
           .map((etape) => ({
-            ...etape,
+            id: etape.id,
+            ordre: etape.ordre,
+            nom: etape.nom,
             programmeId: programme.id,
             programmeCode: programme.code,
           }))
@@ -290,6 +304,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
                     {selected && (
                       <ProgrammeEtapesSection
                         programme={p}
+                        sessionId={selectedSessionId}
                         selectedEtapeIds={selectedEtapeIds}
                         onToggleEtape={toggleEtape}
                         onEtapesLoaded={handleEtapesLoaded}

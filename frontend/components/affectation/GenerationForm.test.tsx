@@ -9,7 +9,10 @@ const controls = vi.hoisted(() => ({
   sessions: [{ id: 7, nom: "Hiver 2027", annee: 2027, semestre: "hiver", statut: "ouverte" }],
   programmes: [{ id: 46, code: "51046", nom: "Programmation informatique", departement: null, semestres_admission: [] }],
   ponderations: { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 },
-  etapes: [{ id: 1, ordre: 1, nom: "Étape 1" }],
+  etapes: [
+    { id: 1, programme_id: 46, ordre: 1, nom: "Étape 1", total_cours: 2, cours_couverts: 0, affectation_complete: false },
+    { id: 2, programme_id: 46, ordre: 2, nom: "Étape 2", total_cours: 2, cours_couverts: 2, affectation_complete: true },
+  ],
 }));
 
 vi.mock("swr", () => ({
@@ -26,7 +29,7 @@ vi.mock("swr", () => ({
     if (key?.includes("/ponderations")) {
       return { data: controls.ponderations, isLoading: false };
     }
-    if (key?.includes("/programmes/46/etapes")) {
+    if (key?.includes("/programmes/46/etapes-statut")) {
       return { data: controls.etapes, isLoading: false };
     }
     return { data: undefined, isLoading: false };
@@ -39,6 +42,7 @@ vi.mock("@/lib/api/affectations", () => ({
     getPonderations: vi.fn(),
     updatePonderations: controls.updatePonderations,
     programmesEligibles: vi.fn(),
+    etapesStatut: vi.fn(),
   },
   affectationsApi: {
     generer: controls.generer,
@@ -84,5 +88,18 @@ describe("GenerationForm", () => {
         weights: { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 },
       })
     );
+  });
+
+  it("désactive les étapes déjà entièrement affectées", () => {
+    controls.mode = "ready";
+    render(<GenerationForm onTaskStarted={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("option", { name: "Hiver 2027" }));
+    fireEvent.click(screen.getByRole("button", { name: /Programmation informatique/i }));
+
+    expect(screen.getByRole("checkbox", { name: /Étape 1/i })).not.toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /Étape 2/i })).toBeDisabled();
+    expect(screen.getByText(/Déjà affectée/i)).toBeInTheDocument();
   });
 });
