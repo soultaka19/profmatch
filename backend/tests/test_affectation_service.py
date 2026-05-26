@@ -676,3 +676,43 @@ async def test_etape_sans_cours_non_complete(db_session):
     res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
     assert res[0].total_cours == 0
     assert res[0].affectation_complete is False
+
+
+# ── generer_affectations : purge restreinte au périmètre (décision 6) ─────────
+
+
+@pytest.mark.asyncio
+async def test_generer_ne_purge_que_le_perimetre(db_session):
+    """Générer l'étape 2 ne doit pas supprimer les PROPOSEE de l'étape 1."""
+    from sqlalchemy import func, select as _sel
+    from app.models.affectation import Affectation, AffectationStatut
+
+    prof = await _make_prof_traite(db_session, "pp@test.ca", "PP", ["Python"])
+    prog = await _make_programme_int(db_session, "PG-01", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    e1 = await _make_etape_int(db_session, prog.id, 1)
+    e2 = await _make_etape_int(db_session, prog.id, 2)
+    c1 = await _make_cours_int(db_session, "PG-C1")
+    c2 = await _make_cours_int(db_session, "PG-C2")
+    await _make_lien_int(db_session, prog.id, e1.id, c1.id)
+    await _make_lien_int(db_session, prog.id, e2.id, c2.id)
+    await db_session.flush()
+    # proposée préexistante sur l'étape 1
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=prof.id, cours_id=c1.id,
+        score_total=Decimal("0.6"), score_comp=Decimal("0.6"), score_exp=Decimal("0.6"),
+        score_hist=Decimal("0.6"), score_sem=Decimal("0.6"), statut=AffectationStatut.PROPOSEE,
+    ))
+    await db_session.commit()
+
+    # générer uniquement l'étape 2
+    await generer_affectations(sess.id, [prog.id], db_session, etape_ids=[e2.id])
+
+    nb_c1_proposees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.statut == AffectationStatut.PROPOSEE,
+        )
+    )).scalar_one()
+    assert nb_c1_proposees == 1  # l'étape 1 est préservée

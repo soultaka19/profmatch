@@ -258,16 +258,18 @@ async def generer_affectations(
     if not professeurs:
         return [], exclus_ids
 
-    # Supprimer les affectations PROPOSEE existantes pour cette session
-    existing = await db.execute(
-        select(Affectation).where(
-            Affectation.session_id == session_id,
-            Affectation.statut == AffectationStatut.PROPOSEE,
+    # Supprimer les PROPOSEE existantes UNIQUEMENT pour les cours du périmètre généré
+    if cours_ids:
+        existing = await db.execute(
+            select(Affectation).where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.PROPOSEE,
+                Affectation.cours_id.in_(cours_ids),
+            )
         )
-    )
-    for aff in existing.scalars().all():
-        await db.delete(aff)
-    await db.flush()
+        for aff in existing.scalars().all():
+            await db.delete(aff)
+        await db.flush()
 
     nouvelles_affectations: list[Affectation] = []
 
