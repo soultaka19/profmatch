@@ -1,16 +1,20 @@
-"""Tests pour le router affectations — POST /api/affectations/generer."""
+"""Tests pour le router affectations."""
 
 from decimal import Decimal
 
 import pytest
 from unittest.mock import MagicMock, patch
 from httpx import AsyncClient
+from sqlalchemy import select as _sel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.affectation import Affectation
+from app.core.security import hash_password
+from app.models.affectation import Affectation, AffectationStatut
 from app.models.cours import Cours
+from app.models.cv import CV, CVStatut
 from app.models.professeur import Professeur
 from app.models.session import Semestre, Session
+from app.models.user import User, UserRole
 
 
 @pytest.mark.asyncio
@@ -215,6 +219,149 @@ async def test_get_professeurs_disponibles(client, db_session, auth_headers_rh):
     assert resp.status_code == 200
     body = resp.json()
     assert any(p["professeur_id"] == prof.id for p in body)
+
+
+# ── GET /mes-affectations ────────────────────────────────────────────────────
+
+
+async def _setup_mes_affectations(db_session: AsyncSession):
+    """Crée un prof avec CV traité, une session, un cours et une affectation."""
+    user = User(
+        email="mesaff@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Prof MesAff",
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    prof = (await db_session.execute(
+        _sel(Professeur).where(Professeur.user_id == user.id)
+    )).scalar_one()
+
+    db_session.add(CV(
+        professeur_id=prof.id,
+        nom_original="cv.pdf",
+        chemin_fichier="x.pdf",
+        taille_octets=1,
+        mime_type="application/pdf",
+        statut=CVStatut.TRAITE,
+    ))
+
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    cours = Cours(code="MA-101", nom="Cours MesAff")
+    db_session.add_all([sess, cours])
+    await db_session.commit()
+    await db_session.refresh(sess)
+    await db_session.refresh(cours)
+
+    aff = Affectation(
+        session_id=sess.id,
+        professeur_id=prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.840"),
+        score_comp=Decimal("0.857"),
+        score_exp=Decimal("0.750"),
+        score_hist=Decimal("1.000"),
+        score_sem=Decimal("0.620"),
+        justification="• Compétences : ok\nRecommandation : Fortement recommandé.",
+        statut=AffectationStatut.VALIDEE,
+    )
+    db_session.add(aff)
+    await db_session.commit()
+
+    from app.core.security import create_access_token
+    token = create_access_token(subject=user.id, role=user.role.value)
+    headers = {"Authorization": f"Bearer {token}"}
+    return prof, sess, cours, aff, headers
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_retourne_ses_propres_affectations(
+    client: AsyncClient,
+    db_session: AsyncSession,
+):
+    """GET /mes-affectations retourne uniquement les affectations du prof connecté."""
+    prof, sess, cours, aff, headers = await _setup_mes_affectations(db_session)
+
+    resp = await client.get("/api/affectations/mes-affectations", headers=headers)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    item = body[0]
+    assert item["id"] == aff.id
+    assert item["session_nom"] == "Automne 2026"
+    assert item["cours_code"] == "MA-101"
+    assert item["cours_nom"] == "Cours MesAff"
+    assert item["score_total"] == pytest.approx(0.840, abs=0.001)
+    assert item["statut"] == "validee"
+    assert item["justification"] is not None
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_liste_vide_si_aucune(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    auth_headers_prof: dict[str, str],
+):
+    """Un prof sans affectation reçoit une liste vide — pas 404."""
+    resp = await client.get("/api/affectations/mes-affectations", headers=auth_headers_prof)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_refuse_role_rh(
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+):
+    """GET /mes-affectations est réservé au rôle prof — un RH reçoit 403."""
+    resp = await client.get("/api/affectations/mes-affectations", headers=auth_headers_rh)
+
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_refuse_sans_auth(client: AsyncClient):
+    """Sans token, l'endpoint retourne 401."""
+    resp = await client.get("/api/affectations/mes-affectations")
+
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_isolation_entre_profs(
+    client: AsyncClient,
+    db_session: AsyncSession,
+):
+    """Deux profs ne voient pas les affectations de l'autre."""
+    # Prof A avec 1 affectation
+    _, _, _, _, headers_a = await _setup_mes_affectations(db_session)
+
+    # Prof B distinct (même setup, email différent auto via _setup)
+    user_b = User(
+        email="profb@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Prof B",
+    )
+    db_session.add(user_b)
+    await db_session.commit()
+    await db_session.refresh(user_b)
+
+    from app.core.security import create_access_token
+    headers_b = {
+        "Authorization": f"Bearer {create_access_token(subject=user_b.id, role='prof')}"
+    }
+
+    resp_b = await client.get("/api/affectations/mes-affectations", headers=headers_b)
+
+    assert resp_b.status_code == 200
+    # Prof B n'a aucune affectation — il ne voit pas celle de A
+    assert resp_b.json() == []
 
 
 @pytest.mark.asyncio

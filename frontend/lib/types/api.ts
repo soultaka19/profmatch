@@ -189,6 +189,28 @@ export interface ProfesseurDisponibleOut {
   nom_complet: string;
 }
 
+// ── Affectation vue professeur ───────────────────────────────────────────────
+
+export interface AffectationProfOut {
+  id: number;
+  session_id: number;
+  /** Nom lisible de la session, ex: "Automne 2026" */
+  session_nom: string;
+  cours_id: number;
+  cours_code: string | null;
+  cours_nom: string | null;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  justification: string | null;
+  statut: AffectationStatut;
+  origine: "algo" | "manuel";
+  valide_le: string | null;
+  cree_le: string;
+}
+
 // ── Génération ────────────────────────────────────────────────────────────────
 
 export type GenerationPhase = "pending" | "queued" | "processing" | "done" | "error";

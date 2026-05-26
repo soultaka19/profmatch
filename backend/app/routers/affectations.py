@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.affectation import (
     AffectationManuelleCreate,
     AffectationOut,
+    AffectationProfOut,
     AffectationValidateRequest,
     FeedbackCreate,
     FeedbackOut,
@@ -31,10 +32,16 @@ from app.tasks.affectation_tasks import generer_affectations_task
 
 router = APIRouter()
 
-# Chargement eager des relations utilisées pour enrichir AffectationOut
+# Chargement eager des relations utilisées pour enrichir AffectationOut (vue RH/Admin)
 _RELATIONS = (
     selectinload(Affectation.cours),
     selectinload(Affectation.professeur).selectinload(Professeur.user),
+)
+
+# Chargement eager pour la vue professeur (session + cours)
+_RELATIONS_PROF = (
+    selectinload(Affectation.cours),
+    selectinload(Affectation.session),
 )
 
 
@@ -50,6 +57,19 @@ def _to_out(aff: Affectation) -> AffectationOut:
         out.cours_code = aff.cours.code
     if aff.professeur is not None and aff.professeur.user is not None:
         out.professeur_nom = aff.professeur.user.nom_complet
+    return out
+
+
+def _to_prof_out(aff: Affectation) -> AffectationProfOut:
+    """Convertit une Affectation ORM en AffectationProfOut pour la vue professeur.
+
+    Les relations `cours` et `session` doivent être chargées au préalable
+    (via `_RELATIONS_PROF`) pour éviter tout lazy-load en contexte async.
+    """
+    out = AffectationProfOut.model_validate(aff)
+    out.session_nom = aff.session.nom if aff.session is not None else f"Session {aff.session_id}"
+    out.cours_code = aff.cours.code if aff.cours is not None else None
+    out.cours_nom = aff.cours.nom if aff.cours is not None else None
     return out
 
 
@@ -163,6 +183,38 @@ async def professeurs_disponibles(
         ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom)
         for pid, nom in profs
     ]
+
+
+@router.get(
+    "/mes-affectations",
+    response_model=list[AffectationProfOut],
+    summary="Mes affectations (vue professeur)",
+    description=(
+        "Retourne toutes les affectations du professeur connecté, tous statuts "
+        "(proposée, validée, rejetée), triées par date de création décroissante. "
+        "Accessible uniquement au rôle `prof`."
+    ),
+)
+async def mes_affectations(
+    current_user: User = Depends(require_role("prof")),
+    db: AsyncSession = Depends(get_db),
+) -> list[AffectationProfOut]:
+    """Liste les affectations du professeur connecté — tous statuts confondus."""
+    # Résoudre le professeur_id depuis l'user connecté
+    prof_result = await db.execute(
+        select(Professeur).where(Professeur.user_id == current_user.id)
+    )
+    prof = prof_result.scalar_one_or_none()
+    if prof is None:
+        return []
+
+    result = await db.execute(
+        select(Affectation)
+        .options(*_RELATIONS_PROF)
+        .where(Affectation.professeur_id == prof.id)
+        .order_by(Affectation.cree_le.desc())
+    )
+    return [_to_prof_out(aff) for aff in result.scalars().all()]
 
 
 @router.get("/{affectation_id}", response_model=AffectationOut)

@@ -109,6 +109,34 @@ class AffectationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AffectationProfOut(BaseModel):
+    """Vue professeur : affectation enrichie avec session_nom, cours_code, cours_nom.
+
+    Accessible uniquement via GET /api/affectations/mes-affectations (rôle prof).
+    Les scores sont en lecture seule — le prof ne peut pas valider ni rejeter.
+    """
+
+    id: int
+    session_id: int
+    cours_id: int
+    score_total: float
+    score_comp: float
+    score_exp: float
+    score_hist: float
+    score_sem: float
+    justification: Optional[str]
+    statut: AffectationStatut
+    origine: AffectationOrigine
+    valide_le: Optional[datetime]
+    cree_le: datetime
+    # Champs enrichis — résolus via les relations dans _to_prof_out()
+    session_nom: str = ""          # ex: "Automne 2026"
+    cours_code: Optional[str] = None  # ex: "WEB-301"
+    cours_nom: Optional[str] = None   # ex: "Développement web avancé"
+
+    model_config = {"from_attributes": True}
+
+
 class GenererAffectationsRequest(BaseModel):
     session_id: int
     programme_ids: list[int] = Field(min_length=1)
