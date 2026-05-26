@@ -350,3 +350,25 @@ async def test_etapes_statut_marque_etape_complete(client, db_session, auth_head
     assert body[0]["ordre"] == 1
     assert body[0]["total_cours"] == 1
     assert body[0]["affectation_complete"] is True
+
+
+@pytest.mark.asyncio
+async def test_etapes_statut_session_introuvable(client, auth_headers_rh):
+    resp = await client.get(
+        "/api/sessions/999999/programmes/1/etapes-statut",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_etapes_statut_programme_introuvable(client, db_session, auth_headers_rh):
+    sess = Session(annee=2052, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    resp = await client.get(
+        f"/api/sessions/{sess.id}/programmes/999999/etapes-statut",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 404
