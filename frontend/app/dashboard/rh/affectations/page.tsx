@@ -52,14 +52,16 @@ export default function AffectationsPage() {
   const etapeIds = useMemo(() => scope?.etapes.map((e) => e.id) ?? [], [scope]);
   const inReview = phase === "review" && sessionId !== null;
 
-  // Génération courante : propositions du périmètre exact (programme + étapes)
+  // Génération courante : TOUTES les affectations du périmètre exact (programme +
+  // étapes), quel que soit leur statut. Ce qu'on valide/rejette pendant la revue
+  // reste donc visible ici (avec son badge) au lieu de basculer dans l'historique.
   const { data: currentProposals, mutate: mutateCurrent } = useSWR<AffectationOut[]>(
     inReview
       ? `gen-current:${sessionId}:${programmeIds.join(",")}:${etapeIds.join(",")}`
       : null,
     inReview
       ? () =>
-          affectationsApi.list(sessionId!, "proposee", {
+          affectationsApi.list(sessionId!, undefined, {
             programmeIds,
             etapeIds: etapeIds.length ? etapeIds : undefined,
           })
@@ -73,9 +75,19 @@ export default function AffectationsPage() {
   );
 
   const proposals = useMemo(() => currentProposals ?? [], [currentProposals]);
+  // Le cloisonnement se fait sur le PÉRIMÈTRE, pas sur le statut : l'historique ne
+  // garde que les affectations traitées du programme situées hors du périmètre
+  // courant (autres étapes). Les ids du périmètre courant sont donc exclus.
+  const currentIds = useMemo(
+    () => new Set(proposals.map((a) => a.id)),
+    [proposals]
+  );
   const treated = useMemo(
-    () => (programmeAffectations ?? []).filter((a) => a.statut !== "proposee"),
-    [programmeAffectations]
+    () =>
+      (programmeAffectations ?? []).filter(
+        (a) => !currentIds.has(a.id) && a.statut !== "proposee"
+      ),
+    [programmeAffectations, currentIds]
   );
   const refreshReview = useCallback(async () => {
     await Promise.all([mutateCurrent(), mutateProgramme()]);
@@ -214,7 +226,9 @@ export default function AffectationsPage() {
     setFocusCandidateId(null);
   };
 
-  const hasPendingProposals = proposals.length > 0;
+  // « En attente » = propositions encore à réviser (la vue courante inclut
+  // désormais aussi les validées/rejetées, qui ne comptent pas comme en attente).
+  const hasPendingProposals = proposals.some((p) => p.statut === "proposee");
 
   return (
     <div className="space-y-8">

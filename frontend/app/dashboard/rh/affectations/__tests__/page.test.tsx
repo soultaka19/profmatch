@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import AffectationsPage from "../page";
 
 const PROPOSEE = {
@@ -9,18 +9,29 @@ const PROPOSEE = {
   valide_par_user_id: null, valide_le: null, cree_le: "2026-01-01",
   cours_nom: "Programmation avancée", cours_code: "INF-200", professeur_nom: "Alice",
 };
-const VALIDEE = {
+// Affectation validée APPARTENANT au périmètre d'étape généré (doit rester courante).
+const VALIDEE_CURRENT = {
+  ...PROPOSEE, id: 3, professeur_id: 3, cours_id: 101, statut: "validee",
+  cours_nom: "Structures de données", cours_code: "INF-201", professeur_nom: "Carol",
+};
+// Affectation traitée HORS périmètre d'étape (doit aller dans l'historique).
+const HIST = {
   ...PROPOSEE, id: 2, professeur_id: 2, cours_id: 30733, statut: "validee",
   cours_nom: "Introduction à la programmation", cours_code: "30733 IFM", professeur_nom: "Bob",
 };
 
+// Données mockées mutables : le périmètre courant (gen-current) renvoie tous les
+// statuts du périmètre d'étape ; le programme (gen-programme) renvoie tout.
+let mockCurrentData: unknown[] = [PROPOSEE];
+let mockProgrammeData: unknown[] = [PROPOSEE, HIST];
+
 vi.mock("swr", () => ({
   default: (key: unknown) => {
     if (typeof key === "string" && key.startsWith("gen-current:")) {
-      return { data: [PROPOSEE], mutate: vi.fn() };
+      return { data: mockCurrentData, mutate: vi.fn() };
     }
     if (typeof key === "string" && key.startsWith("gen-programme:")) {
-      return { data: [PROPOSEE, VALIDEE], mutate: vi.fn() };
+      return { data: mockProgrammeData, mutate: vi.fn() };
     }
     if (typeof key === "string" && key.includes("/ponderations")) {
       return { data: { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 }, mutate: vi.fn() };
@@ -56,6 +67,11 @@ vi.mock("@/components/affectation/GenerationForm", () => ({
   ),
 }));
 
+beforeEach(() => {
+  mockCurrentData = [PROPOSEE];
+  mockProgrammeData = [PROPOSEE, HIST];
+});
+
 describe("AffectationsPage — séparation des résultats", () => {
   it("place les déjà traitées dans une section distincte des propositions courantes", async () => {
     render(<AffectationsPage />);
@@ -68,5 +84,31 @@ describe("AffectationsPage — séparation des résultats", () => {
       expect(screen.getAllByText(/Programmation avancée/).length).toBeGreaterThan(0)
     );
     expect(screen.getAllByText(/Introduction à la programmation/).length).toBeGreaterThan(0);
+  });
+
+  it("garde une affectation traitée DU périmètre courant dans la section courante, pas dans l'historique", async () => {
+    // Le périmètre d'étape contient une proposée + une validée ; l'historique ne
+    // doit contenir que l'affectation hors périmètre.
+    mockCurrentData = [PROPOSEE, VALIDEE_CURRENT];
+    mockProgrammeData = [PROPOSEE, VALIDEE_CURRENT, HIST];
+
+    render(<AffectationsPage />);
+    fireEvent.click(screen.getByText("go"));
+
+    const summary = await screen.findByText(/Affectations déjà traitées du programme/i);
+    // Seule l'affectation hors périmètre (HIST) est dans l'historique.
+    expect(summary.textContent).toMatch(/\(1\)/);
+
+    const details = summary.closest("details");
+    expect(details).not.toBeNull();
+    const history = within(details as HTMLElement);
+    // Hors périmètre → présent dans l'historique.
+    expect(history.queryAllByText(/Introduction à la programmation/).length).toBeGreaterThan(0);
+    // Validée mais DANS le périmètre courant → absente de l'historique…
+    expect(history.queryAllByText(/Structures de données/)).toHaveLength(0);
+    // …et bien présente dans la vue courante.
+    await waitFor(() =>
+      expect(screen.getAllByText(/Structures de données/).length).toBeGreaterThan(0)
+    );
   });
 });
