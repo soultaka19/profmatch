@@ -53,6 +53,20 @@ class EtapeOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class EtapeStatutOut(BaseModel):
+    """Étape enrichie de son statut d'affectation pour une session."""
+
+    id: int
+    programme_id: int
+    ordre: int
+    nom: Optional[str]
+    total_cours: int
+    cours_couverts: int
+    affectation_complete: bool
+
+    model_config = {"from_attributes": True}
+
+
 # ── Cursus (cours dans une étape d'un programme) ─────────────────────────────
 
 class CursusCreate(BaseModel):

@@ -47,16 +47,51 @@ export default function AffectationsPage() {
     }
   }, [genStatus, phase]);
 
-  // Affectations en phase review
-  const { data: affectations, mutate: mutateAffectations } =
-    useSWR<AffectationOut[]>(
-      phase === "review" && sessionId
-        ? `/api/affectations/?session_id=${sessionId}`
-        : null,
-      phase === "review" && sessionId
-        ? () => affectationsApi.list(sessionId)
-        : null
-    );
+  // Périmètre exact de la génération courante (dérivé du scope choisi)
+  const programmeIds = useMemo(() => scope?.programmes.map((p) => p.id) ?? [], [scope]);
+  const etapeIds = useMemo(() => scope?.etapes.map((e) => e.id) ?? [], [scope]);
+  const inReview = phase === "review" && sessionId !== null;
+
+  // Génération courante : TOUTES les affectations du périmètre exact (programme +
+  // étapes), quel que soit leur statut. Ce qu'on valide/rejette pendant la revue
+  // reste donc visible ici (avec son badge) au lieu de basculer dans l'historique.
+  const { data: currentProposals, mutate: mutateCurrent } = useSWR<AffectationOut[]>(
+    inReview
+      ? `gen-current:${sessionId}:${programmeIds.join(",")}:${etapeIds.join(",")}`
+      : null,
+    inReview
+      ? () =>
+          affectationsApi.list(sessionId!, undefined, {
+            programmeIds,
+            etapeIds: etapeIds.length ? etapeIds : undefined,
+          })
+      : null
+  );
+
+  // Toutes les affectations du programme (pour la section « déjà traitées »)
+  const { data: programmeAffectations, mutate: mutateProgramme } = useSWR<AffectationOut[]>(
+    inReview ? `gen-programme:${sessionId}:${programmeIds.join(",")}` : null,
+    inReview ? () => affectationsApi.list(sessionId!, undefined, { programmeIds }) : null
+  );
+
+  const proposals = useMemo(() => currentProposals ?? [], [currentProposals]);
+  // Le cloisonnement se fait sur le PÉRIMÈTRE, pas sur le statut : l'historique ne
+  // garde que les affectations traitées du programme situées hors du périmètre
+  // courant (autres étapes). Les ids du périmètre courant sont donc exclus.
+  const currentIds = useMemo(
+    () => new Set(proposals.map((a) => a.id)),
+    [proposals]
+  );
+  const treated = useMemo(
+    () =>
+      (programmeAffectations ?? []).filter(
+        (a) => !currentIds.has(a.id) && a.statut !== "proposee"
+      ),
+    [programmeAffectations, currentIds]
+  );
+  const refreshReview = useCallback(async () => {
+    await Promise.all([mutateCurrent(), mutateProgramme()]);
+  }, [mutateCurrent, mutateProgramme]);
 
   // Pondérations pour afficher la barre de score
   const { data: ponderations } = useSWR<PonderationsOut>(
@@ -76,7 +111,7 @@ export default function AffectationsPage() {
   // Maps id → nom dérivées des champs enrichis renvoyés par l'API
   const coursNames = useMemo(() => {
     const m: Record<number, string> = {};
-    for (const a of affectations ?? []) {
+    for (const a of [...proposals, ...treated]) {
       if (a.cours_nom) {
         m[a.cours_id] = a.cours_code
           ? `${a.cours_code} — ${a.cours_nom}`
@@ -84,15 +119,15 @@ export default function AffectationsPage() {
       }
     }
     return m;
-  }, [affectations]);
+  }, [proposals, treated]);
 
   const professorNames = useMemo(() => {
     const m: Record<number, string> = {};
-    for (const a of affectations ?? []) {
+    for (const a of [...proposals, ...treated]) {
       if (a.professeur_nom) m[a.professeur_id] = a.professeur_nom;
     }
     return m;
-  }, [affectations]);
+  }, [proposals, treated]);
 
   const handleTaskStarted = useCallback((tid: string, sid: number, nextScope: GenerationScope) => {
     setTaskId(tid);
@@ -103,8 +138,8 @@ export default function AffectationsPage() {
 
   const handleValidate = useCallback(
     async (id: number) => {
-      const current = affectations?.find((affectation) => affectation.id === id);
-      const nextCandidate = affectations?.find(
+      const current = proposals.find((affectation) => affectation.id === id);
+      const nextCandidate = proposals.find(
         (affectation) =>
           affectation.cours_id === current?.cours_id &&
           affectation.id !== id &&
@@ -119,7 +154,7 @@ export default function AffectationsPage() {
       setPendingAction("validate");
       try {
         await affectationsApi.validate(id, "validee");
-        await mutateAffectations();
+        await refreshReview();
         setActionFeedback((previous) => ({
           ...previous,
           [id]: { tone: "success", message: "Affectation validée." },
@@ -138,13 +173,13 @@ export default function AffectationsPage() {
         setPendingAction(null);
       }
     },
-    [affectations, mutateAffectations]
+    [proposals, refreshReview]
   );
 
   const handleReject = useCallback(
     async (id: number) => {
-      const current = affectations?.find((affectation) => affectation.id === id);
-      const nextCandidate = affectations?.find(
+      const current = proposals.find((affectation) => affectation.id === id);
+      const nextCandidate = proposals.find(
         (affectation) =>
           affectation.cours_id === current?.cours_id &&
           affectation.id !== id &&
@@ -159,7 +194,7 @@ export default function AffectationsPage() {
       setPendingAction("reject");
       try {
         await affectationsApi.validate(id, "rejetee");
-        await mutateAffectations();
+        await refreshReview();
         setActionFeedback((previous) => ({
           ...previous,
           [id]: { tone: "success", message: "Affectation rejetée." },
@@ -178,7 +213,7 @@ export default function AffectationsPage() {
         setPendingAction(null);
       }
     },
-    [affectations, mutateAffectations]
+    [proposals, refreshReview]
   );
 
   const reset = () => {
@@ -191,9 +226,9 @@ export default function AffectationsPage() {
     setFocusCandidateId(null);
   };
 
-  const hasPendingProposals = (affectations ?? []).some(
-    (affectation) => affectation.statut === "proposee"
-  );
+  // « En attente » = propositions encore à réviser (la vue courante inclut
+  // désormais aussi les validées/rejetées, qui ne comptent pas comme en attente).
+  const hasPendingProposals = proposals.some((p) => p.statut === "proposee");
 
   return (
     <div className="space-y-8">
@@ -238,14 +273,14 @@ export default function AffectationsPage() {
 
       {/* Phase review */}
       {phase === "review" && (
-        <div className="space-y-5">
+        <div className="space-y-8">
           {scope && <GenerationScopeSummary scope={scope} />}
           <p role="status" aria-live="polite" className="sr-only">
-            Génération terminée. {(affectations ?? []).length} propositions disponibles.
+            Génération terminée. {proposals.length} propositions disponibles.
           </p>
-          <ReviewSummary affectations={affectations ?? []} />
+          <ReviewSummary affectations={proposals} />
           <AffectationTable
-            affectations={affectations ?? []}
+            affectations={proposals}
             coursNames={coursNames}
             professorNames={professorNames}
             poids={poids}
@@ -256,8 +291,27 @@ export default function AffectationsPage() {
             pendingAction={pendingAction}
             actionFeedback={actionFeedback}
             focusCandidateId={focusCandidateId}
-            onManualAssigned={() => mutateAffectations()}
+            onManualAssigned={refreshReview}
           />
+
+          {treated.length > 0 && (
+            <details className="rounded-lg border border-border bg-canvas px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-fg">
+                Affectations déjà traitées du programme ({treated.length})
+              </summary>
+              <p className="mb-3 mt-1 text-xs text-fg-muted">
+                Affectations validées ou rejetées du programme, hors de la génération courante.
+              </p>
+              <AffectationTable
+                affectations={treated}
+                coursNames={coursNames}
+                professorNames={professorNames}
+                poids={poids}
+                onValidate={() => {}}
+                onReject={() => {}}
+              />
+            </details>
+          )}
         </div>
       )}
 

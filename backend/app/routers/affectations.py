@@ -1,6 +1,6 @@
 """Routes RH et Admin pour la génération et révision des affectations."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.affectation import Affectation, AffectationStatut
+from app.models.cours_etape_programme import CoursEtapeProgramme
 from app.models.professeur import Professeur
 from app.models.user import User
 from app.schemas.affectation import (
@@ -90,6 +91,8 @@ async def list_affectations(
     session_id: int | None = None,
     cours_id: int | None = None,
     statut: AffectationStatut | None = None,
+    programme_ids: list[int] | None = Query(default=None),
+    etape_ids: list[int] | None = Query(default=None),
     current_user: User = Depends(require_role("rh", "admin")),
     db: AsyncSession = Depends(get_db),
 ) -> list[AffectationOut]:
@@ -100,6 +103,15 @@ async def list_affectations(
         query = query.where(Affectation.cours_id == cours_id)
     if statut is not None:
         query = query.where(Affectation.statut == statut)
+    if programme_ids or etape_ids:
+        query = query.join(
+            CoursEtapeProgramme, CoursEtapeProgramme.cours_id == Affectation.cours_id
+        )
+        if programme_ids:
+            query = query.where(CoursEtapeProgramme.programme_id.in_(programme_ids))
+        if etape_ids:
+            query = query.where(CoursEtapeProgramme.etape_id.in_(etape_ids))
+        query = query.distinct()
     query = query.order_by(Affectation.score_total.desc())
     result = await db.execute(query)
     return [_to_out(aff) for aff in result.scalars().all()]

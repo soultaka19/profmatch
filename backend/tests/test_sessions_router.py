@@ -296,3 +296,79 @@ async def test_programmes_eligibles_rh_autorise(
         f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_rh
     )
     assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_etapes_statut_marque_etape_complete(client, db_session, auth_headers_rh):
+    from app.core.security import hash_password
+    from app.models.user import User, UserRole
+    from app.models.professeur import Professeur
+    from app.models.cv import CV, CVStatut
+    from app.models.programme import Programme
+    from app.models.etape_programme import EtapeProgramme
+    from app.models.cours import Cours
+    from app.models.cours_etape_programme import CoursEtapeProgramme, CategorieCours
+    from app.models.affectation import Affectation, AffectationStatut
+    from sqlalchemy import select as _sel
+
+    user = User(email="zp@test.ca", password_hash=hash_password("Test@1234"),
+                role=UserRole.PROF, nom_complet="Z Prof")
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    prof = (await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))).scalar_one()
+    db_session.add(CV(professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
+                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.TRAITE))
+    prog = Programme(code="ST-01", nom="Prog", semestres_admission=[Semestre.AUTOMNE])
+    sess = Session(annee=2050, semestre=Semestre.AUTOMNE)
+    db_session.add_all([prog, sess])
+    await db_session.commit()
+    await db_session.refresh(prog)
+    await db_session.refresh(sess)
+    etape = EtapeProgramme(programme_id=prog.id, ordre=1)
+    cours = Cours(code="ST-C1", nom="C")
+    db_session.add_all([etape, cours])
+    await db_session.commit()
+    await db_session.refresh(etape)
+    await db_session.refresh(cours)
+    db_session.add(CoursEtapeProgramme(programme_id=prog.id, etape_id=etape.id,
+                                       cours_id=cours.id, categorie=CategorieCours.OBLIGATOIRE))
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
+        score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
+        score_hist=Decimal("0.8"), score_sem=Decimal("0.8"), statut=AffectationStatut.VALIDEE,
+    ))
+    await db_session.commit()
+
+    resp = await client.get(
+        f"/api/sessions/{sess.id}/programmes/{prog.id}/etapes-statut",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["ordre"] == 1
+    assert body[0]["total_cours"] == 1
+    assert body[0]["affectation_complete"] is True
+
+
+@pytest.mark.asyncio
+async def test_etapes_statut_session_introuvable(client, auth_headers_rh):
+    resp = await client.get(
+        "/api/sessions/999999/programmes/1/etapes-statut",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_etapes_statut_programme_introuvable(client, db_session, auth_headers_rh):
+    sess = Session(annee=2052, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    resp = await client.get(
+        f"/api/sessions/{sess.id}/programmes/999999/etapes-statut",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 404

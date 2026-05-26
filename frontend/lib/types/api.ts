@@ -246,3 +246,13 @@ export interface EtapeProgramme {
   ordre: number;
   nom: string | null;
 }
+
+export interface EtapeStatut {
+  id: number;
+  programme_id: number;
+  ordre: number;
+  nom: string | null;
+  total_cours: number;
+  cours_couverts: number;
+  affectation_complete: boolean;
+}

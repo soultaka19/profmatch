@@ -19,8 +19,9 @@ from app.schemas.affectation import (
     SessionOut,
     SessionUpdate,
 )
+from app.schemas.programme import EtapeStatutOut
 from app.services.academic_calendar import programme_actif_pour_session
-from app.services.affectation_service import update_ponderations
+from app.services.affectation_service import lister_etapes_avec_statut, update_ponderations
 
 router = APIRouter()
 
@@ -116,6 +117,27 @@ async def list_programmes_eligibles(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
     progs = (await db.execute(select(Programme).order_by(Programme.code))).scalars().all()
     return [p for p in progs if programme_actif_pour_session(p, sess)]
+
+
+@router.get(
+    "/{session_id}/programmes/{programme_id}/etapes-statut",
+    response_model=list[EtapeStatutOut],
+)
+async def list_etapes_statut(
+    session_id: int,
+    programme_id: int,
+    current_user: User = Depends(require_role("admin", "rh")),
+    db: AsyncSession = Depends(get_db),
+) -> list[EtapeStatutOut]:
+    """Étapes d'un programme avec leur statut d'affectation pour la session."""
+    sess = (await db.execute(select(Session).where(Session.id == session_id))).scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    prog = (await db.execute(select(Programme).where(Programme.id == programme_id))).scalar_one_or_none()
+    if not prog:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable")
+    statuts = await lister_etapes_avec_statut(session_id, programme_id, db)
+    return [EtapeStatutOut.model_validate(s) for s in statuts]
 
 
 @router.get("/{session_id}/ponderations", response_model=PonderationsOut)

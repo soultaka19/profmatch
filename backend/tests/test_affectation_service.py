@@ -21,6 +21,7 @@ from app.services.affectation_service import (
     ajouter_feedback,
     creer_affectation_manuelle,
     generer_affectations,
+    lister_etapes_avec_statut,
     lister_professeurs_disponibles,
     update_ponderations,
     valider_affectation,
@@ -555,3 +556,274 @@ async def test_lister_profs_dispo_inclut_rejetes(db_session):
     dispo = await lister_professeurs_disponibles(sess.id, cours.id, db_session)
     ids = [pid for pid, _ in dispo]
     assert pr.id in ids
+
+
+# ── lister_etapes_avec_statut (P1) ───────────────────────────────────────────
+
+
+async def _valider_aff(db, sess_id, prof_id, cours_id):
+    from app.models.affectation import Affectation, AffectationStatut
+    db.add(Affectation(
+        session_id=sess_id, professeur_id=prof_id, cours_id=cours_id,
+        score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
+        score_hist=Decimal("0.8"), score_sem=Decimal("0.8"),
+        statut=AffectationStatut.VALIDEE,
+    ))
+    await db.flush()
+
+
+@pytest.mark.asyncio
+async def test_etape_complete_quand_tous_cours_valides(db_session):
+    prof = await _make_prof_traite(db_session, "e1@test.ca", "E1", ["Python"])
+    prog = await _make_programme_int(db_session, "EL-01", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "EL-C1")
+    c2 = await _make_cours_int(db_session, "EL-C2")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await _make_lien_int(db_session, prog.id, etape.id, c2.id)
+    await db_session.flush()
+    await _valider_aff(db_session, sess.id, prof.id, c1.id)
+    await _valider_aff(db_session, sess.id, prof.id, c2.id)
+    await db_session.commit()
+
+    res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
+    assert len(res) == 1
+    assert res[0].total_cours == 2
+    assert res[0].cours_couverts == 2
+    assert res[0].affectation_complete is True
+
+
+@pytest.mark.asyncio
+async def test_etape_incomplete_si_un_cours_sans_validee(db_session):
+    prof = await _make_prof_traite(db_session, "e2@test.ca", "E2", ["Python"])
+    prog = await _make_programme_int(db_session, "EL-02", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "EL-C3")
+    c2 = await _make_cours_int(db_session, "EL-C4")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await _make_lien_int(db_session, prog.id, etape.id, c2.id)
+    await db_session.flush()
+    await _valider_aff(db_session, sess.id, prof.id, c1.id)  # c2 non couvert
+    await db_session.commit()
+
+    res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
+    assert res[0].affectation_complete is False
+    assert res[0].cours_couverts == 1
+
+
+@pytest.mark.asyncio
+async def test_etape_rejetee_ne_couvre_pas(db_session):
+    from app.models.affectation import Affectation, AffectationStatut
+    prof = await _make_prof_traite(db_session, "e3@test.ca", "E3", ["Python"])
+    prog = await _make_programme_int(db_session, "EL-03", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "EL-C5")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await db_session.flush()
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=prof.id, cours_id=c1.id,
+        score_total=Decimal("0.5"), score_comp=Decimal("0.5"), score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.5"), score_sem=Decimal("0.5"),
+        statut=AffectationStatut.REJETEE,
+    ))
+    await db_session.commit()
+
+    res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
+    assert res[0].affectation_complete is False
+
+
+@pytest.mark.asyncio
+async def test_etape_isolation_par_session(db_session):
+    prof = await _make_prof_traite(db_session, "e4@test.ca", "E4", ["Python"])
+    prog = await _make_programme_int(db_session, "EL-04", [Semestre.AUTOMNE])
+    sess_a = await _make_session_int(db_session, Semestre.AUTOMNE)
+    sess_b = await _make_session_int(db_session, Semestre.HIVER)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "EL-C6")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await db_session.flush()
+    await _valider_aff(db_session, sess_a.id, prof.id, c1.id)  # validé en A seulement
+    await db_session.commit()
+
+    res_b = await lister_etapes_avec_statut(sess_b.id, prog.id, db_session)
+    assert res_b[0].affectation_complete is False
+
+
+@pytest.mark.asyncio
+async def test_etape_neutralisee_si_aucun_candidat(db_session):
+    """Décision 2 : aucun professeur au CV traité → cours neutralisé (couvert)."""
+    prog = await _make_programme_int(db_session, "EL-05", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "EL-C7")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await db_session.commit()  # aucun prof traité créé
+
+    res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
+    assert res[0].affectation_complete is True
+
+
+@pytest.mark.asyncio
+async def test_etape_sans_cours_non_complete(db_session):
+    prog = await _make_programme_int(db_session, "EL-06", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    await _make_etape_int(db_session, prog.id, 1)  # étape vide
+    await db_session.commit()
+
+    res = await lister_etapes_avec_statut(sess.id, prog.id, db_session)
+    assert res[0].total_cours == 0
+    assert res[0].affectation_complete is False
+
+
+# ── generer_affectations : purge restreinte au périmètre (décision 6) ─────────
+
+
+@pytest.mark.asyncio
+async def test_generer_ne_purge_que_le_perimetre(db_session):
+    """Générer l'étape 2 ne doit pas supprimer les PROPOSEE de l'étape 1."""
+    from sqlalchemy import func, select as _sel
+    from app.models.affectation import Affectation, AffectationStatut
+
+    prof = await _make_prof_traite(db_session, "pp@test.ca", "PP", ["Python"])
+    prog = await _make_programme_int(db_session, "PG-01", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    e1 = await _make_etape_int(db_session, prog.id, 1)
+    e2 = await _make_etape_int(db_session, prog.id, 2)
+    c1 = await _make_cours_int(db_session, "PG-C1")
+    c2 = await _make_cours_int(db_session, "PG-C2")
+    await _make_lien_int(db_session, prog.id, e1.id, c1.id)
+    await _make_lien_int(db_session, prog.id, e2.id, c2.id)
+    await db_session.flush()
+    # proposée préexistante sur l'étape 1
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=prof.id, cours_id=c1.id,
+        score_total=Decimal("0.6"), score_comp=Decimal("0.6"), score_exp=Decimal("0.6"),
+        score_hist=Decimal("0.6"), score_sem=Decimal("0.6"), statut=AffectationStatut.PROPOSEE,
+    ))
+    await db_session.commit()
+
+    # générer uniquement l'étape 2
+    await generer_affectations(sess.id, [prog.id], db_session, etape_ids=[e2.id])
+
+    nb_c1_proposees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.statut == AffectationStatut.PROPOSEE,
+        )
+    )).scalar_one()
+    assert nb_c1_proposees == 1  # l'étape 1 est préservée
+
+
+# ── generer_affectations : régénération vs décisions (item 1) ─────────────────
+
+
+@pytest.mark.asyncio
+async def test_generer_apres_rejet_ne_collisionne_pas(db_session):
+    """Régénérer un cours portant déjà une REJETEE ne doit pas violer l'unicité.
+
+    Le prof rejeté n'est pas re-proposé (le rejet persiste), un autre candidat
+    éligible prend sa place dans le top-3.
+    """
+    from sqlalchemy import func, select as _sel
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours_competence import CoursCompetence
+
+    pr = await _make_prof_traite(db_session, "rej-gen@test.ca", "Rejete", ["Python"])
+    pb = await _make_prof_traite(db_session, "ok-gen@test.ca", "Bob", ["Python"])
+    prog = await _make_programme_int(db_session, "RG-01", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "RG-C1")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    await db_session.flush()
+    # pr a été rejeté pour c1
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=pr.id, cours_id=c1.id,
+        score_total=Decimal("0.5"), score_comp=Decimal("0.5"), score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.5"), score_sem=Decimal("0.5"), statut=AffectationStatut.REJETEE,
+    ))
+    await db_session.commit()
+
+    # ne doit pas lever d'IntegrityError
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+
+    # le prof rejeté n'a pas de nouvelle PROPOSEE sur c1
+    nb_pr_proposees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.professeur_id == pr.id,
+            Affectation.statut == AffectationStatut.PROPOSEE,
+        )
+    )).scalar_one()
+    assert nb_pr_proposees == 0
+    # la REJETEE est préservée
+    nb_pr_rejetees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.professeur_id == pr.id,
+            Affectation.statut == AffectationStatut.REJETEE,
+        )
+    )).scalar_one()
+    assert nb_pr_rejetees == 1
+    # l'autre candidat éligible est proposé
+    prop_prof_ids = {a.professeur_id for a in affectations if a.cours_id == c1.id}
+    assert pb.id in prop_prof_ids
+    assert pr.id not in prop_prof_ids
+
+
+@pytest.mark.asyncio
+async def test_generer_saute_cours_couvert_par_validee(db_session):
+    """Un cours déjà couvert par une VALIDEE est sauté : aucune nouvelle PROPOSEE
+    n'est créée pour lui et l'unicité n'est pas violée."""
+    from sqlalchemy import func, select as _sel
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours_competence import CoursCompetence
+
+    pa = await _make_prof_traite(db_session, "val-gen@test.ca", "Alice", ["Python"])
+    prog = await _make_programme_int(db_session, "RG-02", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    c1 = await _make_cours_int(db_session, "RG-C2")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    await db_session.flush()
+    # c1 déjà couvert par une VALIDEE
+    db_session.add(Affectation(
+        session_id=sess.id, professeur_id=pa.id, cours_id=c1.id,
+        score_total=Decimal("0.9"), score_comp=Decimal("0.9"), score_exp=Decimal("0.9"),
+        score_hist=Decimal("0.9"), score_sem=Decimal("0.9"), statut=AffectationStatut.VALIDEE,
+    ))
+    await db_session.commit()
+
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+
+    # aucune PROPOSEE générée pour c1 (cours couvert sauté)
+    nb_proposees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.statut == AffectationStatut.PROPOSEE,
+        )
+    )).scalar_one()
+    assert nb_proposees == 0
+    assert all(a.cours_id != c1.id for a in affectations)
+    # la VALIDEE est intacte
+    nb_validees = (await db_session.execute(
+        _sel(func.count(Affectation.id)).where(
+            Affectation.session_id == sess.id,
+            Affectation.cours_id == c1.id,
+            Affectation.statut == AffectationStatut.VALIDEE,
+        )
+    )).scalar_one()
+    assert nb_validees == 1

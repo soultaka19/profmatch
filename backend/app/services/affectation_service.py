@@ -15,6 +15,7 @@ Flux :
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -226,7 +227,11 @@ async def generer_affectations(
 ) -> tuple[list[Affectation], list[int]]:
     """Génère et persiste le top-3 d'affectations pour chaque cours des programmes éligibles.
 
-    Supprime les propositions PROPOSEE existantes avant de regénérer.
+    Supprime les propositions PROPOSEE existantes du périmètre avant de regénérer.
+    Les décisions déjà prises persistent : un cours déjà couvert par une VALIDEE est
+    sauté et tout prof déjà décidé (VALIDEE/REJETEE) est exclu du vivier du cours —
+    ce qui respecte les rejets et évite toute collision sur l'unicité
+    (session, prof, cours).
     Retourne (affectations, programmes_exclus_ids).
     """
     poids = await _charger_ponderations(session_id, db)
@@ -257,24 +262,54 @@ async def generer_affectations(
     if not professeurs:
         return [], exclus_ids
 
-    # Supprimer les affectations PROPOSEE existantes pour cette session
-    existing = await db.execute(
-        select(Affectation).where(
-            Affectation.session_id == session_id,
-            Affectation.statut == AffectationStatut.PROPOSEE,
+    # Supprimer les PROPOSEE existantes UNIQUEMENT pour les cours du périmètre généré
+    if cours_ids:
+        existing = await db.execute(
+            select(Affectation).where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.PROPOSEE,
+                Affectation.cours_id.in_(cours_ids),
+            )
         )
-    )
-    for aff in existing.scalars().all():
-        await db.delete(aff)
-    await db.flush()
+        for aff in existing.scalars().all():
+            await db.delete(aff)
+        await db.flush()
+
+    # Décisions déjà prises (VALIDEE/REJETEE) sur le périmètre : elles persistent
+    # et la contrainte uq_affectation_session_prof_cours interdit de recréer une
+    # PROPOSEE sur le même triplet. On saute donc les cours déjà couverts par une
+    # VALIDEE et on retire du vivier tout prof déjà décidé pour un cours.
+    cours_couverts: set[int] = set()
+    profs_decides_par_cours: dict[int, set[int]] = {}
+    if cours_ids:
+        decidees = await db.execute(
+            select(
+                Affectation.cours_id,
+                Affectation.professeur_id,
+                Affectation.statut,
+            ).where(
+                Affectation.session_id == session_id,
+                Affectation.statut != AffectationStatut.PROPOSEE,
+                Affectation.cours_id.in_(cours_ids),
+            )
+        )
+        for cid, pid, statut in decidees.all():
+            profs_decides_par_cours.setdefault(cid, set()).add(pid)
+            if statut == AffectationStatut.VALIDEE:
+                cours_couverts.add(cid)
 
     nouvelles_affectations: list[Affectation] = []
 
     for cours in cours_list:
+        if cours.id in cours_couverts:
+            continue  # cours déjà couvert par une VALIDEE → pas de re-proposition
+        profs_exclus = profs_decides_par_cours.get(cours.id, set())
         competences_cours = competences_par_cours.get(cours.id, [])
         scores_par_prof: list[tuple[float, Affectation]] = []
 
         for prof in professeurs:
+            if prof.id in profs_exclus:
+                continue  # décision déjà prise pour ce (cours, prof)
             score_total, composants, justification = await _scorer_paire(
                 prof, cours, competences_cours, poids, session_id, db
             )
@@ -470,3 +505,88 @@ async def update_ponderations(
     await db.commit()
     await db.refresh(pond)
     return pond
+
+
+@dataclass
+class EtapeStatut:
+    """Statut d'affectation d'une étape pour une session donnée."""
+
+    id: int
+    programme_id: int
+    ordre: int
+    nom: str | None
+    total_cours: int
+    cours_couverts: int
+    affectation_complete: bool
+
+
+async def _nb_professeurs_traites(db: AsyncSession) -> int:
+    from app.models.cv import CV, CVStatut
+
+    result = await db.execute(
+        select(func.count(func.distinct(Professeur.id)))
+        .select_from(Professeur)
+        .join(CV, CV.professeur_id == Professeur.id)
+        .where(CV.statut == CVStatut.TRAITE)
+    )
+    return int(result.scalar_one() or 0)
+
+
+async def lister_etapes_avec_statut(
+    session_id: int,
+    programme_id: int,
+    db: AsyncSession,
+) -> list[EtapeStatut]:
+    """Statut d'affectation de chaque étape d'un programme pour une session.
+
+    Une étape est `affectation_complete` quand elle possède au moins un cours et
+    que TOUS ses cours sont couverts. Un cours est couvert s'il a au moins une
+    affectation VALIDEE pour la session, ou s'il n'existe aucun candidat éligible
+    (aucun professeur au CV traité — cas neutralisé). Une affectation REJETEE ne
+    couvre jamais un cours.
+    """
+    from app.models.etape_programme import EtapeProgramme
+
+    etapes = (await db.execute(
+        select(EtapeProgramme)
+        .where(EtapeProgramme.programme_id == programme_id)
+        .order_by(EtapeProgramme.ordre)
+    )).scalars().all()
+
+    liens = (await db.execute(
+        select(CoursEtapeProgramme.etape_id, CoursEtapeProgramme.cours_id)
+        .where(CoursEtapeProgramme.programme_id == programme_id)
+    )).all()
+    cours_par_etape: dict[int, list[int]] = {}
+    for etape_id, cours_id in liens:
+        cours_par_etape.setdefault(etape_id, []).append(cours_id)
+
+    cours_valides = {
+        row[0]
+        for row in (await db.execute(
+            select(Affectation.cours_id).where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.VALIDEE,
+            )
+        )).all()
+    }
+
+    aucun_candidat = (await _nb_professeurs_traites(db)) == 0
+
+    resultats: list[EtapeStatut] = []
+    for etape in etapes:
+        cours_ids = cours_par_etape.get(etape.id, [])
+        total = len(cours_ids)
+        couverts = sum(
+            1 for cid in cours_ids if cid in cours_valides or aucun_candidat
+        )
+        resultats.append(EtapeStatut(
+            id=etape.id,
+            programme_id=programme_id,
+            ordre=etape.ordre,
+            nom=etape.nom,
+            total_cours=total,
+            cours_couverts=couverts,
+            affectation_complete=total > 0 and couverts == total,
+        ))
+    return resultats

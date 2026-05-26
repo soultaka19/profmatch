@@ -215,3 +215,53 @@ async def test_get_professeurs_disponibles(client, db_session, auth_headers_rh):
     assert resp.status_code == 200
     body = resp.json()
     assert any(p["professeur_id"] == prof.id for p in body)
+
+
+@pytest.mark.asyncio
+async def test_list_affectations_filtre_par_etape(client, db_session, auth_headers_rh, professeur_prof):
+    from app.models.programme import Programme
+    from app.models.etape_programme import EtapeProgramme
+    from app.models.cours_etape_programme import CoursEtapeProgramme, CategorieCours
+
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    prog = Programme(code="FP-01", nom="P", semestres_admission=[Semestre.AUTOMNE])
+    db_session.add_all([sess, prog])
+    await db_session.commit()
+    await db_session.refresh(sess)
+    await db_session.refresh(prog)
+    e1 = EtapeProgramme(programme_id=prog.id, ordre=1)
+    e2 = EtapeProgramme(programme_id=prog.id, ordre=2)
+    c1 = Cours(code="FP-C1", nom="Cours E1")
+    c2 = Cours(code="FP-C2", nom="Cours E2")
+    db_session.add_all([e1, e2, c1, c2])
+    await db_session.commit()
+    for e, c in ((e1, c1), (e2, c2)):
+        await db_session.refresh(e)
+        await db_session.refresh(c)
+        db_session.add(CoursEtapeProgramme(programme_id=prog.id, etape_id=e.id,
+                                           cours_id=c.id, categorie=CategorieCours.OBLIGATOIRE))
+    for c in (c1, c2):
+        db_session.add(Affectation(
+            session_id=sess.id, professeur_id=professeur_prof.id, cours_id=c.id,
+            score_total=Decimal("0.5"), score_comp=Decimal("0.5"), score_exp=Decimal("0.5"),
+            score_hist=Decimal("0.5"), score_sem=Decimal("0.5"),
+        ))
+    await db_session.commit()
+
+    # programme entier → 2 affectations
+    resp = await client.get(
+        f"/api/affectations/?session_id={sess.id}&programme_ids={prog.id}",
+        headers=auth_headers_rh,
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()) == 2
+
+    # étape 1 seule → 1 affectation (cours E1)
+    resp2 = await client.get(
+        f"/api/affectations/?session_id={sess.id}&programme_ids={prog.id}&etape_ids={e1.id}",
+        headers=auth_headers_rh,
+    )
+    assert resp2.status_code == 200
+    body2 = resp2.json()
+    assert len(body2) == 1
+    assert body2[0]["cours_id"] == c1.id
