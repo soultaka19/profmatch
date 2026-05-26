@@ -67,6 +67,22 @@
   --fg-subtle: #8B95A1;
 }
 
+/* Theme : Violet ardoise */
+[data-theme="slateViolet"] {
+  --primary: #4A3F5C;
+  --primary-dark: #382F46;
+  --primary-soft: #EEEAF2;
+  --primary-foreground: #FFFFFF;
+
+  --surface: #F6F4F8;
+  --surface-border: #E2DCE8;
+
+  --canvas: #FBFAFC;
+
+  --fg-muted: #5D5668;
+  --fg-subtle: #8A8294;
+}
+
 body {
   background-color: var(--canvas);
   color: var(--fg);
