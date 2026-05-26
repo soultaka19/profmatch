@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   DEFAULT_THEME,
+  ROLE_THEME_MAP,
   THEME_STORAGE_KEY,
   isThemeId,
 } from "@/lib/theme/config";
@@ -11,6 +12,7 @@ import type { ThemeId } from "@/lib/theme/types";
 interface ThemeContextValue {
   theme: ThemeId;
   setTheme: (theme: ThemeId) => void;
+  setThemeForRole: (role: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -41,8 +43,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setThemeForRole = useCallback(
+    (role: string) => {
+      const themeId = ROLE_THEME_MAP[role] ?? DEFAULT_THEME;
+      setTheme(themeId);
+    },
+    [setTheme]
+  );
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, setThemeForRole }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -47,33 +47,82 @@
   --surface: #F7F3EA;
   --surface-border: #E5DCCD;
 
-  /* Off-white chaud — sert de fond pour <main> et la topbar. Les cards
-     gardent --canvas-pure (#FFFFFF) pour un léger lift visuel. */
+  /* Off-white chaud — fond pour <main> et la topbar. */
   --canvas: #FBF8F1;
 
   --fg-muted: #555F5A;
   --fg-subtle: #88918C;
+
+  /* Sidebar sombre — anthracite vert */
+  --sidebar-bg: #1F2D27;
+  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-fg: rgba(255,255,255,0.92);
+  --sidebar-fg-muted: rgba(255,255,255,0.50);
+  --sidebar-section-label: rgba(255,255,255,0.32);
+  --sidebar-item-active-bg: rgba(255,255,255,0.13);
+  --sidebar-item-hover-bg: rgba(255,255,255,0.07);
+  --sidebar-accent: #6EE7B7;
 }
 
 /* ─────────────────────────────────────────────────────────────
- * Thème : Bordeaux institutionnel
+ * Thème Prof : Bordeaux institutionnel
  * ───────────────────────────────────────────────────────────── */
 [data-theme="institutionalBurgundy"] {
-  --primary: #A01835;
-  --primary-dark: #86162D;
-  --primary-soft: #F8E9ED;
-  --primary-foreground: #FBF7F0;
+  --primary: #8B2332;
+  --primary-dark: #6E1A26;
+  --primary-soft: #F5E6E9;
+  --primary-foreground: #FFFFFF;
 
   --surface: #F8F5EF;
   --surface-border: #E7DFD2;
 
-  --canvas: #FAFAF8;
+  --canvas: #FBF7F0;
 
   --fg-muted: #5F6673;
   --fg-subtle: #8B95A1;
+
+  /* Sidebar bordeaux sombre */
+  --sidebar-bg: #3D0F17;
+  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-fg: rgba(255,255,255,0.92);
+  --sidebar-fg-muted: rgba(255,255,255,0.50);
+  --sidebar-section-label: rgba(255,255,255,0.32);
+  --sidebar-item-active-bg: rgba(255,255,255,0.13);
+  --sidebar-item-hover-bg: rgba(255,255,255,0.07);
+  --sidebar-accent: #FCA5A5;
 }
 
-/* Theme : Violet ardoise */
+/* ─────────────────────────────────────────────────────────────
+ * Thème RH : Vert sapin
+ * ───────────────────────────────────────────────────────────── */
+[data-theme="vertSapin"] {
+  --primary: #1F4D3F;
+  --primary-dark: #163A2F;
+  --primary-soft: #E3EEE9;
+  --primary-foreground: #FFFFFF;
+
+  --surface: #F3F7F5;
+  --surface-border: #D5E3DC;
+
+  --canvas: #F8FCFA;
+
+  --fg-muted: #4A5C55;
+  --fg-subtle: #7A8E88;
+
+  /* Sidebar vert sapin sombre */
+  --sidebar-bg: #0D2B22;
+  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-fg: rgba(255,255,255,0.92);
+  --sidebar-fg-muted: rgba(255,255,255,0.50);
+  --sidebar-section-label: rgba(255,255,255,0.32);
+  --sidebar-item-active-bg: rgba(255,255,255,0.13);
+  --sidebar-item-hover-bg: rgba(255,255,255,0.07);
+  --sidebar-accent: #6EE7B7;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Thème Admin : Violet ardoise
+ * ───────────────────────────────────────────────────────────── */
 [data-theme="slateViolet"] {
   --primary: #4A3F5C;
   --primary-dark: #382F46;
@@ -87,6 +136,16 @@
 
   --fg-muted: #5D5668;
   --fg-subtle: #8A8294;
+
+  /* Sidebar gris-violet sombre */
+  --sidebar-bg: #1E1728;
+  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-fg: rgba(255,255,255,0.92);
+  --sidebar-fg-muted: rgba(255,255,255,0.50);
+  --sidebar-section-label: rgba(255,255,255,0.32);
+  --sidebar-item-active-bg: rgba(255,255,255,0.13);
+  --sidebar-item-hover-bg: rgba(255,255,255,0.07);
+  --sidebar-accent: #C4B5FD;
 }
 
 body {

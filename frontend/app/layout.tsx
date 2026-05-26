@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme/config";
 
-const NO_FLASH_SCRIPT = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t!=="anthraciteIvory"&&t!=="institutionalBurgundy"&&t!=="slateViolet")t=${JSON.stringify(DEFAULT_THEME)};document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme",${JSON.stringify(DEFAULT_THEME)});}})();`;
+const NO_FLASH_SCRIPT = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});var valid=["anthraciteIvory","institutionalBurgundy","vertSapin","slateViolet"];if(!valid.includes(t))t=${JSON.stringify(DEFAULT_THEME)};document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme",${JSON.stringify(DEFAULT_THEME)});}})();`;
 
 const inter = Inter({
   subsets: ["latin"],

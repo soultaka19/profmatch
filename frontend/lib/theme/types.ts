@@ -1,4 +1,8 @@
-export type ThemeId = "anthraciteIvory" | "institutionalBurgundy" | "slateViolet";
+export type ThemeId =
+  | "anthraciteIvory"
+  | "institutionalBurgundy"
+  | "vertSapin"
+  | "slateViolet";
 
 export interface ThemeMeta {
   id: ThemeId;

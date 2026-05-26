@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { NavIcon } from "@/lib/nav/types";
 
 interface Props {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: NavIcon;
   disabled?: boolean;
   onDisabledClick?: () => void;
   onNavigate?: () => void;
@@ -25,26 +25,22 @@ export function SidebarNavItem({
   const pathname = usePathname();
   const active = !disabled && pathname === href;
 
-  const baseClasses =
-    "relative flex items-center gap-3 pl-6 pr-4 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
+  const base =
+    "relative flex items-center gap-3 mx-2 px-3 py-2 rounded-[8px] text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/40";
 
   const stateClasses = active
-    ? "bg-primary-soft text-primary font-medium before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-primary before:content-['']"
-    : "text-fg-muted hover:bg-primary-soft hover:text-fg";
+    ? "bg-sidebar-item-active text-white font-medium"
+    : "text-sidebar-fg-muted hover:bg-sidebar-item-hover hover:text-sidebar-fg";
 
   if (disabled) {
     return (
       <button
         type="button"
         onClick={onDisabledClick}
-        data-active="false"
-        className={cn(
-          baseClasses,
-          "w-full text-left text-fg hover:bg-primary-soft"
-        )}
+        className={cn(base, "w-full text-left text-sidebar-fg-muted/60 cursor-default")}
       >
-        <Icon className="h-[18px] w-[18px]" />
-        <span>{label}</span>
+        <Icon className="h-[18px] w-[18px] flex-shrink-0 opacity-50" size={18} stroke={1.6} />
+        <span className="opacity-60">{label}</span>
       </button>
     );
   }
@@ -53,10 +49,14 @@ export function SidebarNavItem({
     <Link
       href={href}
       data-active={active ? "true" : "false"}
-      className={cn(baseClasses, stateClasses)}
+      className={cn(base, stateClasses)}
       onClick={onNavigate}
     >
-      <Icon className={cn("h-[18px] w-[18px]", active ? "text-primary" : "opacity-80")} />
+      <Icon
+        className={cn("h-[18px] w-[18px] flex-shrink-0", active ? "opacity-100" : "opacity-70")}
+        size={18}
+        stroke={1.6}
+      />
       <span>{label}</span>
     </Link>
   );

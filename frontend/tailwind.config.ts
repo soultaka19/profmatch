@@ -51,6 +51,16 @@ const config: Config = {
           historique: "var(--score-historique)",
           semantique: "var(--score-semantique)",
         },
+        sidebar: {
+          DEFAULT: "var(--sidebar-bg)",
+          border: "var(--sidebar-border)",
+          fg: "var(--sidebar-fg)",
+          "fg-muted": "var(--sidebar-fg-muted)",
+          "section-label": "var(--sidebar-section-label)",
+          "item-active": "var(--sidebar-item-active-bg)",
+          "item-hover": "var(--sidebar-item-hover-bg)",
+          accent: "var(--sidebar-accent)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],

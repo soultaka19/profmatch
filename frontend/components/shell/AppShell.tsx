@@ -4,7 +4,6 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";
-import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import type { NavSection } from "@/lib/nav/types";
 
 interface Props {
@@ -38,13 +37,6 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [mobileMenuOpen]);
 
-  const actions = (
-    <div className="flex items-center gap-3">
-      {topbarActions}
-      <ThemeSwitcher />
-    </div>
-  );
-
   // `fixed inset-0` sort l'AppShell du flow du body : le body n'a plus
   // de contenu mesurable, donc aucun scroll global possible. Seul <main>
   // scrolle. Sidebar et topbar sont garantis fixes sans recours à sticky.
@@ -57,7 +49,7 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
       />
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           role="presentation"
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -65,7 +57,7 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
             role="dialog"
             aria-modal="true"
             aria-label="Navigation principale"
-            className="h-full w-[260px]"
+            className="h-full w-[240px]"
             onClick={(event) => event.stopPropagation()}
           >
             <AppSidebar
@@ -82,7 +74,7 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar
           breadcrumb={activeBreadcrumb}
-          actions={actions}
+          actions={topbarActions}
           menuOpen={mobileMenuOpen}
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
         />

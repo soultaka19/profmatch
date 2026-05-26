@@ -1,8 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { IconX } from "@tabler/icons-react";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarUserCard } from "./SidebarUserCard";
@@ -36,29 +35,31 @@ export function AppSidebar({
     <aside
       id={id}
       className={cn(
-        "flex h-full w-[260px] flex-shrink-0 flex-col border-r border-border-surface bg-surface",
+        "flex h-full w-[240px] flex-shrink-0 flex-col bg-sidebar",
         className
       )}
     >
-      <div className="flex h-[68px] flex-shrink-0 items-center border-b border-border-surface">
+      {/* En-tête marque */}
+      <div className="flex h-[64px] flex-shrink-0 items-center justify-between border-b border-sidebar-border">
         <SidebarBrand homeHref={homeHref} />
         {onClose && (
-          <Button
+          <button
             type="button"
-            size="icon"
-            variant="ghost"
-            className="mr-3 lg:hidden"
+            className="mr-3 flex h-8 w-8 items-center justify-center rounded-[6px] text-sidebar-fg-muted hover:bg-sidebar-item-hover hover:text-sidebar-fg lg:hidden"
             aria-label="Fermer le menu"
             onClick={onClose}
           >
-            <X className="h-5 w-5" />
-          </Button>
+            <IconX size={18} stroke={1.6} />
+          </button>
         )}
       </div>
-      <div className="flex flex-col gap-7 overflow-y-auto pb-6 pt-6">
+
+      {/* Navigation */}
+      <div className="flex flex-col gap-5 overflow-y-auto pb-4 pt-5">
         {navigation.map((section) => (
-          <div key={section.label} className="flex flex-col gap-1">
-            <div className="mb-2 pl-6 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
+          <div key={section.label} className="flex flex-col gap-0.5">
+            {/* Label de section en petites capitales */}
+            <div className="mb-1.5 px-5 text-[10px] font-bold uppercase tracking-[0.1em] text-sidebar-section-label">
               {section.label}
             </div>
             {section.items.map((item) => (
