@@ -126,7 +126,9 @@ describe("AffectationCard", () => {
         onReject={onReject}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: /Rejeter/i }));
+    const rejectButton = screen.getByRole("button", { name: /Rejeter/i });
+    expect(rejectButton).toHaveClass("hover:text-white");
+    fireEvent.click(rejectButton);
     expect(onReject).toHaveBeenCalledWith(1);
   });
 
