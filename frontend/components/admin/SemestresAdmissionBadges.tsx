@@ -44,7 +44,7 @@ export function SemestresAdmissionBadges({ semestres }: Props) {
             ? SEMESTRE_LABEL[s as SemestreAdmission]
             : s.charAt(0).toUpperCase() + s.slice(1);
         const colorClasses =
-          SEMESTRE_CLASSES[s] ?? "bg-bg-muted text-fg-muted border-border";
+          SEMESTRE_CLASSES[s] ?? "bg-surface text-fg-muted border-border";
         const icon = SEMESTRE_ICON[s] ?? "";
         return (
           <span

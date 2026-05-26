@@ -17,9 +17,9 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun programme.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-bg">
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
       <table className="w-full text-sm">
-        <thead className="bg-bg-muted text-xs uppercase text-fg-muted">
+        <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Code</th>
             <th className="px-4 py-2 text-left">Nom</th>
@@ -30,7 +30,7 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {programmes.map((p) => (
-            <tr key={p.id} className="hover:bg-bg-muted/40">
+            <tr key={p.id} className="hover:bg-surface/60">
               <td className="px-4 py-3 font-mono">{p.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{p.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{p.departement ?? "—"}</td>

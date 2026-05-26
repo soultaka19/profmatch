@@ -20,9 +20,9 @@ export function SessionsTable({ sessions, onDelete }: Props) {
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-bg">
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
       <table className="w-full text-sm">
-        <thead className="bg-bg-muted text-xs uppercase text-fg-muted">
+        <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Session</th>
             <th className="px-4 py-2 text-left">Année</th>
@@ -32,7 +32,7 @@ export function SessionsTable({ sessions, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {sessions.map((s) => (
-            <tr key={s.id} className="hover:bg-bg-muted/40">
+            <tr key={s.id} className="hover:bg-surface/60">
               <td className="px-4 py-3 font-medium text-fg">{s.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{s.annee}</td>
               <td className="px-4 py-3">

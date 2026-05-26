@@ -33,7 +33,7 @@ export function ActivationLinkPanel({ url, email }: Props) {
         Transmettez-le à l&apos;utilisateur par un canal sécurisé — il n&apos;apparaîtra plus dans l&apos;interface.
       </p>
       <div className="flex items-center gap-2">
-        <code className="flex-1 truncate rounded border border-border bg-bg px-3 py-2 text-xs">
+        <code className="flex-1 truncate rounded border border-border bg-canvas-pure px-3 py-2 text-xs">
           {url}
         </code>
         <Button size="sm" variant={copied ? "default" : "outline"} onClick={handleCopy}>

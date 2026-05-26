@@ -46,7 +46,7 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
 
   if (isLoading || !data) {
     return (
-      <div className="rounded-lg border border-border bg-bg p-4">
+      <div className="rounded-lg border border-border bg-canvas-pure p-4">
         <p className="text-sm text-fg-muted">Chargement du calendrier…</p>
       </div>
     );
@@ -57,8 +57,8 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
     : "Standard (2 sessions actives / année)";
 
   return (
-    <div className="rounded-lg border border-border bg-bg overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-bg-muted/40 px-4 py-3">
+    <div className="rounded-lg border border-border bg-canvas-pure overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-fg-muted" />
           <h3 className="font-semibold text-fg">Année académique</h3>
@@ -95,7 +95,7 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
                   "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium " +
                   (isActive
                     ? meta.classes
-                    : "border-border bg-bg-muted text-fg-muted")
+                    : "border-border bg-surface text-fg-muted")
                 }
               >
                 {isActive ? "✓ Actif" : "🌴 Vacances"}
@@ -105,7 +105,7 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
         })}
       </div>
 
-      <div className="border-t border-border bg-bg-muted/30 px-4 py-2 text-xs text-fg-muted">
+      <div className="border-t border-border bg-surface/40 px-4 py-2 text-xs text-fg-muted">
         {data.etapes_total > 0 ? (
           <>
             <strong className="text-fg">{data.etapes_total}</strong> étape

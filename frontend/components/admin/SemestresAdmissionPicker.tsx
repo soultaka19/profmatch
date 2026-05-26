@@ -51,7 +51,7 @@ export function SemestresAdmissionPicker({ value, onChange, disabled }: Props) {
               "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors " +
               (checked
                 ? ACTIVE_CLASSES[s]
-                : "border-border bg-bg text-fg-muted hover:bg-bg-muted") +
+                : "border-border bg-canvas-pure text-fg-muted hover:bg-surface") +
               (disabled ? " opacity-50 cursor-not-allowed" : " cursor-pointer")
             }
           >
