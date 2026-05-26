@@ -45,6 +45,12 @@ const config: Config = {
           bg: "var(--warning-bg)",
         },
         info: "var(--info)",
+        score: {
+          competences: "var(--score-competences)",
+          experience: "var(--score-experience)",
+          historique: "var(--score-historique)",
+          semantique: "var(--score-semantique)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],

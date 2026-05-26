@@ -17,28 +17,53 @@ describe("ThemeSwitcher", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 
-  it("affiche le label du thème courant", () => {
+  it("affiche le label du theme courant", () => {
     setup();
     expect(screen.getByRole("button", { name: /Anthracite ivoire/i })).toBeInTheDocument();
   });
 
-  it("ouvre le menu au click et liste les deux thèmes", () => {
+  it("ouvre le panneau Apparence et liste trois themes visuels", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
 
     const menu = screen.getByRole("menu");
     expect(menu).toBeInTheDocument();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(2);
-    expect(screen.getByRole("menuitem", { name: /Anthracite ivoire/i })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /Bordeaux institutionnel/i })).toBeInTheDocument();
+    expect(screen.getByText("Apparence")).toBeInTheDocument();
+    expect(screen.getByText(/Th.me visuel/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("menuitemradio")).toHaveLength(3);
+    expect(screen.getByRole("menuitemradio", { name: /Anthracite ivoire/i })).toBeChecked();
+    expect(screen.getByRole("menuitemradio", { name: /Bordeaux institutionnel/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: /Violet ardoise/i })).toBeInTheDocument();
   });
 
-  it("change de thème quand on click sur une option", () => {
+  it("change de theme quand on selectionne une option", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
-    fireEvent.click(screen.getByRole("menuitem", { name: /Bordeaux institutionnel/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Bordeaux institutionnel/i }));
 
     expect(document.documentElement.getAttribute("data-theme")).toBe("institutionalBurgundy");
     expect(screen.getByRole("button", { name: /Bordeaux institutionnel/i })).toBeInTheDocument();
+  });
+
+  it("selectionne Violet ardoise depuis son apercu visuel", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
+
+    const violetOption = screen.getByRole("menuitemradio", { name: /Violet ardoise/i });
+    expect(violetOption.querySelector("[data-theme-swatch]")).toBeInTheDocument();
+    fireEvent.click(violetOption);
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("slateViolet");
+    expect(screen.getByRole("button", { name: /Violet ardoise/i })).toBeInTheDocument();
+  });
+
+  it("ferme le panneau avec Escape", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 });

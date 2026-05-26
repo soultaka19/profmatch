@@ -19,15 +19,15 @@ export function ProgrammesEligiblesPanel({ sessionId }: Props) {
 
   if (isLoading || !data) {
     return (
-      <div className="rounded-lg border border-border bg-bg p-4">
+      <div className="rounded-lg border border-border bg-canvas-pure p-4">
         <p className="text-sm text-fg-muted">Chargement…</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border bg-bg overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-bg-muted/40 px-4 py-3">
+    <div className="rounded-lg border border-border bg-canvas-pure overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 text-fg-muted" />
           <h3 className="font-semibold text-fg">Programmes éligibles</h3>

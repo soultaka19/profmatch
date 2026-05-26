@@ -9,6 +9,7 @@ function Consumer() {
     <div>
       <span data-testid="current">{theme}</span>
       <button onClick={() => setTheme("institutionalBurgundy")}>switch</button>
+      <button onClick={() => setTheme("slateViolet")}>switch violet</button>
     </div>
   );
 }
@@ -43,6 +44,19 @@ describe("ThemeProvider", () => {
     expect(document.documentElement.getAttribute("data-theme")).toBe("institutionalBurgundy");
   });
 
+  it("hydrate slateViolet depuis localStorage", () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, "slateViolet");
+
+    render(
+      <ThemeProvider>
+        <Consumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId("current")).toHaveTextContent("slateViolet");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("slateViolet");
+  });
+
   it("persiste le thème dans localStorage et met à jour data-theme", () => {
     render(
       <ThemeProvider>
@@ -56,6 +70,21 @@ describe("ThemeProvider", () => {
 
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("institutionalBurgundy");
     expect(document.documentElement.getAttribute("data-theme")).toBe("institutionalBurgundy");
+  });
+
+  it("persiste slateViolet dans localStorage et data-theme", () => {
+    render(
+      <ThemeProvider>
+        <Consumer />
+      </ThemeProvider>
+    );
+
+    act(() => {
+      screen.getByText("switch violet").click();
+    });
+
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("slateViolet");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("slateViolet");
   });
 
   it("ignore une valeur invalide dans localStorage et retombe sur le défaut", () => {

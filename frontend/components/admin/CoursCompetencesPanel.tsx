@@ -57,9 +57,9 @@ export function CoursCompetencesPanel({ coursId }: Props) {
           Aucune compétence définie pour ce cours.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-bg">
+        <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
           <table className="w-full text-sm">
-            <thead className="bg-bg-muted text-xs uppercase text-fg-muted">
+            <thead className="bg-surface text-xs uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-2 text-left">Compétence</th>
                 <th className="px-4 py-2 text-left">Importance</th>

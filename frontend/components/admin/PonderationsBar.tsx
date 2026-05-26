@@ -16,7 +16,7 @@ export function PonderationsBar({ w1, w2, w3, w4 }: Props) {
   const values: Record<"w1" | "w2" | "w3" | "w4", number> = { w1, w2, w3, w4 };
   return (
     <div className="space-y-1">
-      <div className="flex h-2 w-40 overflow-hidden rounded-full bg-bg-muted">
+      <div className="flex h-2 w-40 overflow-hidden rounded-full bg-surface">
         {SEGMENTS.map((s) => (
           <div
             key={s.key}

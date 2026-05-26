@@ -37,7 +37,7 @@ export function EtapeAccordion({
         <AccordionItem
           key={e.id}
           value={`etape-${e.id}`}
-          className="rounded-lg border border-border bg-bg px-4"
+          className="rounded-lg border border-border bg-canvas-pure px-4"
         >
           <AccordionTrigger className="hover:no-underline">
             <div className="flex w-full items-center justify-between pr-4">

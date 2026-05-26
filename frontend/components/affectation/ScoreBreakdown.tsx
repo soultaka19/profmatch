@@ -21,10 +21,10 @@ interface ScoreBreakdownProps {
 }
 
 const SEGMENTS = [
-  { key: "comp" as keyof Scores, pKey: "w1" as keyof Poids, className: "bg-blue-500", label: "Compétences" },
-  { key: "exp" as keyof Scores, pKey: "w2" as keyof Poids, className: "bg-green-500", label: "Expérience" },
-  { key: "hist" as keyof Scores, pKey: "w3" as keyof Poids, className: "bg-orange-500", label: "Historique" },
-  { key: "sem" as keyof Scores, pKey: "w4" as keyof Poids, className: "bg-purple-500", label: "Sémantique" },
+  { key: "comp" as keyof Scores, pKey: "w1" as keyof Poids, className: "bg-score-competences", label: "Compétences" },
+  { key: "exp" as keyof Scores, pKey: "w2" as keyof Poids, className: "bg-score-experience", label: "Expérience" },
+  { key: "hist" as keyof Scores, pKey: "w3" as keyof Poids, className: "bg-score-historique", label: "Historique" },
+  { key: "sem" as keyof Scores, pKey: "w4" as keyof Poids, className: "bg-score-semantique", label: "Sémantique" },
 ];
 
 function recommendation(total: number): {
@@ -47,9 +47,8 @@ export function ScoreBreakdown({ scores, poids, total }: ScoreBreakdownProps) {
         <Badge variant={reco.variant}>{reco.label}</Badge>
       </div>
 
-      {/* Barre 4 segments */}
       <div
-        className="flex h-2 w-full overflow-hidden rounded-full bg-secondary"
+        className="flex h-2 w-full overflow-hidden rounded-full bg-surface"
         aria-label={`Score total ${pct}%`}
       >
         {SEGMENTS.map(({ key, pKey, className, label }) => {
@@ -65,7 +64,6 @@ export function ScoreBreakdown({ scores, poids, total }: ScoreBreakdownProps) {
         })}
       </div>
 
-      {/* Légende */}
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {SEGMENTS.map(({ key, className, label }) => (
           <span key={key} className="flex items-center gap-1 text-xs text-fg-muted">

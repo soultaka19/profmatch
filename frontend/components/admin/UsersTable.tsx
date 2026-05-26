@@ -30,9 +30,9 @@ export function UsersTable({
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun utilisateur.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-bg">
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
       <table className="w-full text-sm">
-        <thead className="bg-bg-muted text-xs uppercase text-fg-muted">
+        <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Nom</th>
             <th className="px-4 py-2 text-left">Email</th>
@@ -43,7 +43,7 @@ export function UsersTable({
         </thead>
         <tbody className="divide-y divide-border">
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-bg-muted/40">
+            <tr key={u.id} className="hover:bg-surface/60">
               <td className="px-4 py-3 font-medium text-fg">{u.nom_complet}</td>
               <td className="px-4 py-3 text-fg-muted">{u.email}</td>
               <td className="px-4 py-3">{ROLE_LABEL[u.role] ?? u.role}</td>

@@ -34,7 +34,7 @@ export function SessionStatusSwitcher({ session, onUpdated }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="inline-flex rounded-md border border-border bg-bg p-1 shadow-sm">
+      <div className="inline-flex rounded-md border border-border bg-canvas-pure p-1 shadow-sm">
         {STATUTS.map((s) => {
           const active = s === session.statut;
           return (
@@ -47,7 +47,7 @@ export function SessionStatusSwitcher({ session, onUpdated }: Props) {
                 "inline-flex items-center gap-1 rounded px-3 py-1 text-xs font-medium transition " +
                 (active
                   ? STATUT_CLASSES[s] + " border"
-                  : "text-fg-muted hover:bg-bg-muted")
+                  : "text-fg-muted hover:bg-surface")
               }
             >
               {submitting === s && <Loader2 className="h-3 w-3 animate-spin" />}

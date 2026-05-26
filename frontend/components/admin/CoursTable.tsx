@@ -16,9 +16,9 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun cours.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-bg">
+    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
       <table className="w-full text-sm">
-        <thead className="bg-bg-muted text-xs uppercase text-fg-muted">
+        <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Code</th>
             <th className="px-4 py-2 text-left">Nom</th>
@@ -29,7 +29,7 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {cours.map((c) => (
-            <tr key={c.id} className="hover:bg-bg-muted/40">
+            <tr key={c.id} className="hover:bg-surface/60">
               <td className="px-4 py-3 font-mono">{c.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{c.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{c.credits ?? "—"}</td>

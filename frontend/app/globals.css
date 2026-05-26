@@ -21,6 +21,12 @@
   --warning-bg: #FEF3C7;
   --info: #3B82F6;
 
+  /* Scores d'affectation : dimensions analytiques stables entre themes */
+  --score-competences: #2563EB;
+  --score-experience: #059669;
+  --score-historique: #D97706;
+  --score-semantique: #7C3AED;
+
   /* Texte primaire et bordures neutres */
   --fg: #111827;
   --border: #E5E7EB;
@@ -65,6 +71,22 @@
 
   --fg-muted: #5F6673;
   --fg-subtle: #8B95A1;
+}
+
+/* Theme : Violet ardoise */
+[data-theme="slateViolet"] {
+  --primary: #4A3F5C;
+  --primary-dark: #382F46;
+  --primary-soft: #EEEAF2;
+  --primary-foreground: #FFFFFF;
+
+  --surface: #F6F4F8;
+  --surface-border: #E2DCE8;
+
+  --canvas: #FBFAFC;
+
+  --fg-muted: #5D5668;
+  --fg-subtle: #8A8294;
 }
 
 body {

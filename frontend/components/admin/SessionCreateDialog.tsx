@@ -95,7 +95,7 @@ export function SessionCreateDialog({ onCreated }: Props) {
             <Label htmlFor="semestre">Semestre</Label>
             <select
               id="semestre"
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-canvas-pure px-3 py-2 text-sm"
               value={semestre}
               onChange={(e) => setSemestre(e.target.value as Semestre)}
             >
@@ -110,7 +110,7 @@ export function SessionCreateDialog({ onCreated }: Props) {
             <Label htmlFor="statut">Statut initial</Label>
             <select
               id="statut"
-              className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-canvas-pure px-3 py-2 text-sm"
               value={statut}
               onChange={(e) => setStatut(e.target.value as SessionStatut)}
             >
