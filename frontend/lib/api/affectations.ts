@@ -3,6 +3,7 @@ import type {
   AffectationOut,
   AffectationStatut,
   EtapeProgramme,
+  EtapeStatut,
   GenerationResponse,
   GenerationStatus,
   PonderationsOut,
@@ -30,6 +31,14 @@ export const sessionsApi = {
   programmesEligibles: (sessionId: number): Promise<Programme[]> =>
     apiClient.get<Programme[]>(
       `/api/sessions/${sessionId}/programmes-eligibles`
+    ),
+
+  etapesStatut: (
+    sessionId: number,
+    programmeId: number
+  ): Promise<EtapeStatut[]> =>
+    apiClient.get<EtapeStatut[]>(
+      `/api/sessions/${sessionId}/programmes/${programmeId}/etapes-statut`
     ),
 };
 
@@ -62,10 +71,13 @@ export const affectationsApi = {
 
   list: (
     sessionId: number,
-    statut?: AffectationStatut
+    statut?: AffectationStatut,
+    opts?: { programmeIds?: number[]; etapeIds?: number[] }
   ): Promise<AffectationOut[]> => {
     const params = new URLSearchParams({ session_id: String(sessionId) });
     if (statut) params.set("statut", statut);
+    for (const pid of opts?.programmeIds ?? []) params.append("programme_ids", String(pid));
+    for (const eid of opts?.etapeIds ?? []) params.append("etape_ids", String(eid));
     return apiClient.get<AffectationOut[]>(`/api/affectations/?${params}`);
   },
 
