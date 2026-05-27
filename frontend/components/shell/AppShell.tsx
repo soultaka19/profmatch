@@ -37,6 +37,23 @@ export function AppShell({
 }: Props) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("sidebar-collapsed") === "1") setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+      } catch {
+        // localStorage indisponible (mode privé) : on garde l'état en mémoire.
+      }
+      return next;
+    });
+  };
 
   const activeBreadcrumb = useMemo(() => {
     for (const section of navigation) {
@@ -50,6 +67,9 @@ export function AppShell({
   const resolvedWidth =
     contentWidth ??
     (pathname.includes("/affectations") || pathname.includes("/historique") ? "wide" : "standard");
+  // Largeur partagée topbar + contenu : alignement des bords sur tous les écrans.
+  // Repliée → pas de plafond (le contenu s'étire pour remplir l'espace libéré).
+  const contentMaxWidth = collapsed ? "max-w-none" : WIDTH_CLASSES[resolvedWidth];
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -67,15 +87,18 @@ export function AppShell({
     </div>
   );
 
-  // `fixed inset-0` sort l'AppShell du flow du body : le body n'a plus
-  // de contenu mesurable, donc aucun scroll global possible. Seul <main>
-  // scrolle. Sidebar et topbar sont garantis fixes sans recours à sticky.
+  // `fixed inset-0` sort l'AppShell du flow du body (aucun scroll global).
+  // La topbar vit DANS le conteneur scrollable (<main>) en `sticky top-0` :
+  // ainsi topbar et contenu partagent la même largeur (gouttière de scrollbar
+  // comprise) et restent alignés, scrollbar présente ou non.
   return (
     <div className="fixed inset-0 flex bg-canvas">
       <AppSidebar
         navigation={navigation}
         homeHref={homeHref}
         className="hidden lg:flex"
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapsed}
       />
       {mobileMenuOpen && (
         <div
@@ -101,20 +124,19 @@ export function AppShell({
           </div>
         </div>
       )}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-canvas [scrollbar-gutter:stable]">
         <AppTopbar
           breadcrumb={activeBreadcrumb}
           subtitle={sectionLabel}
           actions={actions}
           menuOpen={mobileMenuOpen}
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
+          maxWidthClass={contentMaxWidth}
         />
-        <main className="flex-1 overflow-y-auto bg-canvas">
-          <div className={cn("mx-auto px-4 py-8 sm:px-6 lg:px-10 lg:py-12", WIDTH_CLASSES[resolvedWidth])}>
-            {children}
-          </div>
-        </main>
-      </div>
+        <div className={cn("mx-auto p-6 sm:p-8 lg:p-16 lg:pt-12", contentMaxWidth)}>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

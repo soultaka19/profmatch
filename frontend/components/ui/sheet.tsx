@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
-import { X } from "lucide-react";
+import { Maximize2, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Sheet = SheetPrimitive.Root;
@@ -32,9 +32,9 @@ const sheetVariants = cva(
     variants: {
       side: {
         right:
-          "inset-y-0 right-0 h-full w-full border-l border-border data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl",
+          "inset-y-0 right-0 h-full w-full border-l border-border data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-3xl",
         left:
-          "inset-y-0 left-0 h-full w-full border-r border-border data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-xl",
+          "inset-y-0 left-0 h-full w-full border-r border-border data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-3xl",
       },
     },
     defaultVariants: { side: "right" },
@@ -43,27 +43,49 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  /** Affiche un bouton pour élargir le panneau (défaut : true). */
+  expandable?: boolean;
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-60 ring-offset-canvas-pure transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary-ring disabled:pointer-events-none">
-        <X className="h-4 w-4 text-fg-muted" />
-        <span className="sr-only">Fermer</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-));
+>(({ side = "right", className, children, expandable = true, ...props }, ref) => {
+  // État local réinitialisé à chaque ouverture (Radix démonte le contenu à la fermeture).
+  const [expanded, setExpanded] = React.useState(false);
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), expanded && "sm:max-w-[min(1100px,92vw)]", className)}
+        {...props}
+      >
+        {children}
+        {expandable && (
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-label={expanded ? "Réduire le panneau" : "Agrandir le panneau"}
+            aria-pressed={expanded}
+            className="absolute right-12 top-4 rounded-sm opacity-60 ring-offset-canvas-pure transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary-ring"
+          >
+            {expanded ? (
+              <Minimize2 className="h-4 w-4 text-fg-muted" />
+            ) : (
+              <Maximize2 className="h-4 w-4 text-fg-muted" />
+            )}
+          </button>
+        )}
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-60 ring-offset-canvas-pure transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary-ring disabled:pointer-events-none">
+          <X className="h-4 w-4 text-fg-muted" />
+          <span className="sr-only">Fermer</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+});
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

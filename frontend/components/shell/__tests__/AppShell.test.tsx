@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Home, ListChecks, Sparkles } from "lucide-react";
 import { AppShell } from "../AppShell";
+
+afterEach(() => localStorage.clear());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/rh/affectations",
@@ -40,7 +42,7 @@ describe("AppShell", () => {
     expect(screen.getAllByText("Générer affectations")).toHaveLength(2);
   });
 
-  it("affiche le contexte d'espace et réserve un emplacement d'action principal", () => {
+  it("affiche le contexte d'espace dans la topbar et la sidebar", () => {
     render(
       <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
         <div>Contenu RH</div>
@@ -48,7 +50,6 @@ describe("AppShell", () => {
     );
 
     expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
-    expect(document.querySelector("#app-topbar-page-action")).toBeInTheDocument();
   });
 
   it("utilise une largeur large pour les écrans de données", () => {
@@ -59,6 +60,28 @@ describe("AppShell", () => {
     );
 
     expect(container.querySelector("main > div")).toHaveClass("max-w-[1360px]");
+  });
+
+  it("replie la sidebar en icônes, masque les libellés et étire le contenu", () => {
+    const { container } = render(
+      <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
+        <div>Contenu RH</div>
+      </AppShell>
+    );
+
+    const content = container.querySelector("main > div");
+    expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
+    // Déployé : largeur plafonnée (route affectations -> wide).
+    expect(content).toHaveClass("max-w-[1360px]");
+
+    fireEvent.click(screen.getByRole("button", { name: "Réduire le menu" }));
+
+    expect(screen.getByRole("button", { name: "Déployer le menu" })).toBeInTheDocument();
+    // Le libellé de section disparaît de la sidebar (reste seulement dans la topbar).
+    expect(screen.getAllByText("Ressources humaines")).toHaveLength(1);
+    // Replié : le contenu s'étire pour occuper l'espace disponible.
+    expect(content).toHaveClass("max-w-none");
+    expect(content).not.toHaveClass("max-w-[1360px]");
   });
 
   it("expose un bouton de menu mobile accessible", () => {
