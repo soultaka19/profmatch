@@ -22,7 +22,7 @@ describe("ThemeSwitcher", () => {
     expect(screen.getByRole("button", { name: /Anthracite ivoire/i })).toBeInTheDocument();
   });
 
-  it("ouvre le panneau Apparence et liste trois themes visuels", () => {
+  it("ouvre le panneau Apparence et liste quatre themes visuels", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
 
@@ -30,19 +30,20 @@ describe("ThemeSwitcher", () => {
     expect(menu).toBeInTheDocument();
     expect(screen.getByText("Apparence")).toBeInTheDocument();
     expect(screen.getByText(/Th.me visuel/i)).toBeInTheDocument();
-    expect(screen.getAllByRole("menuitemradio")).toHaveLength(3);
+    expect(screen.getAllByRole("menuitemradio")).toHaveLength(4);
     expect(screen.getByRole("menuitemradio", { name: /Anthracite ivoire/i })).toBeChecked();
-    expect(screen.getByRole("menuitemradio", { name: /Bordeaux institutionnel/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: /Bordeaux/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: /Vert sapin/i })).toBeInTheDocument();
     expect(screen.getByRole("menuitemradio", { name: /Violet ardoise/i })).toBeInTheDocument();
   });
 
   it("change de theme quand on selectionne une option", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /Bordeaux institutionnel/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Bordeaux/i }));
 
     expect(document.documentElement.getAttribute("data-theme")).toBe("institutionalBurgundy");
-    expect(screen.getByRole("button", { name: /Bordeaux institutionnel/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bordeaux/i })).toBeInTheDocument();
   });
 
   it("selectionne Violet ardoise depuis son apercu visuel", () => {

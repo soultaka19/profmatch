@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { Home, ListChecks, Sparkles } from "lucide-react";
+import { IconHome, IconClipboardList, IconWand } from "@tabler/icons-react";
 import { AppShell } from "../AppShell";
 
 vi.mock("next/navigation", () => ({
@@ -14,17 +14,18 @@ vi.mock("@/components/auth/AuthProvider", () => ({
   }),
 }));
 
-vi.mock("@/components/theme/ThemeSwitcher", () => ({
-  ThemeSwitcher: () => <button type="button">Thème</button>,
+vi.mock("@/components/theme/ThemeProvider", () => ({
+  useTheme: () => ({ theme: "vertSapin", setTheme: vi.fn(), setThemeForRole: vi.fn() }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const rhNavigation = [
   {
-    label: "Ressources humaines",
+    label: "Affectations",
     items: [
-      { href: "/dashboard/rh", label: "Tableau de bord", icon: Home },
-      { href: "/dashboard/rh/affectations", label: "Générer affectations", icon: Sparkles },
-      { href: "/dashboard/rh/historique", label: "Historique", icon: ListChecks },
+      { href: "/dashboard/rh", label: "Tableau de bord", icon: IconHome },
+      { href: "/dashboard/rh/affectations", label: "Générer affectations", icon: IconWand },
+      { href: "/dashboard/rh/historique", label: "Historique", icon: IconClipboardList },
     ],
   },
 ];

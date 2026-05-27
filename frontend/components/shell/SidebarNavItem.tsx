@@ -39,7 +39,7 @@ export function SidebarNavItem({
         onClick={onDisabledClick}
         className={cn(base, "w-full text-left text-sidebar-fg-muted/60 cursor-default")}
       >
-        <Icon className="h-[18px] w-[18px] flex-shrink-0 opacity-50" size={18} stroke={1.6} />
+        <Icon className="h-[18px] w-[18px] flex-shrink-0 opacity-50" size={18} />
         <span className="opacity-60">{label}</span>
       </button>
     );
@@ -55,7 +55,6 @@ export function SidebarNavItem({
       <Icon
         className={cn("h-[18px] w-[18px] flex-shrink-0", active ? "opacity-100" : "opacity-70")}
         size={18}
-        stroke={1.6}
       />
       <span>{label}</span>
     </Link>

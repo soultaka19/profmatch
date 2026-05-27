@@ -1,38 +1,37 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { FileText } from "lucide-react";
+import { IconFileText } from "@tabler/icons-react";
 import { AppSidebar } from "../AppSidebar";
-import { AuthProvider } from "@/components/auth/AuthProvider";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/prof" }));
 
-vi.mock("@/lib/api/auth", () => ({
-  authApi: {
-    me: vi.fn().mockResolvedValue({ id: 1, email: "p@x.com", nom_complet: "Jean", role: "prof" }),
-  },
+// Mock AuthProvider — évite l'accès à localStorage dans le test
+vi.mock("@/components/auth/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "p@x.com", nom_complet: "Jean Dupont", role: "prof" },
+    logout: vi.fn(),
+    login: vi.fn(),
+    isLoading: false,
+  }),
 }));
 
 describe("AppSidebar", () => {
   it("rend le brand + tous les items de toutes les sections", () => {
     const nav = [
       {
-        label: "Espace prof",
+        label: "Mon espace",
         items: [
-          { href: "/dashboard/prof", label: "Mon CV", icon: FileText },
-          { href: "/dashboard/prof/affectations", label: "Mes affectations", icon: FileText, disabled: true },
+          { href: "/dashboard/prof", label: "Mon CV", icon: IconFileText },
+          { href: "/dashboard/prof/affectations", label: "Mes affectations", icon: IconFileText, disabled: true },
         ],
       },
     ];
 
-    render(
-      <AuthProvider>
-        <AppSidebar navigation={nav} />
-      </AuthProvider>
-    );
+    render(<AppSidebar navigation={nav} />);
 
     expect(screen.getByText("ProfMatch")).toBeInTheDocument();
     expect(screen.getByText("Collège La Cité")).toBeInTheDocument();
-    expect(screen.getByText("Espace prof")).toBeInTheDocument();
+    expect(screen.getByText("Mon espace")).toBeInTheDocument();
     expect(screen.getByText("Mon CV")).toBeInTheDocument();
     expect(screen.getByText("Mes affectations")).toBeInTheDocument();
   });
