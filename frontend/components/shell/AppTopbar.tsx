@@ -20,7 +20,7 @@ export function AppTopbar({
   onMenuClick,
 }: Props) {
   return (
-    <div className="flex h-[68px] flex-shrink-0 items-center gap-3 border-b border-border bg-canvas px-4 sm:px-6 lg:gap-6 lg:px-10">
+    <div className="flex h-[68px] flex-shrink-0 items-center gap-3 border-b border-border bg-canvas px-5 sm:px-8 lg:gap-6 lg:px-12">
       {onMenuClick && (
         <Button
           type="button"
