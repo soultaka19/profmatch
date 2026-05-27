@@ -42,7 +42,7 @@ describe("AppShell", () => {
     expect(screen.getAllByText("Générer affectations")).toHaveLength(2);
   });
 
-  it("affiche le contexte d'espace et réserve un emplacement d'action principal", () => {
+  it("affiche le contexte d'espace dans la topbar et la sidebar", () => {
     render(
       <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
         <div>Contenu RH</div>
@@ -50,7 +50,6 @@ describe("AppShell", () => {
     );
 
     expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
-    expect(document.querySelector("#app-topbar-page-action")).toBeInTheDocument();
   });
 
   it("utilise une largeur large pour les écrans de données", () => {

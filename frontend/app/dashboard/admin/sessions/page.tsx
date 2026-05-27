@@ -7,7 +7,6 @@ import type { Session } from "@/lib/types/api";
 import { SessionsTable } from "@/components/admin/SessionsTable";
 import { SessionCreateDialog } from "@/components/admin/SessionCreateDialog";
 import { SessionDeleteDialog } from "@/components/admin/SessionDeleteDialog";
-import { TopbarAction } from "@/components/shell";
 import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 export default function Page() {
@@ -19,10 +18,7 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <TopbarAction>
-        <SessionCreateDialog onCreated={() => mutate()} />
-      </TopbarAction>
-      <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-fg">Sessions académiques</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -30,6 +26,7 @@ export default function Page() {
             sont configurées au niveau de chaque session.
           </p>
         </div>
+        <SessionCreateDialog onCreated={() => mutate()} />
       </div>
 
       <AdminTableToolbar countLabel={`${sessions?.length ?? 0} session${sessions?.length === 1 ? "" : "s"}`} />

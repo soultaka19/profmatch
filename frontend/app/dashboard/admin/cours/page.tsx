@@ -10,7 +10,6 @@ import { CoursCreateDialog } from "@/components/admin/CoursCreateDialog";
 import { CoursEditDialog } from "@/components/admin/CoursEditDialog";
 import { CoursDeleteDialog } from "@/components/admin/CoursDeleteDialog";
 import { Input } from "@/components/ui/input";
-import { TopbarAction } from "@/components/shell";
 import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 export default function Page() {
@@ -30,10 +29,7 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <TopbarAction>
-        <CoursCreateDialog onCreated={() => mutate()} />
-      </TopbarAction>
-      <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-fg">Cours</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -41,6 +37,7 @@ export default function Page() {
             d&apos;un programme depuis la page Programmes.
           </p>
         </div>
+        <CoursCreateDialog onCreated={() => mutate()} />
       </div>
 
       <AdminTableToolbar countLabel={`${cours?.length ?? 0} cours`}>

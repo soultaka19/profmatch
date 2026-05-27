@@ -54,7 +54,6 @@ export function AppTopbar({
           <div className="text-base font-semibold text-fg">{breadcrumb}</div>
         </div>
         <div className="flex-1" />
-        <div id="app-topbar-page-action" className="flex items-center gap-2 sm:gap-3 empty:hidden" />
         {actions}
       </div>
     </header>
