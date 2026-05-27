@@ -14,7 +14,6 @@ from app.models.ponderations_session import PonderationsSession
 from app.models.programme import Programme
 from app.models.session import Semestre, Session, SessionStatut
 from app.services.affectation_service import (
-    _bonus_historique,
     _charger_cours_par_programmes,
     _score_comp_pondere,
     _scorer_paire,
@@ -356,8 +355,9 @@ async def test_scorer_paire_competence_totale(db_session: AsyncSession, professe
     )).scalars().all()
 
     poids = PoidsScoring(w1=Decimal("1"), w2=Decimal("0"), w3=Decimal("0"), w4=Decimal("0"))
-    score_total, composants, ctx = await _scorer_paire(
-        prof, cours, list(ccs), poids, 999, db_session
+    # _scorer_paire est désormais pur (sync) ; bonus W3 fourni via un map préchargé.
+    score_total, composants, ctx = _scorer_paire(
+        prof, cours, list(ccs), poids, {}
     )
     assert float(composants.score_comp) == pytest.approx(1.0, abs=0.001)
     assert float(score_total) == pytest.approx(1.0, abs=0.001)
@@ -998,3 +998,41 @@ async def test_generer_justification_reflete_historique_reel(db_session):
     )
     assert "1 session(s) précédente(s)" in aff.justification
     assert "4.0 sur 5" in aff.justification
+
+
+# ── _charger_bonus_historique : préagrégation W3 (anti N+1) ───────────────────
+
+
+@pytest.mark.asyncio
+async def test_charger_bonus_historique_agrege(db_session):
+    """Une seule requête agrège l'historique de toutes les paires (prof, cours)
+    hors session courante : {(prof, cours): (bonus, nb_sessions, note_moy)}."""
+    from app.services.affectation_service import _charger_bonus_historique
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.affectation_feedback import AffectationFeedback
+
+    prof = await _make_prof_traite(db_session, "agg@test.ca", "Aggreg", ["Python"])
+    cours = await _make_cours_int(db_session, "AGG-C")
+    s1 = await _make_session_int(db_session, Semestre.HIVER)
+    s2 = await _make_session_int(db_session, Semestre.PRINTEMPS)
+    s_courante = await _make_session_int(db_session, Semestre.AUTOMNE)
+    await db_session.flush()
+    for s, note in ((s1, 4), (s2, 5)):
+        aff = Affectation(
+            session_id=s.id, professeur_id=prof.id, cours_id=cours.id,
+            score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
+            score_hist=Decimal("0.8"), score_sem=Decimal("0.8"),
+            statut=AffectationStatut.VALIDEE,
+        )
+        db_session.add(aff)
+        await db_session.flush()
+        db_session.add(AffectationFeedback(affectation_id=aff.id, note=note))
+    await db_session.commit()
+
+    bonus_map = await _charger_bonus_historique(s_courante.id, db_session)
+
+    assert (prof.id, cours.id) in bonus_map
+    bonus, nb, note_moy = bonus_map[(prof.id, cours.id)]
+    assert nb == 2
+    assert note_moy == pytest.approx(4.5)
+    assert bonus == pytest.approx(0.9)  # note_moy / 5

@@ -119,39 +119,38 @@ async def _charger_professeurs_traites(db: AsyncSession) -> list[Professeur]:
     return list(result.scalars().all())
 
 
-async def _bonus_historique(
-    prof_id: int,
-    cours_id: int,
-    session_id: int,
-    db: AsyncSession,
-) -> tuple[float, int, float]:
-    """Bonus W3 historique pour un couple (prof, cours).
+async def _charger_bonus_historique(
+    session_id: int, db: AsyncSession
+) -> dict[tuple[int, int], tuple[float, int, float]]:
+    """Précharge en UNE requête le bonus W3 de toutes les paires (prof, cours)
+    ayant un historique validé et noté hors de la session courante.
 
-    Retourne (bonus_normalisé [0,1], nb_sessions_précédentes, note_RH_moyenne).
-    Les deux dernières valeurs alimentent la justification XAI (sessions/note),
-    qui sinon afficherait 0 même quand le bonus est appliqué.
-    Conforme Cahier des charges §2.8 (boucle de rétroaction).
+    Retourne {(professeur_id, cours_id): (bonus_normalisé, nb_sessions, note_moy)}.
+    Remplace l'appel par paire qui générait N×M requêtes lors de la génération.
     """
-    result = await db.execute(
+    rows = (await db.execute(
         select(
+            Affectation.professeur_id,
+            Affectation.cours_id,
             func.count(AffectationFeedback.id),
             func.avg(AffectationFeedback.note),
         )
-        .join(Affectation, Affectation.id == AffectationFeedback.affectation_id)
+        .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
         .where(
-            Affectation.professeur_id == prof_id,
-            Affectation.cours_id == cours_id,
             Affectation.statut == AffectationStatut.VALIDEE,
             Affectation.session_id != session_id,
         )
-    )
-    row = result.one()
-    nb_validees, note_moy = row[0], row[1]
-    if not nb_validees or note_moy is None:
-        return 0.0, 0, 0.0
-    # Normalise sur [0, 1] : note_moy est dans [1,5], on divise par 5
-    bonus = float(nb_validees) * float(note_moy) / (5.0 * max(nb_validees, 1))
-    return min(1.0, bonus), int(nb_validees), float(note_moy)
+        .group_by(Affectation.professeur_id, Affectation.cours_id)
+    )).all()
+
+    bonus_map: dict[tuple[int, int], tuple[float, int, float]] = {}
+    for prof_id, cours_id, nb_validees, note_moy in rows:
+        if not nb_validees or note_moy is None:
+            continue
+        # Normalise sur [0, 1] : note_moy ∈ [1,5], on divise par 5
+        bonus = min(1.0, float(nb_validees) * float(note_moy) / (5.0 * max(nb_validees, 1)))
+        bonus_map[(prof_id, cours_id)] = (bonus, int(nb_validees), float(note_moy))
+    return bonus_map
 
 
 def _score_comp_pondere(
@@ -173,17 +172,17 @@ def _score_comp_pondere(
     return Decimal(str(score_pondere / total_importance))
 
 
-async def _scorer_paire(
+def _scorer_paire(
     prof: Professeur,
     cours: Cours,
     competences_cours: list[CoursCompetence],
     poids: PoidsScoring,
-    session_id: int,
-    db: AsyncSession,
+    bonus_map: dict[tuple[int, int], tuple[float, int, float]],
 ) -> tuple[Decimal, ScoresComposants, ContexteJustification]:
     """Calcule (score_total, composants W1–W4, contexte de justification) pour un
-    couple (prof, cours). Extrait de generer_affectations pour réutilisation par
-    l'affectation manuelle (REV-04). Le prof doit avoir competences/experiences/
+    couple (prof, cours). Fonction de calcul PURE : aucune I/O — le bonus W3
+    historique est fourni via `bonus_map` (préchargé par
+    `_charger_bonus_historique`). Le prof doit avoir competences/experiences/
     user/embedding chargés. La rédaction de la justification (LLM ou statique)
     est laissée à l'appelant via `_rediger_justification`."""
     from datetime import date as _date
@@ -199,8 +198,8 @@ async def _scorer_paire(
     annees_exp = max(0, annees_exp)
     sc_exp = score_experience(float(annees_exp))
 
-    bonus_hist, nb_sessions_hist, note_moy_hist = await _bonus_historique(
-        prof.id, cours.id, session_id, db
+    bonus_hist, nb_sessions_hist, note_moy_hist = bonus_map.get(
+        (prof.id, cours.id), (0.0, 0, 0.0)
     )
     sc_hist = score_historique(bonus_hist)
 
@@ -282,6 +281,9 @@ async def generer_affectations(
     if not professeurs:
         return [], exclus_ids
 
+    # Préchargement du bonus W3 en une requête (évite le N×M de l'appel par paire).
+    bonus_map = await _charger_bonus_historique(session_id, db)
+
     # Supprimer les PROPOSEE existantes UNIQUEMENT pour les cours du périmètre généré
     if cours_ids:
         existing = await db.execute(
@@ -330,8 +332,8 @@ async def generer_affectations(
         for prof in professeurs:
             if prof.id in profs_exclus:
                 continue  # décision déjà prise pour ce (cours, prof)
-            score_total, composants, ctx = await _scorer_paire(
-                prof, cours, competences_cours, poids, session_id, db
+            score_total, composants, ctx = _scorer_paire(
+                prof, cours, competences_cours, poids, bonus_map
             )
             aff = Affectation(
                 session_id=session_id,
@@ -417,9 +419,10 @@ async def creer_affectation_manuelle(
 
     competences_cours = (await _charger_competences_cours([cours_id], db)).get(cours_id, [])
     poids, xai_actif = await _charger_ponderations(session_id, db)
+    bonus_map = await _charger_bonus_historique(session_id, db)
 
-    score_total, composants, ctx = await _scorer_paire(
-        prof, cours, competences_cours, poids, session_id, db
+    score_total, composants, ctx = _scorer_paire(
+        prof, cours, competences_cours, poids, bonus_map
     )
     justification = await _rediger_justification(ctx, xai_actif)
 
