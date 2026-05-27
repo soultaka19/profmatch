@@ -52,5 +52,9 @@ describe("ProfilReadOnlyView", () => {
       />
     );
     expect(screen.getByText(/Aucun résumé/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aucune compétence/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aucune expérience/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aucune formation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aucune langue/i)).toBeInTheDocument();
   });
 });

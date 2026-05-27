@@ -3,7 +3,7 @@ import type { CvStatut } from "@/lib/api/rhProfesseurs";
 
 type Variant = "default" | "secondary" | "destructive" | "outline";
 
-const CONFIG: Record<string, { label: string; variant: Variant }> = {
+const CONFIG: Record<CvStatut, { label: string; variant: Variant }> = {
   traite: { label: "Traité", variant: "default" },
   en_cours: { label: "En cours", variant: "secondary" },
   en_attente: { label: "En attente", variant: "outline" },
