@@ -58,7 +58,7 @@ export function AppSidebar({
       <div className="flex flex-col gap-7 overflow-y-auto pb-6 pt-6">
         {navigation.map((section) => (
           <div key={section.label} className="flex flex-col gap-1">
-            <div className="mb-2 pl-6 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
+            <div className="mb-2 pl-7 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
               {section.label}
             </div>
             {section.items.map((item) => (

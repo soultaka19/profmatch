@@ -14,7 +14,7 @@ export function SidebarUserCard() {
   if (!user) return null;
 
   return (
-    <div className="flex items-center gap-3 border-t border-border-surface bg-surface px-5 py-4">
+    <div className="flex items-center gap-3 border-t border-border-surface bg-surface px-7 py-4">
       <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
         {initial(user.nom_complet)}
       </span>

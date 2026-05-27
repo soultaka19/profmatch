@@ -26,7 +26,7 @@ export function SidebarNavItem({
   const active = !disabled && pathname === href;
 
   const baseClasses =
-    "relative flex items-center gap-3 pl-6 pr-4 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
+    "relative flex items-center gap-3 pl-7 pr-5 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
 
   const stateClasses = active
     ? "bg-primary-soft text-primary font-medium before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-primary before:content-['']"
