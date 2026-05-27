@@ -15,6 +15,7 @@ Flux :
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -32,6 +33,7 @@ from app.models.professeur import Professeur
 from app.models.programme import Programme
 from app.models.session import Session
 from app.services.academic_calendar import programme_actif_pour_session
+from app.services.affectation_xai import generer_justification_llm
 from app.services.embeddings import cosine_similarity
 from app.services.scoring import (
     ContexteJustification,
@@ -47,14 +49,27 @@ from app.services.scoring import (
 TOP_N_PAR_COURS: int = 3
 
 
-async def _charger_ponderations(session_id: int, db: AsyncSession) -> PoidsScoring:
+async def _charger_ponderations(session_id: int, db: AsyncSession) -> tuple[PoidsScoring, bool]:
+    """Retourne les poids W1–W4 et le flag `xai_actif` (justification LLM vs statique)."""
     result = await db.execute(
         select(PonderationsSession).where(PonderationsSession.session_id == session_id)
     )
     pond = result.scalar_one_or_none()
     if pond is None:
         raise ValueError(f"Aucune pondération trouvée pour session_id={session_id}")
-    return PoidsScoring(w1=pond.w1, w2=pond.w2, w3=pond.w3, w4=pond.w4)
+    poids = PoidsScoring(w1=pond.w1, w2=pond.w2, w3=pond.w3, w4=pond.w4)
+    return poids, pond.xai_actif
+
+
+async def _rediger_justification(ctx: ContexteJustification, xai_actif: bool) -> str:
+    """Justification narrative XAI par LLM si activée, sinon version statique.
+
+    L'appel LLM (réseau, synchrone) est déporté hors de l'event loop. La
+    fonction LLM intègre déjà un repli statique en cas d'échec.
+    """
+    if xai_actif:
+        return await asyncio.to_thread(generer_justification_llm, ctx)
+    return generer_justification_statique(ctx)
 
 
 async def _charger_cours_par_programmes(
@@ -109,10 +124,13 @@ async def _bonus_historique(
     cours_id: int,
     session_id: int,
     db: AsyncSession,
-) -> float:
-    """Calcule le bonus W3 : (nb_validees × note_moyenne) / nb_sessions, normalisé [0,1].
+) -> tuple[float, int, float]:
+    """Bonus W3 historique pour un couple (prof, cours).
 
-    Conforme Cahier des charges §2.8 boucle de rétroaction.
+    Retourne (bonus_normalisé [0,1], nb_sessions_précédentes, note_RH_moyenne).
+    Les deux dernières valeurs alimentent la justification XAI (sessions/note),
+    qui sinon afficherait 0 même quand le bonus est appliqué.
+    Conforme Cahier des charges §2.8 (boucle de rétroaction).
     """
     result = await db.execute(
         select(
@@ -130,10 +148,10 @@ async def _bonus_historique(
     row = result.one()
     nb_validees, note_moy = row[0], row[1]
     if not nb_validees or note_moy is None:
-        return 0.0
+        return 0.0, 0, 0.0
     # Normalise sur [0, 1] : note_moy est dans [1,5], on divise par 5
     bonus = float(nb_validees) * float(note_moy) / (5.0 * max(nb_validees, 1))
-    return min(1.0, bonus)
+    return min(1.0, bonus), int(nb_validees), float(note_moy)
 
 
 def _score_comp_pondere(
@@ -162,11 +180,12 @@ async def _scorer_paire(
     poids: PoidsScoring,
     session_id: int,
     db: AsyncSession,
-) -> tuple[Decimal, ScoresComposants, str]:
-    """Calcule (score_total, composants W1–W4, justification statique) pour un
+) -> tuple[Decimal, ScoresComposants, ContexteJustification]:
+    """Calcule (score_total, composants W1–W4, contexte de justification) pour un
     couple (prof, cours). Extrait de generer_affectations pour réutilisation par
     l'affectation manuelle (REV-04). Le prof doit avoir competences/experiences/
-    user/embedding chargés."""
+    user/embedding chargés. La rédaction de la justification (LLM ou statique)
+    est laissée à l'appelant via `_rediger_justification`."""
     from datetime import date as _date
 
     competences_prof = {c.nom for c in prof.competences}
@@ -180,7 +199,9 @@ async def _scorer_paire(
     annees_exp = max(0, annees_exp)
     sc_exp = score_experience(float(annees_exp))
 
-    bonus_hist = await _bonus_historique(prof.id, cours.id, session_id, db)
+    bonus_hist, nb_sessions_hist, note_moy_hist = await _bonus_historique(
+        prof.id, cours.id, session_id, db
+    )
     sc_hist = score_historique(bonus_hist)
 
     sim = 0.0
@@ -208,15 +229,14 @@ async def _scorer_paire(
         nb_comp_requises=len(competences_cours),
         competences_maitrisees=sorted(competences_prof)[:5],
         annees_experience=int(annees_exp),
-        nb_sessions_precedentes=0,
-        note_rh_moyenne=0.0,
+        nb_sessions_precedentes=nb_sessions_hist,
+        note_rh_moyenne=note_moy_hist,
         similarite_semantique=sim,
         score_global_pct=float(score_total) * 100,
         poids=poids,
         composants=composants,
     )
-    justification = generer_justification_statique(ctx)
-    return score_total, composants, justification
+    return score_total, composants, ctx
 
 
 async def generer_affectations(
@@ -234,7 +254,7 @@ async def generer_affectations(
     (session, prof, cours).
     Retourne (affectations, programmes_exclus_ids).
     """
-    poids = await _charger_ponderations(session_id, db)
+    poids, xai_actif = await _charger_ponderations(session_id, db)
 
     sess_result = await db.execute(select(Session).where(Session.id == session_id))
     session = sess_result.scalar_one_or_none()
@@ -305,12 +325,12 @@ async def generer_affectations(
             continue  # cours déjà couvert par une VALIDEE → pas de re-proposition
         profs_exclus = profs_decides_par_cours.get(cours.id, set())
         competences_cours = competences_par_cours.get(cours.id, [])
-        scores_par_prof: list[tuple[float, Affectation]] = []
+        scores_par_prof: list[tuple[float, Affectation, ContexteJustification]] = []
 
         for prof in professeurs:
             if prof.id in profs_exclus:
                 continue  # décision déjà prise pour ce (cours, prof)
-            score_total, composants, justification = await _scorer_paire(
+            score_total, composants, ctx = await _scorer_paire(
                 prof, cours, competences_cours, poids, session_id, db
             )
             aff = Affectation(
@@ -322,13 +342,15 @@ async def generer_affectations(
                 score_exp=composants.score_exp.quantize(Decimal("0.001")),
                 score_hist=composants.score_hist.quantize(Decimal("0.001")),
                 score_sem=composants.score_sem.quantize(Decimal("0.001")),
-                justification=justification,
                 statut=AffectationStatut.PROPOSEE,
             )
-            scores_par_prof.append((float(score_total), aff))
+            scores_par_prof.append((float(score_total), aff, ctx))
 
+        # La justification (LLM coûteux ou statique) n'est rédigée que pour le
+        # top-3 réellement conservé, jamais pour tous les candidats scorés.
         top = sorted(scores_par_prof, key=lambda x: x[0], reverse=True)[:TOP_N_PAR_COURS]
-        for _, aff in top:
+        for _, aff, ctx in top:
+            aff.justification = await _rediger_justification(ctx, xai_actif)
             db.add(aff)
             nouvelles_affectations.append(aff)
 
@@ -394,11 +416,12 @@ async def creer_affectation_manuelle(
         raise ValueError("Cours introuvable")
 
     competences_cours = (await _charger_competences_cours([cours_id], db)).get(cours_id, [])
-    poids = await _charger_ponderations(session_id, db)
+    poids, xai_actif = await _charger_ponderations(session_id, db)
 
-    score_total, composants, justification = await _scorer_paire(
+    score_total, composants, ctx = await _scorer_paire(
         prof, cours, competences_cours, poids, session_id, db
     )
+    justification = await _rediger_justification(ctx, xai_actif)
 
     aff = (await db.execute(
         select(Affectation).where(
