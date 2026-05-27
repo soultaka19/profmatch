@@ -47,11 +47,11 @@ export function AppSidebar({
     >
       <div
         className={cn(
-          "flex min-h-[68px] flex-shrink-0 border-b border-border-surface",
-          collapsed ? "flex-col items-center justify-center gap-1 py-2" : "flex-row items-center"
+          "flex min-h-[68px] flex-shrink-0 items-center border-b border-border-surface",
+          collapsed ? "justify-center" : "flex-row"
         )}
       >
-        <SidebarBrand homeHref={homeHref} collapsed={collapsed} />
+        {!collapsed && <SidebarBrand homeHref={homeHref} />}
         {onToggleCollapse && (
           <button
             type="button"
