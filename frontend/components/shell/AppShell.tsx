@@ -110,7 +110,7 @@ export function AppShell({
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
         />
         <main className="flex-1 overflow-y-auto bg-canvas">
-          <div className={cn("mx-auto px-5 py-10 sm:px-8 lg:px-12 lg:py-12", WIDTH_CLASSES[resolvedWidth])}>
+          <div className={cn("mx-auto px-5 py-10 sm:px-8 lg:pl-16 lg:pr-12 lg:py-12", WIDTH_CLASSES[resolvedWidth])}>
             {children}
           </div>
         </main>
