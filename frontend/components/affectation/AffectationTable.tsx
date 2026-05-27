@@ -10,12 +10,12 @@ import type { ActionFeedback } from "./types";
 import type { AffectationOut } from "@/lib/types/api";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Poids {
   w1: number;
@@ -220,16 +220,16 @@ function JustificationDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={Boolean(affectation)} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={Boolean(affectation)} onOpenChange={(open) => !open && onClose()}>
       {affectation && (
-        <DialogContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-5 sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-7">
-          <DialogHeader>
-            <DialogTitle className="text-xl not-italic">Justification IA</DialogTitle>
-            <DialogDescription>
+        <SheetContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-5 sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-7">
+          <SheetHeader>
+            <SheetTitle className="text-xl not-italic">Justification IA</SheetTitle>
+            <SheetDescription>
               {coursName ?? `Cours #${affectation.cours_id}`} ·{" "}
               {professorName ?? `Prof #${affectation.professeur_id}`}
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           <ScoreBreakdown
             scores={{
               comp: affectation.score_comp,
@@ -249,8 +249,8 @@ function JustificationDialog({
               {affectation.justification}
             </p>
           </div>
-        </DialogContent>
+        </SheetContent>
       )}
-    </Dialog>
+    </Sheet>
   );
 }
