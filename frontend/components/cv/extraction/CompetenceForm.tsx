@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { extractionApi, type CompetenceDto, type CompetenceNiveau } from "@/lib/api/extraction";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,11 +56,11 @@ export function CompetenceForm({ open, initial, onOpenChange, onMutate }: Props)
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? "Modifier une compétence" : "Nouvelle compétence"}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{initial ? "Modifier une compétence" : "Nouvelle compétence"}</SheetTitle>
+        </SheetHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -89,15 +89,15 @@ export function CompetenceForm({ open, initial, onOpenChange, onMutate }: Props)
           </div>
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={saving || !nom.trim()}>
             {saving ? "Sauvegarde…" : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -3,13 +3,13 @@
 import { useState } from "react";
 import useSWR from "swr";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -71,17 +71,17 @@ export function ManualAssignDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button size="sm" variant="outline">
           <UserPlus className="mr-1 h-4 w-4" />
           Affecter un autre professeur
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Affecter manuellement un professeur</DialogTitle>
-        </DialogHeader>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Affecter manuellement un professeur</SheetTitle>
+        </SheetHeader>
         <Select value={selected} onValueChange={setSelected}>
           <SelectTrigger>
             <SelectValue placeholder="Choisir un professeur disponible" />
@@ -94,12 +94,12 @@ export function ManualAssignDialog({
             ))}
           </SelectContent>
         </Select>
-        <DialogFooter>
+        <SheetFooter>
           <Button onClick={handleConfirm} disabled={!selected || submitting}>
             Affecter
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

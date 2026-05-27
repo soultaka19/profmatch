@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -62,19 +62,19 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
   }
 
   return (
-    <Dialog
+    <Sheet
       open={!!user}
       onOpenChange={(o) => {
         if (!o) onClose();
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Modifier l&apos;utilisateur</DialogTitle>
-          <DialogDescription>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Modifier l&apos;utilisateur</SheetTitle>
+          <SheetDescription>
             Pour réinitialiser le mot de passe, utilisez le bouton « Réinitialiser le mot de passe » dans la table.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
@@ -105,7 +105,7 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>
             Annuler
           </Button>
@@ -119,8 +119,8 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
               "Enregistrer"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -63,35 +63,35 @@ export function UserCreateDialog({ onCreated }: Props) {
   const canSubmit = email.length > 0 && nom.length >= 1;
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button>
           <UserPlus className="mr-2 h-4 w-4" />
           Inviter un utilisateur
         </Button>
-      </DialogTrigger>
-      <DialogContent>
+      </SheetTrigger>
+      <SheetContent>
         {createdResponse ? (
           <>
-            <DialogHeader>
-              <DialogTitle>Compte créé</DialogTitle>
-              <DialogDescription>
+            <SheetHeader>
+              <SheetTitle>Compte créé</SheetTitle>
+              <SheetDescription>
                 {createdResponse.user.nom_complet} ({createdResponse.user.email}) doit définir son mot de passe via le lien ci-dessous.
-              </DialogDescription>
-            </DialogHeader>
+              </SheetDescription>
+            </SheetHeader>
             <div className="py-2">
               <ActivationLinkPanel
                 url={createdResponse.activation_url}
                 email={createdResponse.user.email}
               />
             </div>
-            <DialogFooter>
+            <SheetFooter>
               <Button
                 onClick={() => {
                   setOpen(false);
@@ -100,17 +100,17 @@ export function UserCreateDialog({ onCreated }: Props) {
               >
                 Fermer
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </>
         ) : (
           <>
-            <DialogHeader>
-              <DialogTitle>Inviter un nouvel utilisateur</DialogTitle>
-              <DialogDescription>
+            <SheetHeader>
+              <SheetTitle>Inviter un nouvel utilisateur</SheetTitle>
+              <SheetDescription>
                 L&apos;utilisateur recevra un lien d&apos;activation pour définir lui-même son mot de passe. Seuls les rôles
                 professeur et RH peuvent être créés ici.
-              </DialogDescription>
-            </DialogHeader>
+              </SheetDescription>
+            </SheetHeader>
 
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -147,7 +147,7 @@ export function UserCreateDialog({ onCreated }: Props) {
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -167,10 +167,10 @@ export function UserCreateDialog({ onCreated }: Props) {
                   "Inviter"
                 )}
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

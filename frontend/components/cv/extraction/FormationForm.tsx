@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { extractionApi, type FormationDto } from "@/lib/api/extraction";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -50,11 +50,11 @@ export function FormationForm({ open, initial, onOpenChange, onMutate }: Props) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? "Modifier la formation" : "Nouvelle formation"}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{initial ? "Modifier la formation" : "Nouvelle formation"}</SheetTitle>
+        </SheetHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="form-dip" className="text-xs font-medium uppercase tracking-wider text-fg-muted">Diplôme</Label>
@@ -69,11 +69,11 @@ export function FormationForm({ open, initial, onOpenChange, onMutate }: Props) 
             <Input id="form-an" type="number" value={annee} onChange={(e) => setAnnee(e.target.value)} placeholder="2018" className="max-w-[140px]" />
           </div>
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Annuler</Button>
           <Button onClick={handleSave} disabled={saving || !valid}>{saving ? "Sauvegarde…" : "Enregistrer"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

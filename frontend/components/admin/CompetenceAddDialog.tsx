@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -68,19 +68,19 @@ export function CompetenceAddDialog({ coursId, onAdded }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      <SheetTrigger asChild>
         <Button size="sm" variant="outline">
           <Plus className="mr-2 h-4 w-4" />Ajouter une compétence
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nouvelle compétence requise</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nouvelle compétence requise</SheetTitle>
+          <SheetDescription>
             L&apos;importance (1-5) modulera le poids de cette compétence dans le scoring W1.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="cnom">Nom de la compétence</Label>
@@ -101,13 +101,13 @@ export function CompetenceAddDialog({ coursId, onAdded }: Props) {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={submitting || !nom.trim()}>
             {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Ajout…</> : "Ajouter"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

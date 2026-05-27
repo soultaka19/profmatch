@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
@@ -59,26 +59,26 @@ export function SessionCreateDialog({ onCreated }: Props) {
   const canSubmit = Number.isInteger(annee) && annee >= 2020 && annee <= 2100;
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle session
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nouvelle session académique</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nouvelle session académique</SheetTitle>
+          <SheetDescription>
             Les pondérations W1–W4 sont créées automatiquement avec leurs valeurs par défaut.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="annee">Année</Label>
@@ -123,7 +123,7 @@ export function SessionCreateDialog({ onCreated }: Props) {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button
             variant="ghost"
             onClick={() => {
@@ -143,8 +143,8 @@ export function SessionCreateDialog({ onCreated }: Props) {
               "Créer"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
