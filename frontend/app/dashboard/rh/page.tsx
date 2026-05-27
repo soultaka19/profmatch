@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Button } from "@/components/ui/button";
 import { ArrowRight, ListChecks, Sparkles, Users } from "lucide-react";
 
 export default function Page() {
@@ -36,7 +35,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_0.78fr]">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Link
           href="/dashboard/rh/affectations"
           className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary-border hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
@@ -73,20 +72,23 @@ export default function Page() {
           </span>
         </Link>
 
-        <div className="rounded-md border border-dashed border-border bg-surface-subtle p-5 opacity-80">
+        <Link
+          href="/dashboard/rh/professeurs"
+          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary-border hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
+        >
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-surface text-fg-muted">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
               <Users className="h-4 w-4" />
             </span>
-            <h2 className="font-semibold text-fg">Suivre les CV profs</h2>
+            <h2 className="font-semibold text-fg">Consulter les CV profs</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-            Fonctionnalité non disponible dans cette version.
+            Parcourez les professeurs et leur profil de CV extrait.
           </p>
-          <Button disabled variant="outline" className="mt-4">
-            Bientôt disponible
-          </Button>
-        </div>
+          <span className="mt-4 inline-flex items-center text-sm font-medium text-primary">
+            Voir les professeurs <ArrowRight className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" />
+          </span>
+        </Link>
       </div>
     </div>
   );

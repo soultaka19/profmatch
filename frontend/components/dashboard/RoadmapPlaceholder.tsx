@@ -40,7 +40,7 @@ export function RoadmapPlaceholder({
           <div className="mt-1 text-sm leading-relaxed text-fg-muted">{heroSub}</div>
         </div>
         {heroEta && (
-          <div className="rounded-md border border-border bg-surface/60 px-3 py-1.5 text-sm text-fg-muted">
+          <div className="rounded-md border border-border bg-surface-hover px-3 py-1.5 text-sm text-fg-muted">
             ETA <strong className="ml-1 text-primary">{heroEta}</strong>
           </div>
         )}

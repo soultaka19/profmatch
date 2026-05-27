@@ -58,7 +58,7 @@ export function ExperienceSection({ items, onMutate }: Props) {
       ) : (
         <ul className="divide-y divide-border-soft">
           {items.map((exp) => (
-            <li key={exp.id} className="group/item px-7 py-5 transition-colors hover:bg-surface/30">
+            <li key={exp.id} className="group/item px-7 py-5 transition-colors hover:bg-surface-subtle">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   {/* Ligne 1 : poste + période alignée à droite */}

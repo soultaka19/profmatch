@@ -81,7 +81,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
               <button
                 type="button"
                 onClick={onRetry}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-destructive bg-canvas-pure px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-destructive bg-canvas-pure px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive-soft"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Réessayer
               </button>
@@ -128,7 +128,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
         <button
           type="button"
           onClick={onReplace}
-          className="flex-shrink-0 rounded-md border border-border bg-canvas-pure px-3.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:border-primary/40 hover:bg-primary-soft/40 hover:text-primary"
+          className="flex-shrink-0 rounded-md border border-border bg-canvas-pure px-3.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:border-primary-border hover:bg-primary-soft hover:text-primary"
         >
           {isManual ? "Importer un fichier CV" : "Remplacer"}
         </button>

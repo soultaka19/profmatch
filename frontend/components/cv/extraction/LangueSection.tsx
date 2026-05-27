@@ -54,7 +54,7 @@ export function LangueSection({ items, onMutate }: Props) {
       ) : (
         <ul className="divide-y divide-border-soft">
           {items.map((l) => (
-            <li key={l.id} className="group/item flex items-baseline justify-between px-7 py-3 transition-colors hover:bg-surface/40 gap-4">
+            <li key={l.id} className="group/item flex items-baseline justify-between px-7 py-3 transition-colors hover:bg-surface-subtle gap-4">
               <div className="flex items-baseline gap-3 min-w-0 flex-1">
                 <span className="font-medium text-fg">{l.langue}</span>
                 <span className="font-mono text-xs text-fg-subtle">{l.niveau}</span>
