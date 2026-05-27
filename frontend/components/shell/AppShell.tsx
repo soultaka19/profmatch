@@ -37,6 +37,23 @@ export function AppShell({
 }: Props) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("sidebar-collapsed") === "1") setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+      } catch {
+        // localStorage indisponible (mode privé) : on garde l'état en mémoire.
+      }
+      return next;
+    });
+  };
 
   const activeBreadcrumb = useMemo(() => {
     for (const section of navigation) {
@@ -76,6 +93,8 @@ export function AppShell({
         navigation={navigation}
         homeHref={homeHref}
         className="hidden lg:flex"
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapsed}
       />
       {mobileMenuOpen && (
         <div

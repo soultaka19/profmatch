@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Home, ListChecks, Sparkles } from "lucide-react";
 import { AppShell } from "../AppShell";
+
+afterEach(() => localStorage.clear());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/rh/affectations",
@@ -59,6 +61,22 @@ describe("AppShell", () => {
     );
 
     expect(container.querySelector("main > div")).toHaveClass("max-w-[1360px]");
+  });
+
+  it("replie la sidebar en icônes et masque les libellés de section", () => {
+    render(
+      <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
+        <div>Contenu RH</div>
+      </AppShell>
+    );
+
+    expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Réduire le menu" }));
+
+    expect(screen.getByRole("button", { name: "Déployer le menu" })).toBeInTheDocument();
+    // Le libellé de section disparaît de la sidebar (reste seulement dans la topbar).
+    expect(screen.getAllByText("Ressources humaines")).toHaveLength(1);
   });
 
   it("expose un bouton de menu mobile accessible", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarNavItem } from "./SidebarNavItem";
@@ -14,6 +14,8 @@ interface Props {
   homeHref?: string;
   id?: string;
   className?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   onNavigate?: () => void;
   onClose?: () => void;
 }
@@ -23,6 +25,8 @@ export function AppSidebar({
   homeHref = "/",
   id,
   className,
+  collapsed = false,
+  onToggleCollapse,
   onNavigate,
   onClose,
 }: Props) {
@@ -36,12 +40,36 @@ export function AppSidebar({
     <aside
       id={id}
       className={cn(
-        "flex h-full w-[260px] flex-shrink-0 flex-col border-r border-border-surface bg-surface",
+        "flex h-full flex-shrink-0 flex-col border-r border-border-surface bg-surface transition-[width] duration-200",
+        collapsed ? "w-[72px]" : "w-[260px]",
         className
       )}
     >
-      <div className="flex h-[68px] flex-shrink-0 items-center border-b border-border-surface">
-        <SidebarBrand homeHref={homeHref} />
+      <div
+        className={cn(
+          "flex min-h-[68px] flex-shrink-0 border-b border-border-surface",
+          collapsed ? "flex-col items-center justify-center gap-1 py-2" : "flex-row items-center"
+        )}
+      >
+        <SidebarBrand homeHref={homeHref} collapsed={collapsed} />
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Déployer le menu" : "Réduire le menu"}
+            aria-expanded={!collapsed}
+            className={cn(
+              "inline-flex items-center justify-center rounded-md p-1.5 text-fg-muted transition-colors hover:bg-primary-soft hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              !collapsed && "ml-auto mr-3"
+            )}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-5 w-5" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5" />
+            )}
+          </button>
+        )}
         {onClose && (
           <Button
             type="button"
@@ -58,9 +86,11 @@ export function AppSidebar({
       <div className="flex flex-col gap-7 overflow-y-auto pb-6 pt-6">
         {navigation.map((section) => (
           <div key={section.label} className="flex flex-col gap-1">
-            <div className="mb-2 pl-7 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
-              {section.label}
-            </div>
+            {!collapsed && (
+              <div className="mb-2 pl-7 text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
+                {section.label}
+              </div>
+            )}
             {section.items.map((item) => (
               <SidebarNavItem
                 key={item.href}
@@ -68,6 +98,7 @@ export function AppSidebar({
                 label={item.label}
                 icon={item.icon}
                 disabled={item.disabled}
+                collapsed={collapsed}
                 onDisabledClick={handleDisabledClick}
                 onNavigate={onNavigate}
               />
@@ -78,7 +109,7 @@ export function AppSidebar({
 
       <div className="flex-1" />
 
-      <SidebarUserCard />
+      <SidebarUserCard collapsed={collapsed} />
     </aside>
   );
 }
