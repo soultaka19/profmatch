@@ -67,6 +67,9 @@ export function AppShell({
   const resolvedWidth =
     contentWidth ??
     (pathname.includes("/affectations") || pathname.includes("/historique") ? "wide" : "standard");
+  // Largeur partagée topbar + contenu : alignement des bords sur tous les écrans.
+  // Repliée → pas de plafond (le contenu s'étire pour remplir l'espace libéré).
+  const contentMaxWidth = collapsed ? "max-w-none" : WIDTH_CLASSES[resolvedWidth];
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -127,14 +130,10 @@ export function AppShell({
           actions={actions}
           menuOpen={mobileMenuOpen}
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
+          maxWidthClass={contentMaxWidth}
         />
-        <main className="flex-1 overflow-y-auto bg-canvas">
-          <div
-            className={cn(
-              "mx-auto p-6 sm:p-8 lg:p-16 lg:pt-12",
-              collapsed ? "max-w-none" : WIDTH_CLASSES[resolvedWidth]
-            )}
-          >
+        <main className="flex-1 overflow-y-auto bg-canvas [scrollbar-gutter:stable]">
+          <div className={cn("mx-auto p-6 sm:p-8 lg:p-16 lg:pt-12", contentMaxWidth)}>
             {children}
           </div>
         </main>
