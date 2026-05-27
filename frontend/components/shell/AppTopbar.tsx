@@ -24,7 +24,7 @@ export function AppTopbar({
   maxWidthClass,
 }: Props) {
   return (
-    <header className="h-[68px] flex-shrink-0 border-b border-border bg-canvas">
+    <header className="sticky top-0 z-30 h-[68px] flex-shrink-0 border-b border-border bg-canvas">
       <div
         className={cn(
           "mx-auto flex h-full items-center gap-3 px-6 sm:px-8 lg:gap-6 lg:px-16",

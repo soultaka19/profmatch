@@ -87,9 +87,10 @@ export function AppShell({
     </div>
   );
 
-  // `fixed inset-0` sort l'AppShell du flow du body : le body n'a plus
-  // de contenu mesurable, donc aucun scroll global possible. Seul <main>
-  // scrolle. Sidebar et topbar sont garantis fixes sans recours à sticky.
+  // `fixed inset-0` sort l'AppShell du flow du body (aucun scroll global).
+  // La topbar vit DANS le conteneur scrollable (<main>) en `sticky top-0` :
+  // ainsi topbar et contenu partagent la même largeur (gouttière de scrollbar
+  // comprise) et restent alignés, scrollbar présente ou non.
   return (
     <div className="fixed inset-0 flex bg-canvas">
       <AppSidebar
@@ -123,7 +124,7 @@ export function AppShell({
           </div>
         </div>
       )}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-canvas [scrollbar-gutter:stable]">
         <AppTopbar
           breadcrumb={activeBreadcrumb}
           subtitle={sectionLabel}
@@ -132,12 +133,10 @@ export function AppShell({
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
           maxWidthClass={contentMaxWidth}
         />
-        <main className="flex-1 overflow-y-auto bg-canvas [scrollbar-gutter:stable]">
-          <div className={cn("mx-auto p-6 sm:p-8 lg:p-16 lg:pt-12", contentMaxWidth)}>
-            {children}
-          </div>
-        </main>
-      </div>
+        <div className={cn("mx-auto p-6 sm:p-8 lg:p-16 lg:pt-12", contentMaxWidth)}>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
