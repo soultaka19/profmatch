@@ -23,7 +23,7 @@ export function ActivationLinkPanel({ url, email }: Props) {
   }
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+    <div className="rounded-lg border border-primary-border bg-primary-tint p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-fg">
         <LinkIcon className="h-4 w-4 text-primary" />
         Lien d&apos;activation pour {email}

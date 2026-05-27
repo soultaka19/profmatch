@@ -63,7 +63,7 @@ export default function Page() {
             </thead>
             <tbody className="divide-y divide-border">
               {data.map(({ session, pond }) => (
-                <tr key={session.id} className="hover:bg-surface/60">
+                <tr key={session.id} className="hover:bg-surface-hover">
                   <td className="px-4 py-3 font-medium text-fg">{session.nom}</td>
                   <td className="px-4 py-3">
                     <SessionStatutBadge statut={session.statut} />
@@ -96,7 +96,7 @@ export default function Page() {
             </tbody>
           </table>
 
-          <div className="border-t border-border bg-surface/40 px-4 py-2 text-xs text-fg-muted">
+          <div className="border-t border-border bg-surface-subtle px-4 py-2 text-xs text-fg-muted">
             <span className="inline-block h-2 w-2 rounded-sm bg-indigo-500 mr-1" /> W1 Compétences
             <span className="inline-block h-2 w-2 rounded-sm bg-emerald-500 mx-1 ml-3" /> W2 Expérience
             <span className="inline-block h-2 w-2 rounded-sm bg-amber-500 mx-1 ml-3" /> W3 Historique

@@ -39,7 +39,7 @@ export default function Page() {
       <div className="grid gap-4 md:grid-cols-3">
         <Link
           href="/dashboard/rh/affectations"
-          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary-border hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
         >
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
@@ -57,7 +57,7 @@ export default function Page() {
 
         <Link
           href="/dashboard/rh/historique"
-          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary-border hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
         >
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">

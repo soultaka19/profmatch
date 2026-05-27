@@ -32,7 +32,7 @@ export function SessionsTable({ sessions, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {sessions.map((s) => (
-            <tr key={s.id} className="hover:bg-surface/60">
+            <tr key={s.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-medium text-fg">{s.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{s.annee}</td>
               <td className="px-4 py-3">

@@ -30,7 +30,7 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {programmes.map((p) => (
-            <tr key={p.id} className="hover:bg-surface/60">
+            <tr key={p.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-mono">{p.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{p.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{p.departement ?? "—"}</td>

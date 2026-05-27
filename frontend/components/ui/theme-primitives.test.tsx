@@ -30,8 +30,9 @@ describe("theme-aware UI primitives", () => {
       </>
     );
 
-    expect(screen.getByLabelText("Nom")).toHaveClass("bg-canvas-pure", "focus-visible:ring-primary/30");
-    expect(screen.getByLabelText("Actif")).toHaveClass("ring-offset-canvas-pure", "focus-visible:ring-primary/30");
+    expect(screen.getByLabelText("Nom")).toHaveClass("bg-canvas-pure", "focus-visible:ring-primary-ring");
+    expect(screen.getByLabelText("Nom")).toHaveClass("focus-visible:border-primary-border");
+    expect(screen.getByLabelText("Actif")).toHaveClass("ring-offset-canvas-pure", "focus-visible:ring-primary-ring");
     expect(container.querySelector("[data-orientation='horizontal'] span")).toHaveClass("bg-surface");
   });
 });

@@ -113,7 +113,7 @@ export function PonderationsPanel({ sessionId }: Props) {
 
   return (
     <div className="rounded-lg border border-border bg-canvas-pure overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-hover px-4 py-3">
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-fg-muted" />
           <h3 className="font-semibold text-fg">Pondérations W1–W4</h3>
@@ -125,7 +125,7 @@ export function PonderationsPanel({ sessionId }: Props) {
               Σ = {somme.toFixed(3)}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md border border-destructive bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+            <span className="inline-flex items-center gap-1 rounded-md border border-destructive bg-destructive-soft px-2 py-0.5 text-xs font-medium text-destructive">
               Σ = {somme.toFixed(3)} (attendu 1.000)
             </span>
           )}
@@ -155,7 +155,7 @@ export function PonderationsPanel({ sessionId }: Props) {
         ))}
       </div>
 
-      <div className="border-t border-border bg-surface/40 px-4 py-3 space-y-3">
+      <div className="border-t border-border bg-surface-subtle px-4 py-3 space-y-3">
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

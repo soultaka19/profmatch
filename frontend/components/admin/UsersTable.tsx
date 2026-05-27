@@ -43,7 +43,7 @@ export function UsersTable({
         </thead>
         <tbody className="divide-y divide-border">
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-surface/60">
+            <tr key={u.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-medium text-fg">{u.nom_complet}</td>
               <td className="px-4 py-3 text-fg-muted">{u.email}</td>
               <td className="px-4 py-3">{ROLE_LABEL[u.role] ?? u.role}</td>

@@ -17,9 +17,12 @@
   /* Destructive / warning / info */
   --destructive: #B91C1C;
   --destructive-bg: #FEF2F2;
+  --destructive-hover: #991B1B;
+  --destructive-soft: #FEE2E2;
   --warning: #B45309;
   --warning-bg: #FEF3C7;
   --info: #3B82F6;
+  --overlay: rgba(17, 24, 39, 0.4);
 
   /* Scores d'affectation : dimensions analytiques stables entre themes */
   --score-competences: #2563EB;
@@ -87,6 +90,14 @@
 
   --fg-muted: #5D5668;
   --fg-subtle: #8A8294;
+}
+
+:root {
+  --primary-ring: color-mix(in srgb, var(--primary) 30%, transparent);
+  --primary-border: color-mix(in srgb, var(--primary) 40%, transparent);
+  --primary-tint: color-mix(in srgb, var(--primary) 8%, var(--canvas-pure));
+  --surface-hover: color-mix(in srgb, var(--surface) 60%, var(--canvas-pure));
+  --surface-subtle: color-mix(in srgb, var(--surface) 40%, var(--canvas-pure));
 }
 
 body {

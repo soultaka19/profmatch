@@ -29,7 +29,7 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {cours.map((c) => (
-            <tr key={c.id} className="hover:bg-surface/60">
+            <tr key={c.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-mono">{c.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{c.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{c.credits ?? "—"}</td>

@@ -98,7 +98,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={submitting}
-          className="mt-2 w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-active hover:bg-primary/95"
+          className="mt-2 w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-active hover:bg-primary-dark"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Se connecter"}
         </Button>

@@ -27,7 +27,7 @@ export function ProgrammesEligiblesPanel({ sessionId }: Props) {
 
   return (
     <div className="rounded-lg border border-border bg-canvas-pure overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-hover px-4 py-3">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 text-fg-muted" />
           <h3 className="font-semibold text-fg">Programmes éligibles</h3>
