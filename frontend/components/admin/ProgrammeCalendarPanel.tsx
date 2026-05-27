@@ -58,7 +58,7 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
 
   return (
     <div className="rounded-lg border border-border bg-canvas-pure overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-hover px-4 py-3">
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-fg-muted" />
           <h3 className="font-semibold text-fg">Année académique</h3>
@@ -105,7 +105,7 @@ export function ProgrammeCalendarPanel({ programmeId }: Props) {
         })}
       </div>
 
-      <div className="border-t border-border bg-surface/40 px-4 py-2 text-xs text-fg-muted">
+      <div className="border-t border-border bg-surface-subtle px-4 py-2 text-xs text-fg-muted">
         {data.etapes_total > 0 ? (
           <>
             <strong className="text-fg">{data.etapes_total}</strong> étape

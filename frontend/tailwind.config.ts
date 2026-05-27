@@ -15,8 +15,15 @@ const config: Config = {
           dark: "var(--primary-dark)",
           soft: "var(--primary-soft)",
           foreground: "var(--primary-foreground)",
+          ring: "var(--primary-ring)",
+          border: "var(--primary-border)",
+          tint: "var(--primary-tint)",
         },
-        surface: "var(--surface)",
+        surface: {
+          DEFAULT: "var(--surface)",
+          hover: "var(--surface-hover)",
+          subtle: "var(--surface-subtle)",
+        },
         canvas: {
           DEFAULT: "var(--canvas)",
           pure: "var(--canvas-pure)",
@@ -39,12 +46,15 @@ const config: Config = {
         destructive: {
           DEFAULT: "var(--destructive)",
           bg: "var(--destructive-bg)",
+          hover: "var(--destructive-hover)",
+          soft: "var(--destructive-soft)",
         },
         warning: {
           DEFAULT: "var(--warning)",
           bg: "var(--warning-bg)",
         },
         info: "var(--info)",
+        overlay: "var(--overlay)",
         score: {
           competences: "var(--score-competences)",
           experience: "var(--score-experience)",

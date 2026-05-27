@@ -54,7 +54,7 @@ export function FormationSection({ items, onMutate }: Props) {
       ) : (
         <ul className="divide-y divide-border-soft">
           {items.map((f) => (
-            <li key={f.id} className="group/item px-7 py-4 transition-colors hover:bg-surface/30">
+            <li key={f.id} className="group/item px-7 py-4 transition-colors hover:bg-surface-subtle">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-4">

@@ -7,7 +7,7 @@ import { adminNav } from "@/lib/nav/adminNav";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <AppShell navigation={adminNav} breadcrumb="Tableau de bord" homeHref="/dashboard/admin">
+      <AppShell navigation={adminNav} breadcrumb="Tableau de bord" sectionLabel="Administration" contentWidth="wide" homeHref="/dashboard/admin">
         {children}
       </AppShell>
     </ProtectedRoute>

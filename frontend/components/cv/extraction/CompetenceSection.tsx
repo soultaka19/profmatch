@@ -66,7 +66,7 @@ export function CompetenceSection({ items, onMutate }: Props) {
           {items.map((c) => (
             <div
               key={c.id}
-              className="group/chip inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 pl-3 pr-1 py-1 transition-all hover:border-primary/40 hover:bg-primary-soft/60"
+              className="group/chip inline-flex items-center gap-2 rounded-full border border-border bg-surface-hover pl-3 pr-1 py-1 transition-all hover:border-primary-border hover:bg-primary-soft"
             >
               <button
                 type="button"
@@ -81,7 +81,7 @@ export function CompetenceSection({ items, onMutate }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 rounded-full opacity-0 transition-opacity group-hover/chip:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                className="h-5 w-5 rounded-full opacity-0 transition-opacity group-hover/chip:opacity-100 focus-visible:opacity-100 hover:bg-destructive-soft hover:text-destructive"
                 onClick={(e) => { e.stopPropagation(); setDeleting(c); }}
                 aria-label={`Supprimer ${c.nom}`}
               >
@@ -91,7 +91,7 @@ export function CompetenceSection({ items, onMutate }: Props) {
           ))}
           <button
             onClick={openAdd}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-sm text-fg-subtle hover:border-primary/40 hover:bg-primary-soft/40 hover:text-fg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-sm text-fg-subtle hover:border-primary-border hover:bg-primary-soft hover:text-fg-muted transition-colors"
             aria-label="Ajouter une compétence"
           >
             <Pencil className="h-3 w-3" />

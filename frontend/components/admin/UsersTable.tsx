@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { UserAdmin } from "@/lib/types/api";
 import { KeyRound, Pencil, Power, RotateCcw } from "lucide-react";
+import { AdminTableShell } from "./AdminDataTable";
 
 interface UsersTableProps {
   users: UserAdmin[];
@@ -30,8 +31,8 @@ export function UsersTable({
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun utilisateur.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
-      <table className="w-full text-sm">
+    <AdminTableShell>
+      <table aria-label="Utilisateurs" className="min-w-[820px] w-full text-sm">
         <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Nom</th>
@@ -43,7 +44,7 @@ export function UsersTable({
         </thead>
         <tbody className="divide-y divide-border">
           {users.map((u) => (
-            <tr key={u.id} className="hover:bg-surface/60">
+            <tr key={u.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-medium text-fg">{u.nom_complet}</td>
               <td className="px-4 py-3 text-fg-muted">{u.email}</td>
               <td className="px-4 py-3">{ROLE_LABEL[u.role] ?? u.role}</td>
@@ -60,7 +61,7 @@ export function UsersTable({
                 )}
               </td>
               <td className="px-4 py-3 text-right space-x-1">
-                <Button size="sm" variant="ghost" onClick={() => onEdit(u)} title="Modifier">
+                <Button size="sm" variant="ghost" onClick={() => onEdit(u)} title="Modifier" aria-label={`Modifier ${u.nom_complet}`}>
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
@@ -68,6 +69,7 @@ export function UsersTable({
                   variant="ghost"
                   onClick={() => onResetPassword(u)}
                   title="Réinitialiser le mot de passe (nouveau lien d'activation)"
+                  aria-label={`Réinitialiser le mot de passe de ${u.nom_complet}`}
                 >
                   <KeyRound className="h-4 w-4" />
                 </Button>
@@ -77,6 +79,7 @@ export function UsersTable({
                     variant="ghost"
                     onClick={() => onDeactivate(u)}
                     title="Désactiver"
+                    aria-label={`Désactiver ${u.nom_complet}`}
                   >
                     <Power className="h-4 w-4 text-destructive" />
                   </Button>
@@ -86,6 +89,7 @@ export function UsersTable({
                     variant="ghost"
                     onClick={() => onRestore(u)}
                     title="Réactiver"
+                    aria-label={`Réactiver ${u.nom_complet}`}
                   >
                     <RotateCcw className="h-4 w-4 text-primary" />
                   </Button>
@@ -95,6 +99,6 @@ export function UsersTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </AdminTableShell>
   );
 }

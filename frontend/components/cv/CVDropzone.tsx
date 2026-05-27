@@ -76,8 +76,8 @@ export const CVDropzone = forwardRef<CVDropzoneHandle, CVDropzoneProps>(function
       <div
         {...getRootProps()}
         className={cn(
-          "mt-6 cursor-pointer rounded-md border border-dashed border-border bg-surface/40 px-5 py-5 transition-colors",
-          isDragActive && "border-primary bg-primary-soft/60",
+          "mt-6 cursor-pointer rounded-md border border-dashed border-border bg-surface-subtle px-5 py-5 transition-colors",
+          isDragActive && "border-primary bg-primary-soft",
           (disabled || isUploading) && "cursor-not-allowed opacity-60"
         )}
       >
@@ -107,8 +107,8 @@ export const CVDropzone = forwardRef<CVDropzoneHandle, CVDropzoneProps>(function
     <div
       {...getRootProps()}
       className={cn(
-        "mt-6 cursor-pointer rounded-lg border-[1.5px] border-dashed border-border bg-surface/50 px-6 py-12 text-center transition-colors",
-        isDragActive && "border-primary bg-primary-soft/60",
+        "mt-6 cursor-pointer rounded-lg border-[1.5px] border-dashed border-border bg-surface-hover px-6 py-12 text-center transition-colors",
+        isDragActive && "border-primary bg-primary-soft",
         (disabled || isUploading) && "cursor-not-allowed opacity-60"
       )}
     >

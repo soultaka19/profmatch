@@ -16,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TopbarAction } from "@/components/shell";
+import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 type Filter = "all" | "actifs" | "inactifs";
 
@@ -37,18 +39,20 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <TopbarAction>
+        <UserCreateDialog onCreated={() => mutate()} />
+      </TopbarAction>
+      <div>
         <div>
           <h1 className="text-2xl font-semibold text-fg">Utilisateurs</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Gestion des comptes professeurs et responsables RH. Chaque nouvel utilisateur reçoit un lien d&apos;activation pour définir son mot de passe.
           </p>
         </div>
-        <UserCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-fg-muted">Filtrer :</span>
+      <AdminTableToolbar countLabel={`${users?.length ?? 0} utilisateur${users?.length === 1 ? "" : "s"}`}>
+        <span className="text-sm text-fg-muted">Statut</span>
         <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <SelectTrigger className="w-44">
             <SelectValue />
@@ -59,13 +63,15 @@ export default function Page() {
             <SelectItem value="inactifs">Inactifs seulement</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </AdminTableToolbar>
 
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
+      ) : !users?.length ? (
+        <AdminTableEmpty title="Aucun utilisateur" description="Aucun compte ne correspond au filtre sélectionné." />
       ) : (
         <UsersTable
-          users={users ?? []}
+          users={users}
           onEdit={setEditing}
           onDeactivate={(u) => setToggling({ user: u, mode: "deactivate" })}
           onRestore={(u) => setToggling({ user: u, mode: "restore" })}

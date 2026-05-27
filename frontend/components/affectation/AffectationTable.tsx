@@ -25,6 +25,7 @@ interface Poids {
 }
 
 interface AffectationTableProps {
+  mode?: "review" | "history";
   affectations: AffectationOut[];
   coursNames: Record<number, string>;
   professorNames: Record<number, string>;
@@ -42,6 +43,7 @@ interface AffectationTableProps {
 }
 
 export function AffectationTable({
+  mode = "review",
   affectations,
   coursNames,
   professorNames,
@@ -113,7 +115,7 @@ export function AffectationTable({
           <select
             value={recommendationFilter}
             onChange={(event) => setRecommendationFilter(event.target.value as RecommendationFilter)}
-            className="h-10 rounded-md border border-border bg-canvas-pure px-3 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="h-10 rounded-md border border-border bg-canvas-pure px-3 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
           >
             <option value="all">Toutes</option>
             <option value="forte">Fortement recommandées</option>
@@ -122,11 +124,11 @@ export function AffectationTable({
           </select>
         </label>
         <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-fg-muted">
-          Cours à réviser
+          {mode === "history" ? "Filtrer par cours" : "Cours à réviser"}
           <select
             value={selectedCoursId}
             onChange={(event) => setSelectedCoursId(event.target.value)}
-            className="h-10 rounded-md border border-border bg-canvas-pure px-3 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="h-10 rounded-md border border-border bg-canvas-pure px-3 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
           >
             <option value="all">Tous les cours</option>
             {coursIds.map((coursId) => (
@@ -136,15 +138,17 @@ export function AffectationTable({
             ))}
           </select>
         </label>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={showNextCourse}
-          disabled={selectedCoursId !== "all" && !hasNextCourse}
-        >
-          Cours suivant
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {mode === "review" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={showNextCourse}
+            disabled={selectedCoursId !== "all" && !hasNextCourse}
+          >
+            Cours suivant
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {displayedCoursIds.length === 0 && (

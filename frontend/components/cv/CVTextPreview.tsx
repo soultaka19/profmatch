@@ -47,7 +47,7 @@ export function CVTextPreview() {
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="bg-surface/60 p-5 text-sm leading-relaxed text-fg-muted">
+          <AccordionContent className="bg-surface-hover p-5 text-sm leading-relaxed text-fg-muted">
             {loading && (
               <div className="flex items-center gap-2 text-fg-subtle">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement…

@@ -48,7 +48,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
             {detail.competences.map((c) => (
               <span
                 key={c.id}
-                className="inline-flex items-baseline gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1"
+                className="inline-flex items-baseline gap-1.5 rounded-full border border-border bg-surface-hover px-3 py-1"
               >
                 <span className="text-sm font-medium text-fg">{c.nom}</span>
                 <span className="text-[11px] text-fg-subtle">·</span>
@@ -109,7 +109,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
             {detail.langues.map((l) => (
               <span
                 key={l.id}
-                className="inline-flex items-baseline gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1"
+                className="inline-flex items-baseline gap-1.5 rounded-full border border-border bg-surface-hover px-3 py-1"
               >
                 <span className="text-sm font-medium text-fg">{l.langue}</span>
                 <span className="text-[11px] text-fg-subtle">·</span>

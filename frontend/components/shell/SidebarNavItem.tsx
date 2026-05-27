@@ -43,8 +43,11 @@ export function SidebarNavItem({
           "w-full text-left text-fg hover:bg-primary-soft"
         )}
       >
-        <Icon className="h-[18px] w-[18px]" />
-        <span>{label}</span>
+        <Icon className="h-[18px] w-[18px] text-fg-subtle" />
+        <span className="text-fg-muted">{label}</span>
+        <span className="ml-auto rounded-full border border-border bg-canvas-pure px-2 py-0.5 text-[10px] font-medium text-fg-subtle">
+          Bientôt
+        </span>
       </button>
     );
   }

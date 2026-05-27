@@ -59,11 +59,39 @@ describe("ThemeSwitcher", () => {
 
   it("ferme le panneau avec Escape", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
+    const trigger = screen.getByRole("button", { name: /Anthracite ivoire/i });
+    fireEvent.click(trigger);
     expect(screen.getByRole("menu")).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("place le focus sur le theme actif quand le panneau s ouvre", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Anthracite ivoire/i }));
+
+    expect(screen.getByRole("menuitemradio", { name: /Anthracite ivoire/i })).toHaveFocus();
+  });
+
+  it("navigue entre les themes au clavier et selectionne avec Enter", () => {
+    setup();
+    const trigger = screen.getByRole("button", { name: /Anthracite ivoire/i });
+    fireEvent.click(trigger);
+
+    const initial = screen.getByRole("menuitemradio", { name: /Anthracite ivoire/i });
+    fireEvent.keyDown(initial, { key: "ArrowDown" });
+    expect(screen.getByRole("menuitemradio", { name: /Bordeaux institutionnel/i })).toHaveFocus();
+
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowDown" });
+    const violet = screen.getByRole("menuitemradio", { name: /Violet ardoise/i });
+    expect(violet).toHaveFocus();
+    fireEvent.keyDown(violet, { key: "Enter" });
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("slateViolet");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });

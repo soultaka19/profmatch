@@ -27,8 +27,8 @@ export function AppSidebar({
   onClose,
 }: Props) {
   const handleDisabledClick = () => {
-    toast.info("Cette section est en cours de développement.", {
-      description: "Disponible avant la démo finale du 4 juin 2026.",
+    toast.info("Cette section est bientôt disponible.", {
+      description: "Elle sera accessible dans une prochaine version.",
     });
   };
 

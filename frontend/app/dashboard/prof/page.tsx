@@ -79,7 +79,7 @@ export default function ProfDashboardPage() {
             type="button"
             onClick={handleCreateManual}
             disabled={isCreatingManual}
-            className="w-full rounded-md border border-border bg-canvas-pure px-4 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-primary/40 hover:bg-primary-soft/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-md border border-border bg-canvas-pure px-4 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-primary-border hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isCreatingManual ? "Création en cours…" : "Créer mon CV manuellement"}
           </button>
@@ -114,7 +114,7 @@ export default function ProfDashboardPage() {
                 type="button"
                 onClick={handleCreateManual}
                 disabled={isCreatingManual}
-                className="w-full rounded-md border border-border bg-canvas-pure px-4 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-primary/40 hover:bg-primary-soft/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-md border border-border bg-canvas-pure px-4 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-primary-border hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCreatingManual ? "Création en cours…" : "Créer mon CV manuellement"}
               </button>

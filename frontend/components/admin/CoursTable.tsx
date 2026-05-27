@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ArrowRight } from "lucide-react";
 import type { CoursReadOnly } from "@/lib/types/programmes";
+import { AdminTableShell } from "./AdminDataTable";
 
 interface Props {
   cours: CoursReadOnly[];
@@ -16,8 +17,8 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun cours.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
-      <table className="w-full text-sm">
+    <AdminTableShell>
+      <table aria-label="Cours" className="min-w-[680px] w-full text-sm">
         <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Code</th>
@@ -29,21 +30,21 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
         </thead>
         <tbody className="divide-y divide-border">
           {cours.map((c) => (
-            <tr key={c.id} className="hover:bg-surface/60">
+            <tr key={c.id} className="hover:bg-surface-hover">
               <td className="px-4 py-3 font-mono">{c.code}</td>
               <td className="px-4 py-3 font-medium text-fg">{c.nom}</td>
               <td className="px-4 py-3 text-fg-muted">{c.credits ?? "—"}</td>
               <td className="px-4 py-3 text-fg-muted">{c.heures ?? "—"}</td>
               <td className="px-4 py-3 text-right space-x-1">
                 <Link href={`/dashboard/admin/cours/${c.id}`}>
-                  <Button size="sm" variant="ghost" title="Ouvrir">
+                  <Button size="sm" variant="ghost" title="Ouvrir" aria-label={`Ouvrir ${c.nom}`}>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Button size="sm" variant="ghost" onClick={() => onEdit(c)} title="Modifier">
+                <Button size="sm" variant="ghost" onClick={() => onEdit(c)} title="Modifier" aria-label={`Modifier ${c.nom}`}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => onDelete(c)} title="Supprimer">
+                <Button size="sm" variant="ghost" onClick={() => onDelete(c)} title="Supprimer" aria-label={`Supprimer ${c.nom}`}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </td>
@@ -51,6 +52,6 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
           ))}
         </tbody>
       </table>
-    </div>
+    </AdminTableShell>
   );
 }

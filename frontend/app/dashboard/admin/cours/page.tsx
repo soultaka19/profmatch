@@ -10,6 +10,8 @@ import { CoursCreateDialog } from "@/components/admin/CoursCreateDialog";
 import { CoursEditDialog } from "@/components/admin/CoursEditDialog";
 import { CoursDeleteDialog } from "@/components/admin/CoursDeleteDialog";
 import { Input } from "@/components/ui/input";
+import { TopbarAction } from "@/components/shell";
+import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 export default function Page() {
   const [search, setSearch] = useState("");
@@ -28,7 +30,10 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <TopbarAction>
+        <CoursCreateDialog onCreated={() => mutate()} />
+      </TopbarAction>
+      <div>
         <div>
           <h1 className="text-2xl font-semibold text-fg">Cours</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -36,23 +41,29 @@ export default function Page() {
             d&apos;un programme depuis la page Programmes.
           </p>
         </div>
-        <CoursCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <div className="max-w-md">
+      <AdminTableToolbar countLabel={`${cours?.length ?? 0} cours`}>
         <Input
           type="search"
+          aria-label="Rechercher un cours"
+          className="w-full sm:w-72"
           placeholder="Rechercher par code ou nom…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
+      </AdminTableToolbar>
 
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
+      ) : !cours?.length ? (
+        <AdminTableEmpty
+          title="Aucun cours trouvé"
+          description={search ? "Modifiez votre recherche ou créez un cours." : "Créez le premier cours."}
+        />
       ) : (
         <CoursTable
-          cours={cours ?? []}
+          cours={cours}
           onEdit={openEdit}
           onDelete={setDeleting}
         />
