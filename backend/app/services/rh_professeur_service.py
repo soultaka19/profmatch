@@ -1,3 +1,4 @@
+"""Service RH : accès en lecture aux profils professeurs."""
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
