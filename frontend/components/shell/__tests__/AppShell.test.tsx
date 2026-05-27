@@ -63,20 +63,26 @@ describe("AppShell", () => {
     expect(container.querySelector("main > div")).toHaveClass("max-w-[1360px]");
   });
 
-  it("replie la sidebar en icônes et masque les libellés de section", () => {
-    render(
+  it("replie la sidebar en icônes, masque les libellés et étire le contenu", () => {
+    const { container } = render(
       <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
         <div>Contenu RH</div>
       </AppShell>
     );
 
+    const content = container.querySelector("main > div");
     expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
+    // Déployé : largeur plafonnée (route affectations -> wide).
+    expect(content).toHaveClass("max-w-[1360px]");
 
     fireEvent.click(screen.getByRole("button", { name: "Réduire le menu" }));
 
     expect(screen.getByRole("button", { name: "Déployer le menu" })).toBeInTheDocument();
     // Le libellé de section disparaît de la sidebar (reste seulement dans la topbar).
     expect(screen.getAllByText("Ressources humaines")).toHaveLength(1);
+    // Replié : le contenu s'étire pour occuper l'espace disponible.
+    expect(content).toHaveClass("max-w-none");
+    expect(content).not.toHaveClass("max-w-[1360px]");
   });
 
   it("expose un bouton de menu mobile accessible", () => {
