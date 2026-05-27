@@ -29,7 +29,8 @@ export default function Page() {
   const { data, isLoading, error } = useRhProfesseurs(page, debouncedQ);
 
   const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / RH_PROFESSEURS_PAGE_SIZE));
+  const pageSize = data?.page_size ?? RH_PROFESSEURS_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const items = data?.items ?? [];
 
   const handlePreview = (professeurId: number) => {
