@@ -77,7 +77,7 @@ describe("AffectationsPage — séparation des résultats", () => {
     render(<AffectationsPage />);
     fireEvent.click(screen.getByText("go"));
 
-    const section = await screen.findByText(/Affectations déjà traitées du programme/i);
+    const section = await screen.findByText(/Historique du programme hors sélection actuelle/i);
     expect(section.textContent).toMatch(/\(1\)/);
 
     await waitFor(() =>
@@ -95,7 +95,7 @@ describe("AffectationsPage — séparation des résultats", () => {
     render(<AffectationsPage />);
     fireEvent.click(screen.getByText("go"));
 
-    const summary = await screen.findByText(/Affectations déjà traitées du programme/i);
+    const summary = await screen.findByText(/Historique du programme hors sélection actuelle/i);
     // Seule l'affectation hors périmètre (HIST) est dans l'historique.
     expect(summary.textContent).toMatch(/\(1\)/);
 

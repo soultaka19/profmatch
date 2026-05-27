@@ -72,7 +72,12 @@ function ProgrammeEtapesSection({
             {etape.nom ? ` — ${etape.nom}` : ""}
           </span>
           {etape.affectation_complete && (
-            <Badge variant="secondary">Déjà affectée</Badge>
+            <>
+              <Badge variant="secondary">Déjà affectée</Badge>
+              <span className="text-xs text-fg-muted">
+                Cours déjà affectés pour cette étape
+              </span>
+            </>
           )}
         </label>
       ))}
@@ -219,8 +224,8 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="xl:col-span-2">
         <h2 className="text-xl font-semibold text-fg">
           {"Générer les affectations"}
         </h2>
@@ -230,7 +235,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
       </div>
 
       {/* Session */}
-      <div className="space-y-2">
+      <div className="space-y-2 rounded-lg border border-border bg-canvas-pure p-5 xl:col-start-1">
         <label className="text-sm font-medium text-fg">
           Session {"académique"}
         </label>
@@ -266,7 +271,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
 
       {/* Programmes éligibles + étapes */}
       {selectedSessionId && (
-        <div className="space-y-3">
+        <div className="space-y-3 rounded-lg border border-border bg-canvas-pure p-5 xl:col-start-1">
           <label className="text-sm font-medium text-fg">
             Programmes {"éligibles"}
           </label>
@@ -320,41 +325,64 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
               {"Sélectionnez au moins un programme."}
             </p>
           )}
+          {selectedProgrammeIds.size > 0 && (
+            <div className="rounded-md border border-border bg-primary-tint px-3 py-2 text-sm text-fg-muted">
+              <p className="font-medium text-fg">Périmètre sélectionné</p>
+              <p>
+                {selectedProgrammeIds.size} programme{selectedProgrammeIds.size > 1 ? "s" : ""} sélectionné{selectedProgrammeIds.size > 1 ? "s" : ""}
+                {" · "}
+                {selectedEtapeIds.length > 0
+                  ? `${selectedEtapeIds.length} étape${selectedEtapeIds.length > 1 ? "s" : ""} ciblée${selectedEtapeIds.length > 1 ? "s" : ""}`
+                  : "toutes les étapes disponibles"}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Sliders W1-W4 */}
       {selectedSessionId && (
-        <WeightSliders
-          value={weights}
-          onChange={setWeights}
-          disabled={isSaving}
-        />
+        <aside className="space-y-4 rounded-lg border border-border bg-canvas-pure p-5 xl:col-start-2 xl:row-start-2 xl:row-span-3">
+          <h3 className="text-sm font-semibold text-fg">Pondérations et lancement</h3>
+          <WeightSliders
+            value={weights}
+            onChange={setWeights}
+            disabled={isSaving}
+          />
+          {launchError && <p className="text-sm text-destructive">{launchError}</p>}
+          <Button
+            onClick={handleLaunch}
+            disabled={!canLaunch || isSaving}
+            className="w-full"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {"Préparation de la génération…"}
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Lancer la {"génération"}
+              </>
+            )}
+          </Button>
+          {isSaving && (
+            <p role="status" aria-live="polite" className="text-xs text-fg-muted">
+              Paramètres verrouillés temporairement pendant le lancement.
+            </p>
+          )}
+        </aside>
       )}
 
-      {launchError && <p className="text-sm text-destructive">{launchError}</p>}
-
-      <Button
-        onClick={handleLaunch}
-        disabled={!canLaunch || isSaving}
-        className="w-full sm:w-auto"
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {"Préparation de la génération…"}
-          </>
-        ) : (
-          <>
+      {!selectedSessionId && (
+        <div className="space-y-4 rounded-lg border border-dashed border-border bg-canvas-pure p-5 text-sm text-fg-muted xl:col-start-2 xl:row-start-2">
+          <p>Choisissez une session pour configurer les pondérations et lancer la génération.</p>
+          <Button disabled className="w-full">
             <Sparkles className="mr-2 h-4 w-4" />
-            Lancer la {"génération"}
-          </>
-        )}
-      </Button>
-      {isSaving && (
-        <p role="status" aria-live="polite" className="text-xs text-fg-muted">
-          Paramètres verrouillés temporairement pendant le lancement.
-        </p>
+            Lancer la génération
+          </Button>
+        </div>
       )}
     </div>
   );

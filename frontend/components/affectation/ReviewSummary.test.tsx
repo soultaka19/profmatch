@@ -37,9 +37,10 @@ describe("ReviewSummary", () => {
     );
 
     const summary = screen.getByLabelText("Synthèse des propositions");
-    expect(summary).toHaveTextContent("2cours analysés");
-    expect(summary).toHaveTextContent("3propositions");
-    expect(summary).toHaveTextContent("2traitées sur 3");
+    expect(summary).toHaveTextContent("1cours restant à traiter");
+    expect(summary).toHaveTextContent("1proposition en attente");
+    expect(summary).toHaveTextContent("1validée");
+    expect(summary).toHaveTextContent("1rejetée");
     expect(summary).toHaveTextContent("1fortement recommandée");
     expect(summary).toHaveTextContent("1avec réserves");
     expect(summary).toHaveTextContent("1à examiner");

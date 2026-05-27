@@ -300,12 +300,13 @@ export default function AffectationsPage() {
           {treated.length > 0 && (
             <details className="rounded-lg border border-border bg-canvas px-4 py-3">
               <summary className="cursor-pointer text-sm font-medium text-fg">
-                Affectations déjà traitées du programme ({treated.length})
+                Historique du programme hors sélection actuelle ({treated.length})
               </summary>
               <p className="mb-3 mt-1 text-xs text-fg-muted">
                 Affectations validées ou rejetées du programme, hors de la génération courante.
               </p>
               <AffectationTable
+                mode="history"
                 affectations={treated}
                 coursNames={coursNames}
                 professorNames={professorNames}

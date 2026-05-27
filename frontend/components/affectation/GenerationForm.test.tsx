@@ -61,7 +61,7 @@ describe("GenerationForm", () => {
     render(<GenerationForm onTaskStarted={vi.fn()} />);
 
     expect(screen.getByText(/Chargement des sessions/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lancer la génération/i).closest("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Lancer la génération/i })).toBeDisabled();
   });
 
   it("transmet le périmètre choisi après préparation de la génération", async () => {
@@ -101,5 +101,7 @@ describe("GenerationForm", () => {
     expect(screen.getByRole("checkbox", { name: /Étape 1/i })).not.toBeDisabled();
     expect(screen.getByRole("checkbox", { name: /Étape 2/i })).toBeDisabled();
     expect(screen.getByText(/Déjà affectée/i)).toBeInTheDocument();
+    expect(screen.getByText(/cours déjà affectés pour cette étape/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 programme sélectionné/i)).toBeInTheDocument();
   });
 });

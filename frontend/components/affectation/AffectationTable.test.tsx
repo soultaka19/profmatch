@@ -150,4 +150,22 @@ describe("AffectationTable", () => {
     expect(screen.getByRole("heading", { name: "IAI-301 ML" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "PI-301 Algorithmes" })).not.toBeInTheDocument();
   });
+
+  it("adapte les filtres en consultation historique sans action de revue", () => {
+    render(
+      <AffectationTable
+        mode="history"
+        affectations={affectations}
+        coursNames={coursNames}
+        professorNames={professorNames}
+        poids={poids}
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText("Filtrer par cours")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cours suivant" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Affecter un autre professeur/i)).not.toBeInTheDocument();
+  });
 });

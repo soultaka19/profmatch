@@ -120,7 +120,7 @@ export default function HistoriquePage() {
             <button
               key={sess.id}
               onClick={() => setSelectedSession(sess)}
-              className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-canvas-pure px-4 py-3 text-left transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-canvas-pure px-4 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
             >
               <div className="flex items-center gap-3">
                 <span className="font-medium text-fg">{sess.nom}</span>
@@ -196,6 +196,7 @@ export default function HistoriquePage() {
             !ponderationsError &&
             (affectations ?? []).length > 0 && (
               <AffectationTable
+                mode="history"
                 affectations={affectations ?? []}
                 coursNames={coursNames}
                 professorNames={professorNames}

@@ -9,18 +9,18 @@ export default function Page() {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="text-display font-semibold text-fg">
           Bienvenue, {user?.nom_complet ?? "Responsable"}
         </h1>
-        <p className="mt-3 max-w-2xl text-base leading-relaxed text-fg-muted">
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-fg-muted">
           Pilotez les propositions d&apos;affectation, révisez les justifications IA
           et retrouvez les validations par session académique.
         </p>
       </div>
 
-      <div className="rounded-md border border-border bg-canvas-pure p-5 shadow-sm">
+      <div className="rounded-md border border-border bg-canvas-pure p-4 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
             <Sparkles className="h-5 w-5" />
@@ -36,7 +36,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_0.78fr]">
         <Link
           href="/dashboard/rh/affectations"
           className="group rounded-md border border-border bg-canvas-pure p-5 shadow-sm transition hover:border-primary-border hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring"
@@ -73,7 +73,7 @@ export default function Page() {
           </span>
         </Link>
 
-        <div className="rounded-md border border-border bg-canvas-pure p-5 opacity-75 shadow-sm">
+        <div className="rounded-md border border-dashed border-border bg-surface-subtle p-5 opacity-80">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-surface text-fg-muted">
               <Users className="h-4 w-4" />
@@ -81,7 +81,7 @@ export default function Page() {
             <h2 className="font-semibold text-fg">Suivre les CV profs</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-            La vue consolidée des CV professeurs sera ajoutée à cet espace.
+            Fonctionnalité non disponible dans cette version.
           </p>
           <Button disabled variant="outline" className="mt-4">
             Bientôt disponible
