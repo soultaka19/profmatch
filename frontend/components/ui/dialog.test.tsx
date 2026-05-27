@@ -25,12 +25,14 @@ describe("DialogContent — agrandissement", () => {
   it("élargit la fenêtre quand expandable est activé", () => {
     renderDialog({ expandable: true });
     const dialog = screen.getByRole("dialog");
-    expect(dialog).not.toHaveClass("max-w-3xl");
+    // Palier replié = max-w-3xl (le minimum) ; agrandi = très large.
+    expect(dialog).toHaveClass("max-w-3xl");
+    expect(dialog).not.toHaveClass("max-w-[min(1100px,92vw)]");
 
     fireEvent.click(screen.getByRole("button", { name: "Agrandir la fenêtre" }));
-    expect(dialog).toHaveClass("max-w-3xl");
+    expect(dialog).toHaveClass("max-w-[min(1100px,92vw)]");
 
     fireEvent.click(screen.getByRole("button", { name: "Réduire la fenêtre" }));
-    expect(dialog).not.toHaveClass("max-w-3xl");
+    expect(dialog).not.toHaveClass("max-w-[min(1100px,92vw)]");
   });
 });

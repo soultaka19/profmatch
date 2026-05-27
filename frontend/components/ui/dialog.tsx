@@ -43,7 +43,7 @@ const DialogContent = React.forwardRef<
         ref={ref}
         className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[520px] translate-x-[-50%] translate-y-[-50%] gap-5 border border-border bg-canvas-pure p-7 shadow-lift rounded-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          expanded && "max-w-3xl",
+          expandable && (expanded ? "max-w-[min(1100px,92vw)]" : "max-w-3xl"),
           className
         )}
         {...props}
