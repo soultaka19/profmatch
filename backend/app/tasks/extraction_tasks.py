@@ -7,7 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.models.cv import CV, CVStatut
 from app.services.extraction_service import (
-    extract_structured_data, persist_extraction, ExtractionError,
+    compute_professeur_embedding, extract_structured_data, persist_extraction,
+    ExtractionError,
 )
 from app.services.llm_client import get_llm_client
 from app.worker import celery_app
@@ -40,6 +41,8 @@ def extract_cv_data_llm(self, cv_id: int) -> None:
             client = get_llm_client()
             data = extract_structured_data(cv.texte_brut, client)
             persist_extraction(db, cv.professeur_id, data)
+            db.flush()  # rend compétences/expériences/résumé visibles pour l'embedding
+            compute_professeur_embedding(db, cv.professeur_id)
             cv.statut = CVStatut.TRAITE
             cv.traite_le = datetime.now(timezone.utc)
             cv.message_erreur = None

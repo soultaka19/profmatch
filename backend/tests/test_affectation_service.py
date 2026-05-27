@@ -827,3 +827,38 @@ async def test_generer_saute_cours_couvert_par_validee(db_session):
         )
     )).scalar_one()
     assert nb_validees == 1
+
+
+# ── generer_affectations : score sémantique W4 (embeddings) ───────────────────
+
+
+@pytest.mark.asyncio
+async def test_generer_utilise_embedding_pour_score_semantique(db_session):
+    """Quand prof et cours ont un embedding, le score W4 (sc_sem) est non nul.
+
+    Régression : tant que les embeddings n'étaient jamais peuplés, la branche
+    sémantique de `_scorer_paire` restait inerte et W4 valait toujours 0.
+    """
+    from app.models.cours_competence import CoursCompetence
+
+    prof = await _make_prof_traite(db_session, "emb-gen@test.ca", "Emma", ["Python"])
+    prog = await _make_programme_int(db_session, "EMB-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    cours = await _make_cours_int(db_session, "EMB-C")
+    await _make_lien_int(db_session, prog.id, etape.id, cours.id)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    # embeddings non nuls de même dimension → similarité cosinus > 0
+    prof.embedding = [0.10, 0.20, 0.30]
+    cours.embedding = [0.10, 0.20, 0.25]
+    await db_session.commit()
+
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+
+    aff = next(
+        a for a in affectations
+        if a.professeur_id == prof.id and a.cours_id == cours.id
+    )
+    assert aff.score_sem > Decimal("0")

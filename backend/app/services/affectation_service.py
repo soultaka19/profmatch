@@ -32,7 +32,7 @@ from app.models.professeur import Professeur
 from app.models.programme import Programme
 from app.models.session import Session
 from app.services.academic_calendar import programme_actif_pour_session
-from app.services.embeddings import build_cours_text, build_professeur_text, cosine_similarity
+from app.services.embeddings import cosine_similarity
 from app.services.scoring import (
     ContexteJustification,
     PoidsScoring,

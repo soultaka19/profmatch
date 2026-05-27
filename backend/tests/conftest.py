@@ -128,6 +128,28 @@ def default_llm_api_key(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def mock_embedding_model(monkeypatch):
+    """Neutralise le chargement de sentence-transformers/PyTorch en CI.
+
+    `compute_embedding` reste réel mais s'appuie sur un encodeur déterministe
+    léger (hash → vecteur normalisé), sans modèle ML ni téléchargement réseau.
+    Les tests qui patchent `_get_model` ou `compute_embedding` localement priment.
+    """
+    import hashlib
+
+    import numpy as np
+
+    class _FakeModel:
+        def encode(self, text, normalize_embeddings=True):
+            digest = hashlib.sha256(text.encode("utf-8")).digest()
+            vec = np.frombuffer(digest, dtype=np.uint8).astype("float32")
+            norm = float(np.linalg.norm(vec)) or 1.0
+            return vec / norm
+
+    monkeypatch.setattr("app.services.embeddings._get_model", lambda: _FakeModel())
+
+
+@pytest.fixture(autouse=True)
 def mock_llm_client(monkeypatch):
     """Mock global du client LLM — JAMAIS d'appel API réel en CI.
 

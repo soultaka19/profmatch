@@ -50,6 +50,43 @@ async def test_extract_cv_data_llm_success(
 
 
 @pytest.mark.asyncio
+async def test_extract_cv_data_llm_persists_professeur_embedding(
+    db_session, professeur_prof: Professeur, celery_eager
+):
+    """Après extraction réussie, l'embedding W4 du professeur est calculé à
+    partir du résumé + compétences + expériences et persisté (sinon W4 = 0)."""
+    cv = CV(
+        professeur_id=professeur_prof.id,
+        nom_original="test.pdf",
+        chemin_fichier="x/test.pdf",
+        taille_octets=100,
+        mime_type="application/pdf",
+        statut=CVStatut.EN_COURS,
+        texte_brut="CV de test",
+    )
+    db_session.add(cv)
+    await db_session.commit()
+    await db_session.refresh(cv)
+
+    fake_vec = [0.11, 0.22, 0.33]
+    with patch(
+        "app.tasks.extraction_tasks.get_llm_client",
+        return_value=_mock_client_with_fixture("ok_complete.json"),
+    ), patch(
+        "app.services.embeddings.compute_embedding", return_value=fake_vec
+    ) as mock_embed:
+        from app.tasks.extraction_tasks import extract_cv_data_llm
+        extract_cv_data_llm(cv.id)
+
+    await db_session.refresh(professeur_prof)
+    assert professeur_prof.embedding == fake_vec
+    mock_embed.assert_called_once()
+    # Le texte source doit refléter les données extraites (compétences notamment).
+    texte_source = mock_embed.call_args.args[0]
+    assert "Python" in texte_source
+
+
+@pytest.mark.asyncio
 async def test_extract_cv_data_llm_marks_erreur_on_extraction_error(
     db_session, professeur_prof: Professeur, celery_eager
 ):

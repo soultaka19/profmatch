@@ -58,6 +58,46 @@ async def test_list_cours_recherche(client: AsyncClient, auth_headers_admin: dic
     assert data[0]["code"] == "INF1001"
 
 
+# ── Embedding W4 ───────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_create_cours_persists_embedding(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    """À la création, l'embedding W4 du cours est calculé (sinon W4 = 0)."""
+    r = await client.post(
+        "/api/cours",
+        json={"code": "EMB-1", "nom": "Algorithmes", "description": "Tri et complexité"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 201
+    cours = (
+        await db_session.execute(select(Cours).where(Cours.code == "EMB-1"))
+    ).scalar_one()
+    await db_session.refresh(cours)
+    assert cours.embedding is not None
+    assert len(cours.embedding) > 0
+
+
+@pytest.mark.asyncio
+async def test_update_cours_recompute_embedding(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
+    """Modifier nom/description recalcule l'embedding W4."""
+    cours = await _make_cours(db_session, "EMB-2", "Ancien intitulé")
+    assert cours.embedding is None
+
+    r = await client.put(
+        f"/api/cours/{cours.id}",
+        json={"nom": "Architecture logicielle", "description": "Patterns et SOLID"},
+        headers=auth_headers_admin,
+    )
+    assert r.status_code == 200
+    await db_session.refresh(cours)
+    assert cours.embedding is not None
+    assert len(cours.embedding) > 0
+
+
 # ── POST create ──────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
