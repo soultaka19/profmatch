@@ -24,13 +24,16 @@ class Settings(BaseSettings):
     JWT_TTL_HOURS: int = 24
 
     # API LLM
-    LLM_API_URL: str
-    LLM_API_COOKIE: str
+    LLM_API_URL: str = "http://localhost:11434/v1"
+    LLM_API_COOKIE: str = ""
     # Vide par défaut pour ne pas bloquer les tests CI (le client LLM est mocké
     # autouse). Doit être renseignée en .env pour les appels live au proxy CoCalc.
     LLM_API_KEY: str = ""
     LLM_MODEL: str = "gpt-oss-ctx24k:120b"
     LLM_MAX_RETRIES: int = 2
+    # Mode mock — extrait localement sans appeler le LLM.
+    # Mettre à true quand l'API de compétition est indisponible (dev local).
+    LLM_MOCK_MODE: bool = False
 
     # Upload CV
     UPLOAD_DIR: str = "/app/uploads"
