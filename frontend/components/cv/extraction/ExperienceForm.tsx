@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { extractionApi, type ExperienceDto } from "@/lib/api/extraction";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,11 +59,11 @@ export function ExperienceForm({ open, initial, onOpenChange, onMutate }: Props)
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? "Modifier l'expérience" : "Nouvelle expérience"}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{initial ? "Modifier l'expérience" : "Nouvelle expérience"}</SheetTitle>
+        </SheetHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="exp-poste" className="text-xs font-medium uppercase tracking-wider text-fg-muted">Poste</Label>
@@ -92,11 +92,11 @@ export function ExperienceForm({ open, initial, onOpenChange, onMutate }: Props)
             <Textarea id="exp-desc" value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder="Brève description des responsabilités…" />
           </div>
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Annuler</Button>
           <Button onClick={handleSave} disabled={saving || !valid}>{saving ? "Sauvegarde…" : "Enregistrer"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

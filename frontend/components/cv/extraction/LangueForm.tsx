@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { extractionApi, type LangueDto, type LangueNiveau } from "@/lib/api/extraction";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,11 +52,11 @@ export function LangueForm({ open, initial, onOpenChange, onMutate }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? "Modifier la langue" : "Nouvelle langue"}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{initial ? "Modifier la langue" : "Nouvelle langue"}</SheetTitle>
+        </SheetHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="lang-nom" className="text-xs font-medium uppercase tracking-wider text-fg-muted">Langue</Label>
@@ -74,11 +74,11 @@ export function LangueForm({ open, initial, onOpenChange, onMutate }: Props) {
             </Select>
           </div>
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Annuler</Button>
           <Button onClick={handleSave} disabled={saving || !langue.trim()}>{saving ? "Sauvegarde…" : "Enregistrer"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

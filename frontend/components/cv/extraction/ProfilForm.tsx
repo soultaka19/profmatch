@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { extractionApi } from "@/lib/api/extraction";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
@@ -49,14 +49,14 @@ export function ProfilForm({ open, initialResume, onOpenChange, onMutate }: Prop
   const remaining = MAX - value.length;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Votre profil</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Votre profil</SheetTitle>
+          <SheetDescription>
             Un résumé de votre parcours en quelques phrases. Visible par l&apos;équipe RH.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="space-y-2">
           <Textarea
@@ -75,15 +75,15 @@ export function ProfilForm({ open, initialResume, onOpenChange, onMutate }: Prop
           </div>
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={saving || remaining < 0}>
             {saving ? "Sauvegarde…" : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
