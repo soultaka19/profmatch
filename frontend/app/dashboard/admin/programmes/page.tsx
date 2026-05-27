@@ -9,6 +9,7 @@ import { ProgrammeCreateDialog } from "@/components/admin/ProgrammeCreateDialog"
 import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
 import { ProgrammeDeleteDialog } from "@/components/admin/ProgrammeDeleteDialog";
 import { TopbarAction } from "@/components/shell";
+import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 export default function Page() {
   const { data: programmes, mutate, isLoading } = useSWR<Programme[]>(
@@ -32,11 +33,15 @@ export default function Page() {
         </div>
       </div>
 
+      <AdminTableToolbar countLabel={`${programmes?.length ?? 0} programme${programmes?.length === 1 ? "" : "s"}`} />
+
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
+      ) : !programmes?.length ? (
+        <AdminTableEmpty title="Aucun programme" description="Créez un programme pour structurer le cursus." />
       ) : (
         <ProgrammesTable
-          programmes={programmes ?? []}
+          programmes={programmes}
           onEdit={setEditing}
           onDelete={setDeleting}
         />

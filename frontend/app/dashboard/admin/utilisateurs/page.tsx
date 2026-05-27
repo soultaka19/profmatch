@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TopbarAction } from "@/components/shell";
+import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 type Filter = "all" | "actifs" | "inactifs";
 
@@ -50,8 +51,8 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-fg-muted">Filtrer :</span>
+      <AdminTableToolbar countLabel={`${users?.length ?? 0} utilisateur${users?.length === 1 ? "" : "s"}`}>
+        <span className="text-sm text-fg-muted">Statut</span>
         <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <SelectTrigger className="w-44">
             <SelectValue />
@@ -62,13 +63,15 @@ export default function Page() {
             <SelectItem value="inactifs">Inactifs seulement</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </AdminTableToolbar>
 
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
+      ) : !users?.length ? (
+        <AdminTableEmpty title="Aucun utilisateur" description="Aucun compte ne correspond au filtre sélectionné." />
       ) : (
         <UsersTable
-          users={users ?? []}
+          users={users}
           onEdit={setEditing}
           onDeactivate={(u) => setToggling({ user: u, mode: "deactivate" })}
           onRestore={(u) => setToggling({ user: u, mode: "restore" })}

@@ -8,6 +8,7 @@ import { SessionsTable } from "@/components/admin/SessionsTable";
 import { SessionCreateDialog } from "@/components/admin/SessionCreateDialog";
 import { SessionDeleteDialog } from "@/components/admin/SessionDeleteDialog";
 import { TopbarAction } from "@/components/shell";
+import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 export default function Page() {
   const { data: sessions, mutate, isLoading } = useSWR<Session[]>(
@@ -31,10 +32,14 @@ export default function Page() {
         </div>
       </div>
 
+      <AdminTableToolbar countLabel={`${sessions?.length ?? 0} session${sessions?.length === 1 ? "" : "s"}`} />
+
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
+      ) : !sessions?.length ? (
+        <AdminTableEmpty title="Aucune session" description="Créez une session académique pour commencer." />
       ) : (
-        <SessionsTable sessions={sessions ?? []} onDelete={setDeleting} />
+        <SessionsTable sessions={sessions} onDelete={setDeleting} />
       )}
 
       <SessionDeleteDialog

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { Session } from "@/lib/types/api";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { SessionStatutBadge } from "./SessionStatutBadge";
+import { AdminTableShell } from "./AdminDataTable";
 
 interface Props {
   sessions: Session[];
@@ -20,8 +21,8 @@ export function SessionsTable({ sessions, onDelete }: Props) {
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
-      <table className="w-full text-sm">
+    <AdminTableShell>
+      <table aria-label="Sessions académiques" className="min-w-[600px] w-full text-sm">
         <thead className="bg-surface text-xs uppercase text-fg-muted">
           <tr>
             <th className="px-4 py-2 text-left">Session</th>
@@ -40,7 +41,7 @@ export function SessionsTable({ sessions, onDelete }: Props) {
               </td>
               <td className="px-4 py-3 text-right space-x-1">
                 <Link href={`/dashboard/admin/sessions/${s.id}`}>
-                  <Button size="sm" variant="ghost" title="Ouvrir">
+                  <Button size="sm" variant="ghost" title="Ouvrir" aria-label={`Ouvrir ${s.nom}`}>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -49,6 +50,7 @@ export function SessionsTable({ sessions, onDelete }: Props) {
                   variant="ghost"
                   onClick={() => onDelete(s)}
                   title="Supprimer"
+                  aria-label={`Supprimer ${s.nom}`}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
@@ -57,6 +59,6 @@ export function SessionsTable({ sessions, onDelete }: Props) {
           ))}
         </tbody>
       </table>
-    </div>
+    </AdminTableShell>
   );
 }

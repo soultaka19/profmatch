@@ -8,6 +8,7 @@ import { SessionStatutBadge } from "@/components/admin/SessionStatutBadge";
 import { PonderationsBar } from "@/components/admin/PonderationsBar";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Scale } from "lucide-react";
+import { AdminTableEmpty, AdminTableLoading, AdminTableShell, AdminTableToolbar } from "@/components/admin/AdminDataTable";
 
 interface SessionWithPond {
   session: Session;
@@ -39,19 +40,21 @@ export default function Page() {
         </p>
       </div>
 
+      <AdminTableToolbar countLabel={`${data?.length ?? 0} session${data?.length === 1 ? "" : "s"}`} />
+
       {isLoading ? (
-        <p className="text-sm text-fg-muted py-8 text-center">Chargement…</p>
+        <AdminTableLoading />
       ) : !data || data.length === 0 ? (
-        <p className="text-sm text-fg-muted py-8 text-center">
-          Aucune session. Créez-en une dans{" "}
+        <AdminTableEmpty title="Aucune session" description={<>
+          Créez-en une dans{" "}
           <Link href="/dashboard/admin/sessions" className="text-primary underline">
             Sessions
           </Link>
           .
-        </p>
+        </>} />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
-          <table className="w-full text-sm">
+        <AdminTableShell>
+          <table aria-label="Pondérations par session" className="min-w-[760px] w-full text-sm">
             <thead className="bg-surface text-xs uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-2 text-left">Session</th>
@@ -86,7 +89,7 @@ export default function Page() {
                   <td className="px-4 py-3 text-right">
                     <Link href={`/dashboard/admin/sessions/${session.id}`}>
                       <Button size="sm" variant="outline">
-                        Éditer
+                        <span>Éditer</span>
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Button>
                     </Link>
@@ -102,7 +105,7 @@ export default function Page() {
             <span className="inline-block h-2 w-2 rounded-sm bg-amber-500 mx-1 ml-3" /> W3 Historique
             <span className="inline-block h-2 w-2 rounded-sm bg-rose-500 mx-1 ml-3" /> W4 Sémantique
           </div>
-        </div>
+        </AdminTableShell>
       )}
     </div>
   );
