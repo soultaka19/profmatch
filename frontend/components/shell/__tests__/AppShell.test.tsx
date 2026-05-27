@@ -40,6 +40,27 @@ describe("AppShell", () => {
     expect(screen.getAllByText("Générer affectations")).toHaveLength(2);
   });
 
+  it("affiche le contexte d'espace et réserve un emplacement d'action principal", () => {
+    render(
+      <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines">
+        <div>Contenu RH</div>
+      </AppShell>
+    );
+
+    expect(screen.getAllByText("Ressources humaines")).toHaveLength(2);
+    expect(document.querySelector("#app-topbar-page-action")).toBeInTheDocument();
+  });
+
+  it("utilise une largeur large pour les écrans de données", () => {
+    const { container } = render(
+      <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord" contentWidth="wide">
+        <div>Contenu RH</div>
+      </AppShell>
+    );
+
+    expect(container.querySelector("main > div")).toHaveClass("max-w-[1360px]");
+  });
+
   it("expose un bouton de menu mobile accessible", () => {
     render(
       <AppShell navigation={rhNavigation} breadcrumb="Tableau de bord">

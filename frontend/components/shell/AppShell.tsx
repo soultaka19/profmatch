@@ -6,16 +6,35 @@ import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import type { NavSection } from "@/lib/nav/types";
+import { cn } from "@/lib/utils";
+
+export type ContentWidth = "focused" | "standard" | "wide";
 
 interface Props {
   navigation: NavSection[];
   breadcrumb: string;
+  sectionLabel?: string;
+  contentWidth?: ContentWidth;
   homeHref?: string;
   topbarActions?: ReactNode;
   children: ReactNode;
 }
 
-export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, children }: Props) {
+const WIDTH_CLASSES: Record<ContentWidth, string> = {
+  focused: "max-w-[760px]",
+  standard: "max-w-[1120px]",
+  wide: "max-w-[1360px]",
+};
+
+export function AppShell({
+  navigation,
+  breadcrumb,
+  sectionLabel,
+  contentWidth,
+  homeHref,
+  topbarActions,
+  children,
+}: Props) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -28,6 +47,9 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
     }
     return breadcrumb;
   }, [breadcrumb, navigation, pathname]);
+  const resolvedWidth =
+    contentWidth ??
+    (pathname.includes("/affectations") || pathname.includes("/historique") ? "wide" : "standard");
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -82,12 +104,13 @@ export function AppShell({ navigation, breadcrumb, homeHref, topbarActions, chil
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar
           breadcrumb={activeBreadcrumb}
+          subtitle={sectionLabel}
           actions={actions}
           menuOpen={mobileMenuOpen}
           onMenuClick={() => setMobileMenuOpen((open) => !open)}
         />
         <main className="flex-1 overflow-y-auto bg-canvas">
-          <div className="mx-auto max-w-[960px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+          <div className={cn("mx-auto px-4 py-8 sm:px-6 lg:px-10 lg:py-12", WIDTH_CLASSES[resolvedWidth])}>
             {children}
           </div>
         </main>

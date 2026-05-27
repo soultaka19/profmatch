@@ -36,10 +36,15 @@ export function AppTopbar({
         </Button>
       )}
       <div className="flex min-w-0 flex-col">
+        {subtitle && (
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">
+            {subtitle}
+          </div>
+        )}
         <div className="text-base font-semibold text-fg">{breadcrumb}</div>
-        {subtitle && <div className="text-xs text-fg-subtle">{subtitle}</div>}
       </div>
       <div className="flex-1" />
+      <div id="app-topbar-page-action" className="hidden items-center gap-3 sm:flex" />
       {actions}
     </div>
   );

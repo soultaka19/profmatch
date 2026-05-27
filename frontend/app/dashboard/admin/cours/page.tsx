@@ -10,6 +10,7 @@ import { CoursCreateDialog } from "@/components/admin/CoursCreateDialog";
 import { CoursEditDialog } from "@/components/admin/CoursEditDialog";
 import { CoursDeleteDialog } from "@/components/admin/CoursDeleteDialog";
 import { Input } from "@/components/ui/input";
+import { TopbarAction } from "@/components/shell";
 
 export default function Page() {
   const [search, setSearch] = useState("");
@@ -28,7 +29,10 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <TopbarAction>
+        <CoursCreateDialog onCreated={() => mutate()} />
+      </TopbarAction>
+      <div>
         <div>
           <h1 className="text-2xl font-semibold text-fg">Cours</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -36,7 +40,6 @@ export default function Page() {
             d&apos;un programme depuis la page Programmes.
           </p>
         </div>
-        <CoursCreateDialog onCreated={() => mutate()} />
       </div>
 
       <div className="max-w-md">

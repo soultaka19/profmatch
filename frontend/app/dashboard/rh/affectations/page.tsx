@@ -14,6 +14,7 @@ import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import type { AffectationOut, PonderationsOut } from "@/lib/types/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { TopbarAction } from "@/components/shell";
 import {
   AlertCircle,
 } from "lucide-react";
@@ -232,8 +233,16 @@ export default function AffectationsPage() {
 
   return (
     <div className="space-y-8">
+      {phase === "review" && (
+        <TopbarAction>
+          <NewGenerationButton
+            hasPendingProposals={hasPendingProposals}
+            onReset={reset}
+          />
+        </TopbarAction>
+      )}
       {/* En-tête */}
-      <div className="flex items-center justify-between">
+      <div>
         <div>
           <h1 className="text-display font-semibold text-fg">Affectations</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -245,12 +254,6 @@ export default function AffectationsPage() {
             {phase === "error" && "Une erreur est survenue lors de la génération."}
           </p>
         </div>
-        {phase === "review" && (
-          <NewGenerationButton
-            hasPendingProposals={hasPendingProposals}
-            onReset={reset}
-          />
-        )}
         {phase === "error" && (
           <Button variant="outline" size="sm" onClick={reset}>
             Réessayer

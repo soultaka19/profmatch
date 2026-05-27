@@ -7,6 +7,7 @@ import type { Session } from "@/lib/types/api";
 import { SessionsTable } from "@/components/admin/SessionsTable";
 import { SessionCreateDialog } from "@/components/admin/SessionCreateDialog";
 import { SessionDeleteDialog } from "@/components/admin/SessionDeleteDialog";
+import { TopbarAction } from "@/components/shell";
 
 export default function Page() {
   const { data: sessions, mutate, isLoading } = useSWR<Session[]>(
@@ -17,7 +18,10 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <TopbarAction>
+        <SessionCreateDialog onCreated={() => mutate()} />
+      </TopbarAction>
+      <div>
         <div>
           <h1 className="text-2xl font-semibold text-fg">Sessions académiques</h1>
           <p className="mt-1 text-sm text-fg-muted">
@@ -25,7 +29,6 @@ export default function Page() {
             sont configurées au niveau de chaque session.
           </p>
         </div>
-        <SessionCreateDialog onCreated={() => mutate()} />
       </div>
 
       {isLoading ? (
