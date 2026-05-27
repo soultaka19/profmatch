@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
@@ -63,20 +63,20 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
     code.trim().length > 0 && nom.trim().length > 0 && semestres.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      <SheetTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           Nouveau programme
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nouveau programme</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nouveau programme</SheetTitle>
+          <SheetDescription>
             Le code est unique (ex. 51046). Il ne pourra plus être modifié après création.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="code">Code</Label>
@@ -102,13 +102,13 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
             {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création…</> : "Créer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

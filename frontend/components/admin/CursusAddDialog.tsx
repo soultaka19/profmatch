@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -123,28 +123,28 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
   const canCreate = newCode.trim().length > 0 && newNom.trim().length > 0;
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
         if (!o) resetAll();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button size="sm" variant="outline">
           <Plus className="mr-2 h-4 w-4" />
           Ajouter un cours
         </Button>
-      </DialogTrigger>
+      </SheetTrigger>
 
       {mode === "select" ? (
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Ajouter un cours à cette étape</DialogTitle>
-            <DialogDescription>
+        <SheetContent className="max-w-2xl">
+          <SheetHeader>
+            <SheetTitle>Ajouter un cours à cette étape</SheetTitle>
+            <SheetDescription>
               Choisissez un cours existant ou créez-en un nouveau qui sera automatiquement rattaché.
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
 
           <div className="space-y-3 py-1">
             {/* Bouton "Créer" en haut */}
@@ -214,7 +214,7 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               variant="ghost"
               onClick={() => {
@@ -234,16 +234,16 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
                 "Ajouter"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </SheetFooter>
+        </SheetContent>
       ) : (
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Créer un nouveau cours</DialogTitle>
-            <DialogDescription>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Créer un nouveau cours</SheetTitle>
+            <SheetDescription>
               Le cours sera créé dans le référentiel et automatiquement rattaché à cette étape.
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="ncode">Code</Label>
@@ -289,7 +289,7 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
-          <DialogFooter>
+          <SheetFooter>
             <Button variant="ghost" onClick={() => setMode("select")}>
               Retour
             </Button>
@@ -303,9 +303,9 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
                 "Créer et rattacher"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </SheetFooter>
+        </SheetContent>
       )}
-    </Dialog>
+    </Sheet>
   );
 }

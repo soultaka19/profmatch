@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -66,12 +66,12 @@ export function ProgrammeEditDialog({ programme, onClose, onUpdated }: Props) {
   }
 
   return (
-    <Dialog open={!!programme} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Modifier le programme</DialogTitle>
-          <DialogDescription>Code <span className="font-mono">{programme?.code}</span> (immuable).</DialogDescription>
-        </DialogHeader>
+    <Sheet open={!!programme} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Modifier le programme</SheetTitle>
+          <SheetDescription>Code <span className="font-mono">{programme?.code}</span> (immuable).</SheetDescription>
+        </SheetHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="enom">Nom</Label>
@@ -93,13 +93,13 @@ export function ProgrammeEditDialog({ programme, onClose, onUpdated }: Props) {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>Annuler</Button>
           <Button onClick={handleSubmit} disabled={submitting || !nom.trim() || semestres.length === 0}>
             {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement…</> : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
