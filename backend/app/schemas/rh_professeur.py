@@ -31,6 +31,8 @@ class ProfesseurListResponse(BaseModel):
 
 
 class ProfesseurDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     professeur_id: int
     nom_complet: str
     email: str

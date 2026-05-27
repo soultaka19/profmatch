@@ -125,6 +125,28 @@ async def test_detail_404_for_unknown(client: AsyncClient, auth_headers_rh):
 
 
 @pytest.mark.asyncio
+async def test_detail_returns_profile_for_prof_without_cv(
+    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+):
+    # Prof fraîchement créé : pas de CV, pas de données extraites.
+    prof = await _make_prof(db_session, "neo@test.ca", "Neo Sansfichier")
+
+    r = await client.get(f"/api/rh/professeurs/{prof.id}", headers=auth_headers_rh)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["professeur_id"] == prof.id
+    assert data["nom_complet"] == "Neo Sansfichier"
+    assert data["cv_statut"] is None
+    assert data["cv_nom_original"] is None
+    assert data["profil"]["resume"] is None
+    assert data["profil"]["source"] == "llm"
+    assert data["competences"] == []
+    assert data["experiences"] == []
+    assert data["formations"] == []
+    assert data["langues"] == []
+
+
+@pytest.mark.asyncio
 async def test_detail_returns_full_profile(
     client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
 ):
