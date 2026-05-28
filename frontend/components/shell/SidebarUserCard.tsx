@@ -2,6 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useConfirm } from "@/components/confirm/ConfirmProvider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,19 @@ function initial(name: string | undefined): string {
 
 export function SidebarUserCard({ collapsed = false }: { collapsed?: boolean }) {
   const { user, logout } = useAuth();
+  const confirm = useConfirm();
+
   if (!user) return null;
+
+  async function handleLogout() {
+    const ok = await confirm({
+      title: "Se déconnecter ?",
+      description: "Vous allez être déconnecté de votre session. Toute progression non sauvegardée sera perdue.",
+      confirmLabel: "Se déconnecter",
+      cancelLabel: "Annuler",
+    });
+    if (ok) logout();
+  }
 
   return (
     <div
@@ -39,7 +52,7 @@ export function SidebarUserCard({ collapsed = false }: { collapsed?: boolean }) 
         variant="ghost"
         aria-label="Se déconnecter"
         title="Se déconnecter"
-        onClick={logout}
+        onClick={handleLogout}
       >
         <LogOut className="h-4 w-4 text-fg-muted" />
       </Button>
