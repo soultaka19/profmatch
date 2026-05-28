@@ -1073,6 +1073,60 @@ async def test_generer_parallelise_les_appels_xai(db_session):
     assert all(a.justification == "justif-mockée" for a in affectations)
 
 
+@pytest.mark.asyncio
+async def test_generer_borne_la_concurrence_xai(db_session, monkeypatch):
+    """Le parallélisme XAI doit être borné par XAI_MAX_CONCURRENCE.
+
+    Sans borne, un parallélisme massif (50+ requêtes simultanées) sature l'API
+    LLM compétition et déclenche les retries internes du SDK OpenAI, ce qui
+    bloque la tâche pendant des minutes en pratique. La borne protège le LLM
+    distant et stabilise la latence.
+    """
+    import asyncio as _asyncio
+    from unittest.mock import patch
+
+    from app.models.cours_competence import CoursCompetence
+    from app.services import affectation_service
+
+    monkeypatch.setattr(affectation_service, "XAI_MAX_CONCURRENCE", 2)
+
+    prog = await _make_programme_int(db_session, "SEM-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    for i in range(3):
+        await _make_prof_traite(
+            db_session, f"sem{i}@test.ca", f"Sem{i}", ["Python"]
+        )
+    c1 = await _make_cours_int(db_session, "SEM-C1")
+    c2 = await _make_cours_int(db_session, "SEM-C2")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await _make_lien_int(db_session, prog.id, etape.id, c2.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    db_session.add(CoursCompetence(cours_id=c2.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    in_flight = {"current": 0, "max": 0}
+
+    async def fake_justif(ctx, xai_actif):
+        in_flight["current"] += 1
+        in_flight["max"] = max(in_flight["max"], in_flight["current"])
+        await _asyncio.sleep(0.05)
+        in_flight["current"] -= 1
+        return "borne"
+
+    with patch(
+        "app.services.affectation_service._rediger_justification", fake_justif
+    ):
+        await generer_affectations(
+            sess.id, [prog.id], db_session, etape_ids=[etape.id]
+        )
+
+    # Avec 6 candidats et XAI_MAX_CONCURRENCE=2, jamais plus de 2 en vol simultanés
+    assert in_flight["max"] == 2, (
+        f"Borne ignorée : in_flight.max={in_flight['max']}"
+    )
+
+
 # ── _charger_bonus_historique : préagrégation W3 (anti N+1) ───────────────────
 
 

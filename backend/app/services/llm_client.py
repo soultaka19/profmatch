@@ -18,10 +18,15 @@ def get_llm_client() -> OpenAI:
     """
     http_client = httpx.Client(
         cookies={"COCALC_COMPUTE_SERVER_AUTH_TOKEN": settings.LLM_API_COOKIE},
-        timeout=60.0,
+        timeout=15.0,
     )
+    # max_retries=0 : le SDK fait sinon 2 retries auto avec backoff (~3 min total
+    # par appel timeouté). Notre code XAI gère déjà l'échec via fallback statique
+    # et notre extraction CV via sa propre boucle de validation — pas besoin du
+    # retry SDK qui amplifie l'effet de saturation en parallèle.
     return OpenAI(
         base_url=settings.LLM_API_URL,
         api_key=settings.LLM_API_KEY,
         http_client=http_client,
+        max_retries=0,
     )

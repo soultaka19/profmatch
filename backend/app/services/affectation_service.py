@@ -48,6 +48,12 @@ from app.services.scoring import (
 
 TOP_N_PAR_COURS: int = 3
 
+# Borne le parallélisme des appels LLM XAI : sans borne, lancer 50+ requêtes
+# simultanées vers l'API compétition (mono-instance vLLM) déclenche timeouts en
+# masse + retries internes du SDK OpenAI (~3 min par appel échoué). Avec 8 en vol,
+# le LLM reste réactif et la durée totale = N_appels × latence_moy / 8.
+XAI_MAX_CONCURRENCE: int = 8
+
 
 async def _charger_ponderations(session_id: int, db: AsyncSession) -> tuple[PoidsScoring, bool]:
     """Retourne les poids W1–W4 et le flag `xai_actif` (justification LLM vs statique)."""
@@ -351,12 +357,19 @@ async def generer_affectations(
         top = sorted(scores_par_prof, key=lambda x: x[0], reverse=True)[:TOP_N_PAR_COURS]
         top_par_cours.extend((aff, ctx) for _, aff, ctx in top)
 
-    # Phase 2 — justifications XAI EN PARALLÈLE (asyncio.gather). Chaque appel
-    # LLM (~2 s) doublait la latence en séquentiel : pour C cours × top-3 on
-    # passait par C×3 attentes successives. Gather ramène ça à la latence
-    # d'un seul appel (à parallélisme près du LLM).
+    # Phase 2 — justifications XAI EN PARALLÈLE (asyncio.gather) avec un
+    # sémaphore qui borne la concurrence : sans borne, lancer toutes les
+    # requêtes simultanément sature le LLM compétition et le rend inutilisable
+    # (timeouts + retries du SDK). Le sémaphore garde le débit utile tout en
+    # protégeant le serveur distant.
+    sem = asyncio.Semaphore(XAI_MAX_CONCURRENCE)
+
+    async def _bornee(ctx: ContexteJustification) -> str:
+        async with sem:
+            return await _rediger_justification(ctx, xai_actif)
+
     justifications = await asyncio.gather(*[
-        _rediger_justification(ctx, xai_actif) for _, ctx in top_par_cours
+        _bornee(ctx) for _, ctx in top_par_cours
     ])
 
     nouvelles_affectations: list[Affectation] = []
