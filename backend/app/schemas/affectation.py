@@ -143,6 +143,32 @@ class GenererAffectationsResponse(BaseModel):
     message: str = "Génération des affectations en cours"
 
 
+class JustificationTotaux(BaseModel):
+    """Décompte des justifications d'une session par statut d'enrichissement.
+
+    Sert au front à afficher 'X / Y enrichies par l'IA' et à savoir quand
+    arrêter le polling (enrichie + echec == total)."""
+
+    total: int
+    statique: int
+    en_cours: int
+    enrichie: int
+    echec: int
+
+
+class GenerationStatusOut(BaseModel):
+    """Réponse de GET /api/affectations/generation/{task_id}.
+
+    `totaux` n'est rempli que lorsque la tâche est terminée (SUCCESS) et qu'on
+    a pu identifier la session — le front affiche jusque-là son overlay
+    pipeline et poll en attendant."""
+
+    status: str
+    detail: str | None = None
+    result: dict | None = None
+    totaux: JustificationTotaux | None = None
+
+
 class AffectationManuelleCreate(BaseModel):
     session_id: int
     professeur_id: int

@@ -1,13 +1,14 @@
 """Routes RH et Admin pour la génération et révision des affectations."""
 
+from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import require_role
 from app.db.session import get_db
-from app.models.affectation import Affectation, AffectationStatut
+from app.models.affectation import Affectation, AffectationStatut, JustificationStatut
 from app.models.cours_etape_programme import CoursEtapeProgramme
 from app.models.professeur import Professeur
 from app.models.user import User
@@ -18,8 +19,10 @@ from app.schemas.affectation import (
     AffectationValidateRequest,
     FeedbackCreate,
     FeedbackOut,
+    GenerationStatusOut,
     GenererAffectationsRequest,
     GenererAffectationsResponse,
+    JustificationTotaux,
     ProfesseurDisponibleOut,
 )
 from app.services.affectation_service import (
@@ -29,6 +32,7 @@ from app.services.affectation_service import (
     valider_affectation,
 )
 from app.tasks.affectation_tasks import generer_affectations_task
+from app.worker import celery_app
 
 router = APIRouter()
 
@@ -83,21 +87,60 @@ async def generer_affectations(
     return GenererAffectationsResponse(task_id=task.id)
 
 
-@router.get("/generation/{task_id}")
+async def _compter_justifications(session_id: int, db: AsyncSession) -> JustificationTotaux:
+    """Décompte par statut d'enrichissement des justifications d'une session.
+
+    Une seule requête `GROUP BY` — pas de N+1, et le résultat est cumulé en
+    mémoire pour exposer les 4 catégories même quand certaines sont à zéro.
+    """
+    rows = (await db.execute(
+        select(
+            Affectation.justification_statut,
+            func.count(Affectation.id),
+        )
+        .where(
+            Affectation.session_id == session_id,
+            Affectation.statut == AffectationStatut.PROPOSEE,
+        )
+        .group_by(Affectation.justification_statut)
+    )).all()
+    par_statut = {js: int(n) for js, n in rows}
+    return JustificationTotaux(
+        total=sum(par_statut.values()),
+        statique=par_statut.get(JustificationStatut.STATIQUE, 0),
+        en_cours=par_statut.get(JustificationStatut.EN_COURS, 0),
+        enrichie=par_statut.get(JustificationStatut.ENRICHIE, 0),
+        echec=par_statut.get(JustificationStatut.ECHEC, 0),
+    )
+
+
+@router.get("/generation/{task_id}", response_model=GenerationStatusOut)
 async def get_generation_status(
     task_id: str,
     current_user: User = Depends(require_role("rh", "admin")),
-) -> dict:
-    """Retourne le statut de la tâche Celery de génération."""
-    from app.worker import celery_app
-    from celery.result import AsyncResult
+    db: AsyncSession = Depends(get_db),
+) -> GenerationStatusOut:
+    """Statut de la tâche Celery + compteurs d'enrichissement.
 
+    - Pendant que la tâche tourne (PENDING/STARTED), seul `status` est rempli.
+      Le front affiche son overlay pipeline en attendant.
+    - À SUCCESS, on inclut `result` (session_id, nb_affectations, exclus) et
+      `totaux` (compteurs d'enrichissement). Le front passe sur le tableau
+      et poll jusqu'à `enrichie + echec == total`.
+    """
     result = AsyncResult(task_id, app=celery_app)
-    if result.state == "SUCCESS":
-        return {"status": "done", "result": result.get()}
+
     if result.state == "FAILURE":
-        return {"status": "error", "detail": str(result.info)}
-    return {"status": result.state.lower()}
+        return GenerationStatusOut(status="error", detail=str(result.info))
+    if result.state != "SUCCESS":
+        return GenerationStatusOut(status=result.state.lower())
+
+    res = result.get()
+    totaux = None
+    session_id = res.get("session_id") if isinstance(res, dict) else None
+    if session_id is not None:
+        totaux = await _compter_justifications(session_id, db)
+    return GenerationStatusOut(status="done", result=res, totaux=totaux)
 
 
 @router.get("/", response_model=list[AffectationOut])

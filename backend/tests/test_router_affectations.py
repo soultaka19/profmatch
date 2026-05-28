@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.affectation import Affectation, AffectationStatut
+from app.models.affectation import Affectation, AffectationStatut, JustificationStatut
 from app.models.cours import Cours
 from app.models.professeur import Professeur
 from app.models.session import Semestre, Session
@@ -425,3 +425,92 @@ async def test_list_affectations_filtre_par_etape(client, db_session, auth_heade
     body2 = resp2.json()
     assert len(body2) == 1
     assert body2[0]["cours_id"] == c1.id
+
+
+# ── GET /generation/{task_id} : statut + compteurs d'enrichissement (B1) ─────
+
+
+@pytest.mark.asyncio
+async def test_generation_status_pending_pas_de_totaux(
+    client: AsyncClient, auth_headers_rh: dict[str, str]
+):
+    """Pendant que la tâche tourne (PENDING/STARTED), on renvoie juste le
+    status. Aucun compteur d'enrichissement — la session n'est pas encore
+    déterminée côté Celery, et le front affiche l'overlay pipeline."""
+    fake = MagicMock()
+    fake.state = "PENDING"
+    with patch(
+        "app.routers.affectations.AsyncResult", return_value=fake
+    ):
+        resp = await client.get(
+            "/api/affectations/generation/tid-pending", headers=auth_headers_rh
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "pending"
+    assert "totaux" not in body or body["totaux"] is None
+
+
+@pytest.mark.asyncio
+async def test_generation_status_done_avec_compteurs_enrichissement(
+    db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+    professeur_prof,
+):
+    """Quand la tâche est SUCCESS, la réponse contient le résultat ET les
+    compteurs des justifications de la session — permet au front d'afficher
+    'X / Y enrichies par l'IA' et de poller jusqu'à la fin de l'enrichissement.
+    """
+    sess = Session(annee=2030, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    cours_list = []
+    for i in range(5):
+        c = Cours(code=f"GEN-{i}", nom=f"Gen {i}")
+        db_session.add(c)
+        cours_list.append(c)
+    await db_session.commit()
+    for c in cours_list:
+        await db_session.refresh(c)
+
+    statuts = [
+        JustificationStatut.STATIQUE,
+        JustificationStatut.STATIQUE,
+        JustificationStatut.EN_COURS,
+        JustificationStatut.ENRICHIE,
+        JustificationStatut.ECHEC,
+    ]
+    for c, js in zip(cours_list, statuts):
+        db_session.add(Affectation(
+            session_id=sess.id, professeur_id=professeur_prof.id, cours_id=c.id,
+            score_total=Decimal("0.7"), score_comp=Decimal("0.7"),
+            score_exp=Decimal("0.7"), score_hist=Decimal("0.7"),
+            score_sem=Decimal("0.7"),
+            statut=AffectationStatut.PROPOSEE,
+            justification_statut=js,
+            justification="j",
+        ))
+    await db_session.commit()
+
+    fake = MagicMock()
+    fake.state = "SUCCESS"
+    fake.get.return_value = {
+        "session_id": sess.id, "nb_affectations": 5, "programmes_exclus": [],
+    }
+    with patch(
+        "app.routers.affectations.AsyncResult", return_value=fake
+    ):
+        resp = await client.get(
+            f"/api/affectations/generation/tid-done", headers=auth_headers_rh
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "done"
+    assert body["totaux"] == {
+        "total": 5, "statique": 2, "en_cours": 1, "enrichie": 1, "echec": 1,
+    }
