@@ -14,7 +14,6 @@ from app.models.ponderations_session import PonderationsSession
 from app.models.programme import Programme
 from app.models.session import Semestre, Session, SessionStatut
 from app.services.affectation_service import (
-    _bonus_historique,
     _charger_cours_par_programmes,
     _score_comp_pondere,
     _scorer_paire,
@@ -26,7 +25,11 @@ from app.services.affectation_service import (
     update_ponderations,
     valider_affectation,
 )
-from app.services.scoring import PoidsScoring
+from app.services.scoring import (
+    ContexteJustification,
+    PoidsScoring,
+    generer_justification_statique,
+)
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -352,12 +355,16 @@ async def test_scorer_paire_competence_totale(db_session: AsyncSession, professe
     )).scalars().all()
 
     poids = PoidsScoring(w1=Decimal("1"), w2=Decimal("0"), w3=Decimal("0"), w4=Decimal("0"))
-    score_total, composants, justification = await _scorer_paire(
-        prof, cours, list(ccs), poids, 999, db_session
+    # _scorer_paire est désormais pur (sync) ; bonus W3 fourni via un map préchargé.
+    score_total, composants, ctx = _scorer_paire(
+        prof, cours, list(ccs), poids, {}
     )
     assert float(composants.score_comp) == pytest.approx(1.0, abs=0.001)
     assert float(score_total) == pytest.approx(1.0, abs=0.001)
-    assert isinstance(justification, str) and justification
+    # _scorer_paire retourne désormais le contexte ; la rédaction (LLM/statique)
+    # est déléguée à l'orchestrateur via _rediger_justification.
+    assert isinstance(ctx, ContexteJustification)
+    assert generer_justification_statique(ctx)
 
 
 # ── Helper : prof avec CV traité ─────────────────────────────────────────────
@@ -827,3 +834,205 @@ async def test_generer_saute_cours_couvert_par_validee(db_session):
         )
     )).scalar_one()
     assert nb_validees == 1
+
+
+# ── generer_affectations : score sémantique W4 (embeddings) ───────────────────
+
+
+@pytest.mark.asyncio
+async def test_generer_utilise_embedding_pour_score_semantique(db_session):
+    """Quand prof et cours ont un embedding, le score W4 (sc_sem) est non nul.
+
+    Régression : tant que les embeddings n'étaient jamais peuplés, la branche
+    sémantique de `_scorer_paire` restait inerte et W4 valait toujours 0.
+    """
+    from app.models.cours_competence import CoursCompetence
+
+    prof = await _make_prof_traite(db_session, "emb-gen@test.ca", "Emma", ["Python"])
+    prog = await _make_programme_int(db_session, "EMB-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    cours = await _make_cours_int(db_session, "EMB-C")
+    await _make_lien_int(db_session, prog.id, etape.id, cours.id)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    # embeddings non nuls de même dimension → similarité cosinus > 0
+    prof.embedding = [0.10, 0.20, 0.30]
+    cours.embedding = [0.10, 0.20, 0.25]
+    await db_session.commit()
+
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+
+    aff = next(
+        a for a in affectations
+        if a.professeur_id == prof.id and a.cours_id == cours.id
+    )
+    assert aff.score_sem > Decimal("0")
+
+
+# ── generer_affectations : justification XAI (LLM vs statique) ─────────────────
+
+
+def _xai_llm_client():
+    """Client LLM mocké renvoyant une justification XAI narrative valide."""
+    import json as _json
+    from unittest.mock import MagicMock as _MM
+
+    client = _MM()
+    contenu = _json.dumps({
+        "competences": "Analyse LLM des compétences.",
+        "experience": "Analyse LLM de l'expérience.",
+        "historique": "Analyse LLM de l'historique.",
+        "semantique": "Analyse LLM sémantique.",
+        "recommandation": "Recommandation narrative distinctive du LLM.",
+    })
+    client.chat.completions.create.return_value = _MM(
+        choices=[_MM(message=_MM(content=contenu))]
+    )
+    return client
+
+
+async def _setup_un_cours_un_prof(db_session, suffixe: str):
+    from app.models.cours_competence import CoursCompetence
+
+    prof = await _make_prof_traite(
+        db_session, f"xai-{suffixe}@test.ca", "Xavier", ["Python"]
+    )
+    prog = await _make_programme_int(db_session, f"XAI-{suffixe}", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    cours = await _make_cours_int(db_session, f"XAI-C{suffixe}")
+    await _make_lien_int(db_session, prog.id, etape.id, cours.id)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    await db_session.commit()
+    return prog, sess, etape, cours
+
+
+@pytest.mark.asyncio
+async def test_generer_avec_xai_actif_produit_justification_llm(db_session):
+    """xai_actif=True : la justification du top-3 est produite par le LLM
+    (format narratif), pas la version statique technique."""
+    from unittest.mock import patch
+
+    prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, "ON")
+
+    with patch(
+        "app.services.llm_client.get_llm_client", return_value=_xai_llm_client()
+    ):
+        affectations, _ = await generer_affectations(
+            sess.id, [prog.id], db_session, etape_ids=[etape.id]
+        )
+
+    aff = next(a for a in affectations if a.cours_id == cours.id)
+    assert "Recommandation narrative distinctive du LLM." in aff.justification
+    assert "W1 =" not in aff.justification  # narratif, pas le gabarit statique
+
+
+@pytest.mark.asyncio
+async def test_generer_avec_xai_inactif_produit_justification_statique(db_session):
+    """xai_actif=False : justification statique, aucun appel LLM."""
+    from sqlalchemy import select as _sel
+    from unittest.mock import patch
+
+    prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, "OFF")
+    pond = (await db_session.execute(
+        _sel(PonderationsSession).where(PonderationsSession.session_id == sess.id)
+    )).scalar_one()
+    pond.xai_actif = False
+    await db_session.commit()
+
+    client = _xai_llm_client()
+    with patch("app.services.llm_client.get_llm_client", return_value=client):
+        affectations, _ = await generer_affectations(
+            sess.id, [prog.id], db_session, etape_ids=[etape.id]
+        )
+
+    aff = next(a for a in affectations if a.cours_id == cours.id)
+    assert "W1 =" in aff.justification  # gabarit statique
+    client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_generer_justification_reflete_historique_reel(db_session):
+    """La justification mentionne le nombre réel de sessions précédentes et la
+    note RH moyenne (corrige les valeurs jusque-là codées en dur à 0)."""
+    from sqlalchemy import select as _sel
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.affectation_feedback import AffectationFeedback
+    from app.models.cours_competence import CoursCompetence
+
+    prof = await _make_prof_traite(db_session, "hist@test.ca", "Henri", ["Python"])
+    prog = await _make_programme_int(db_session, "HIST-P", [Semestre.AUTOMNE])
+    sess_prev = await _make_session_int(db_session, Semestre.HIVER)
+    sess_new = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    cours = await _make_cours_int(db_session, "HIST-C")
+    await _make_lien_int(db_session, prog.id, etape.id, cours.id)
+    db_session.add(CoursCompetence(cours_id=cours.id, nom="Python", importance=5))
+    await db_session.flush()
+
+    # Historique : affectation validée en session précédente + feedback RH note 4
+    aff_prev = Affectation(
+        session_id=sess_prev.id, professeur_id=prof.id, cours_id=cours.id,
+        score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
+        score_hist=Decimal("0.8"), score_sem=Decimal("0.8"),
+        statut=AffectationStatut.VALIDEE,
+    )
+    db_session.add(aff_prev)
+    await db_session.flush()
+    db_session.add(AffectationFeedback(affectation_id=aff_prev.id, note=4))
+
+    pond = (await db_session.execute(
+        _sel(PonderationsSession).where(PonderationsSession.session_id == sess_new.id)
+    )).scalar_one()
+    pond.xai_actif = False  # justification statique déterministe
+    await db_session.commit()
+
+    affectations, _ = await generer_affectations(
+        sess_new.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+    aff = next(
+        a for a in affectations
+        if a.cours_id == cours.id and a.professeur_id == prof.id
+    )
+    assert "1 session(s) précédente(s)" in aff.justification
+    assert "4.0 sur 5" in aff.justification
+
+
+# ── _charger_bonus_historique : préagrégation W3 (anti N+1) ───────────────────
+
+
+@pytest.mark.asyncio
+async def test_charger_bonus_historique_agrege(db_session):
+    """Une seule requête agrège l'historique de toutes les paires (prof, cours)
+    hors session courante : {(prof, cours): (bonus, nb_sessions, note_moy)}."""
+    from app.services.affectation_service import _charger_bonus_historique
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.affectation_feedback import AffectationFeedback
+
+    prof = await _make_prof_traite(db_session, "agg@test.ca", "Aggreg", ["Python"])
+    cours = await _make_cours_int(db_session, "AGG-C")
+    s1 = await _make_session_int(db_session, Semestre.HIVER)
+    s2 = await _make_session_int(db_session, Semestre.PRINTEMPS)
+    s_courante = await _make_session_int(db_session, Semestre.AUTOMNE)
+    await db_session.flush()
+    for s, note in ((s1, 4), (s2, 5)):
+        aff = Affectation(
+            session_id=s.id, professeur_id=prof.id, cours_id=cours.id,
+            score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
+            score_hist=Decimal("0.8"), score_sem=Decimal("0.8"),
+            statut=AffectationStatut.VALIDEE,
+        )
+        db_session.add(aff)
+        await db_session.flush()
+        db_session.add(AffectationFeedback(affectation_id=aff.id, note=note))
+    await db_session.commit()
+
+    bonus_map = await _charger_bonus_historique(s_courante.id, db_session)
+
+    assert (prof.id, cours.id) in bonus_map
+    bonus, nb, note_moy = bonus_map[(prof.id, cours.id)]
+    assert nb == 2
+    assert note_moy == pytest.approx(4.5)
+    assert bonus == pytest.approx(0.9)  # note_moy / 5

@@ -3,6 +3,8 @@
 Préfixe : /api/cours
 """
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +15,7 @@ from app.models.cours import Cours
 from app.models.user import User
 from app.schemas.cours import CoursCreate, CoursOut, CoursUpdate
 from app.schemas.programme import CoursReadOnlyOut
+from app.services.embeddings import build_cours_text, compute_embedding
 
 router = APIRouter()
 
@@ -23,6 +26,11 @@ async def _get_cours_or_404(cours_id: int, db: AsyncSession) -> Cours:
     if cours is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable")
     return cours
+
+
+async def _compute_cours_embedding(nom: str, description: str | None) -> list[float]:
+    """Embedding W4 du cours, calculé hors event loop (encodage CPU bloquant)."""
+    return await asyncio.to_thread(compute_embedding, build_cours_text(nom, description))
 
 
 @router.get("", response_model=list[CoursReadOnlyOut])
@@ -57,6 +65,7 @@ async def create_cours(
         description=payload.description,
         credits=payload.credits,
         heures=payload.heures,
+        embedding=await _compute_cours_embedding(payload.nom, payload.description),
     )
     db.add(cours)
     await db.commit()
@@ -81,6 +90,7 @@ async def update_cours(
     db: AsyncSession = Depends(get_db),
 ) -> CoursOut:
     cours = await _get_cours_or_404(cours_id, db)
+    texte_modifie = payload.nom is not None or payload.description is not None
     if payload.nom is not None:
         cours.nom = payload.nom
     if payload.description is not None:
@@ -89,6 +99,8 @@ async def update_cours(
         cours.credits = payload.credits
     if payload.heures is not None:
         cours.heures = payload.heures
+    if texte_modifie:
+        cours.embedding = await _compute_cours_embedding(cours.nom, cours.description)
     await db.commit()
     await db.refresh(cours)
     return cours

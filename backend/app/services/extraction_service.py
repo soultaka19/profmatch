@@ -1,6 +1,6 @@
 from openai import OpenAI
 from pydantic import ValidationError
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,6 +10,7 @@ from app.models.formation import Formation
 from app.models.langue import Langue
 from app.models.professeur import Professeur
 from app.schemas.extraction import ExtractionLLM
+from app.services import embeddings
 from app.services.llm_prompts import build_extraction_prompt
 
 
@@ -133,3 +134,24 @@ def persist_extraction(db: Session, professeur_id: int, data: ExtractionLLM) -> 
             resume_profil_source=SourceOrigine.LLM,
         )
     )
+
+
+def compute_professeur_embedding(db: Session, professeur_id: int) -> None:
+    """Calcule et persiste l'embedding W4 du professeur (similarité sémantique).
+
+    Source : résumé de profil + compétences + expériences déjà persistés. À
+    appeler après `persist_extraction`, dans la même transaction (pas de commit
+    interne). Sans embedding, le score W4 vaut toujours 0.
+    """
+    prof = db.execute(
+        select(Professeur).where(Professeur.id == professeur_id)
+    ).scalar_one_or_none()
+    if prof is None:
+        return
+    competences = [c.nom for c in prof.competences]
+    experiences = [
+        " ".join(filter(None, (e.poste, e.employeur, e.description_courte)))
+        for e in prof.experiences
+    ]
+    texte = embeddings.build_professeur_text(prof.resume_profil, competences, experiences)
+    prof.embedding = embeddings.compute_embedding(texte)

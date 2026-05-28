@@ -231,6 +231,54 @@ async def test_mes_affectations_prof_sans_fiche_retourne_liste_vide(
     assert resp.json() == []
 
 
+@pytest.mark.asyncio
+async def test_patch_valider_enrichit_noms(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    auth_headers_rh: dict[str, str],
+    professeur_prof: Professeur,
+    test_user_prof,
+):
+    """PATCH /api/affectations/{id} retourne aussi cours_nom/code et professeur_nom
+    (cohérence avec GET et POST /manuelle), pas seulement les champs bruts."""
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    cours = Cours(code="PCH-1", nom="Cours Patch", credits=3)
+    db_session.add(cours)
+    await db_session.commit()
+    await db_session.refresh(cours)
+
+    aff = Affectation(
+        session_id=sess.id,
+        professeur_id=professeur_prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.800"),
+        score_comp=Decimal("0.800"),
+        score_exp=Decimal("0.800"),
+        score_hist=Decimal("0.800"),
+        score_sem=Decimal("0.800"),
+        statut=AffectationStatut.PROPOSEE,
+    )
+    db_session.add(aff)
+    await db_session.commit()
+    await db_session.refresh(aff)
+
+    resp = await client.patch(
+        f"/api/affectations/{aff.id}",
+        headers=auth_headers_rh,
+        json={"statut": "validee"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["statut"] == "validee"
+    assert body["cours_nom"] == "Cours Patch"
+    assert body["cours_code"] == "PCH-1"
+    assert body["professeur_nom"] == test_user_prof.nom_complet
+
+
 # ── Override manuel (REV-04) ─────────────────────────────────────────────────
 
 
