@@ -165,7 +165,7 @@ export function AffectationTable({
             <section key={coursId}>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-baseline gap-2">
-                  <h3 className="text-base font-semibold text-fg">{coursName}</h3>
+                  <h3 className="text-body font-semibold text-fg">{coursName}</h3>
                   <span className="text-xs text-fg-muted">
                     {group.length} candidat{group.length > 1 ? "s" : ""}
                   </span>
@@ -228,7 +228,7 @@ function JustificationDialog({
       {affectation && (
         <SheetContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-5 sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-7">
           <SheetHeader>
-            <SheetTitle className="text-xl not-italic">Justification IA</SheetTitle>
+            <SheetTitle className="text-title-sm font-semibold">Justification IA</SheetTitle>
             <SheetDescription>
               {coursName ?? `Cours #${affectation.cours_id}`} ·{" "}
               {professorName ?? `Prof #${affectation.professeur_id}`}

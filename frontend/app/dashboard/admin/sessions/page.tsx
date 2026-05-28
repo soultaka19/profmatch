@@ -20,7 +20,7 @@ export default function Page() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-fg">Sessions académiques</h1>
+          <h1 className="text-display font-semibold text-fg">Sessions académiques</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Périodes d&apos;affectation (Automne 2026, Hiver 2027…). Les pondérations W1–W4
             sont configurées au niveau de chaque session.

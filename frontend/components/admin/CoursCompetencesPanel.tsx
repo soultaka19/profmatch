@@ -46,7 +46,7 @@ export function CoursCompetencesPanel({ coursId }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-fg">Compétences requises</h2>
+        <h2 className="text-title-sm font-semibold text-fg">Compétences requises</h2>
         <CompetenceAddDialog coursId={coursId} onAdded={() => mutate()} />
       </div>
 

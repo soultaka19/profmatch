@@ -64,12 +64,12 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem className="gap-1.5">
-              <FormLabel className="text-sm font-medium text-fg">Email</FormLabel>
+              <FormLabel className="text-body-sm font-medium text-fg">Email</FormLabel>
               <FormControl>
                 <Input
                   type="email"
                   autoComplete="email"
-                  className="rounded-md border-border bg-surface px-4 py-3 text-sm placeholder:text-fg-subtle"
+                  className="rounded-md border-border bg-surface px-4 py-3 text-body-sm placeholder:text-fg-subtle"
                   {...field}
                 />
               </FormControl>
@@ -82,12 +82,12 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem className="gap-1.5">
-              <FormLabel className="text-sm font-medium text-fg">Mot de passe</FormLabel>
+              <FormLabel className="text-body-sm font-medium text-fg">Mot de passe</FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   autoComplete="current-password"
-                  className="rounded-md border-border bg-surface px-4 py-3 text-sm placeholder:text-fg-subtle"
+                  className="rounded-md border-border bg-surface px-4 py-3 text-body-sm placeholder:text-fg-subtle"
                   {...field}
                 />
               </FormControl>
@@ -98,12 +98,12 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={submitting}
-          className="mt-2 w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-active hover:bg-primary-dark"
+          className="mt-2 w-full rounded-md bg-primary px-4 py-3 text-body-sm font-medium text-primary-foreground shadow-active hover:bg-primary-dark"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Se connecter"}
         </Button>
         {notActivated && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-body-sm text-amber-900">
             Votre compte n&apos;est pas encore activé. Utilisez le lien d&apos;activation que l&apos;administrateur vous a transmis, ou demandez-lui d&apos;en générer un nouveau.
           </div>
         )}

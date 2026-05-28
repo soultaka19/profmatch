@@ -68,9 +68,48 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       fontSize: {
-        display: ["2rem", { lineHeight: "1.15", letterSpacing: "-0.02em" }],
-        "display-lg": ["2.5rem", { lineHeight: "1.1", letterSpacing: "-0.025em" }],
-        eyebrow: ["0.6875rem", { lineHeight: "1", letterSpacing: "0.075em" }],
+        // ─── Micro-typographie ─────────────────────────────────────────────
+        eyebrow:       ["0.6875rem", { lineHeight: "1",     letterSpacing: "0.08em"   }], // 11px — labels UPPERCASE
+        caption:       ["0.75rem",   { lineHeight: "1.4",   letterSpacing: "0.01em"   }], // 12px — timestamps, metadata
+
+        // ─── Body ─────────────────────────────────────────────────────────
+        "body-sm":     ["0.875rem",  { lineHeight: "1.5",   letterSpacing: "0"        }], // 14px — UI compact, labels
+        body:          ["1rem",      { lineHeight: "1.5",   letterSpacing: "0"        }], // 16px — UI par défaut
+        "body-lg":     ["1.125rem",  { lineHeight: "1.625", letterSpacing: "0"        }], // 18px — lead, intro
+
+        // ─── Titres UI ────────────────────────────────────────────────────
+        "title-sm":    ["1.25rem",   { lineHeight: "1.3",   letterSpacing: "-0.01em"  }], // 20px — H4, sous-titres
+        title:         ["1.5rem",    { lineHeight: "1.25",  letterSpacing: "-0.015em" }], // 24px — H3, cartes
+        "title-lg":    ["1.75rem",   { lineHeight: "1.2",   letterSpacing: "-0.02em"  }], // 28px — H2, sections
+
+        // ─── Display — H1 → Super hero ────────────────────────────────────
+        display:       ["2rem",      { lineHeight: "1.15",  letterSpacing: "-0.02em"  }], // 32px — H1 dashboards ✓
+        "display-lg":  ["2.5rem",    { lineHeight: "1.1",   letterSpacing: "-0.025em" }], // 40px — H1 pages ✓
+        "display-xl":  ["3rem",      { lineHeight: "1.08",  letterSpacing: "-0.03em"  }], // 48px — hero sections
+        "display-2xl": ["3.5rem",    { lineHeight: "1.05",  letterSpacing: "-0.035em" }], // 56px — hero landing
+        "display-3xl": ["4rem",      { lineHeight: "1.0",   letterSpacing: "-0.04em"  }], // 64px — super display
+      },
+      letterSpacing: {
+        tightest: "-0.04em",
+        tighter:  "-0.03em",
+        tight:    "-0.02em",
+        snug:     "-0.01em",
+        normal:   "0em",
+        wide:     "0.01em",
+        wider:    "0.05em",
+        widest:   "0.08em",
+        eyebrow:  "0.10em",
+      },
+      lineHeight: {
+        none:    "1",
+        tightest:"1.05",
+        tighter: "1.1",
+        tight:   "1.15",
+        snug:    "1.2",
+        normal:  "1.3",
+        relaxed: "1.5",
+        loose:   "1.625",
+        looser:  "1.75",
       },
       borderRadius: {
         sm: "8px",

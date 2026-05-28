@@ -6,7 +6,7 @@ export function SidebarBrand({ homeHref }: { homeHref: string }) {
       href={homeHref}
       className="flex w-full items-center gap-3 pl-7 pr-3 outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground font-display italic text-lg">
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground text-body-sm font-semibold">
         P
       </span>
       <span className="flex flex-col leading-tight">

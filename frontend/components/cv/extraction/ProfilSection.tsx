@@ -40,7 +40,7 @@ export function ProfilSection({ profil, onMutate }: Props) {
       <header className="flex items-center justify-between border-b border-border-soft px-7 py-4">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">00</span>
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">Profil</h3>
+          <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">Profil</h3>
         </div>
         <Button
           variant="ghost"

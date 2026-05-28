@@ -68,7 +68,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="truncate text-[15px] font-semibold text-fg">{data.nom_original}</h3>
+              <h3 className="truncate text-body font-semibold text-fg">{data.nom_original}</h3>
               <span className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive-bg px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
                 Erreur
               </span>
@@ -109,7 +109,7 @@ export function CVStatusCard({ data, loading, onRetry, onReplace }: Props) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2.5">
           <h3
-            className="truncate text-[15px] font-medium text-fg"
+            className="truncate text-body font-medium text-fg"
             title={data.nom_original}
           >
             {prettyFileName(data.nom_original)}

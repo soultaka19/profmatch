@@ -15,7 +15,7 @@ function SectionTitle({ index, label, count }: { index: string; label: string; c
   return (
     <header className="flex items-baseline gap-3 border-b border-border-soft px-1 pb-2">
       <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">{index}</span>
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">{label}</h3>
+      <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">{label}</h3>
       {count !== undefined && (
         <span className="text-xs text-fg-subtle tabular-nums">{count}</span>
       )}

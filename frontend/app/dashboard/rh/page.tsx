@@ -25,7 +25,7 @@ export default function Page() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-fg">Flux RH recommandé</h2>
+            <h2 className="text-title-sm font-semibold text-fg">Flux RH recommandé</h2>
             <p className="mt-1 text-sm leading-relaxed text-fg-muted">
               Choisir une session, sélectionner les programmes, ajuster les
               pondérations W1-W4, générer les propositions puis valider les
@@ -44,7 +44,7 @@ export default function Page() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
               <Sparkles className="h-4 w-4" />
             </span>
-            <h2 className="font-semibold text-fg">Générer des affectations</h2>
+            <h2 className="text-title-sm font-semibold text-fg">Générer des affectations</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
             Lancez le scoring W1-W4 et révisez les propositions par cours.
@@ -62,7 +62,7 @@ export default function Page() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
               <ListChecks className="h-4 w-4" />
             </span>
-            <h2 className="font-semibold text-fg">Consulter l&apos;historique</h2>
+            <h2 className="text-title-sm font-semibold text-fg">Consulter l&apos;historique</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
             Retrouvez les affectations validées pour chaque session.
@@ -80,7 +80,7 @@ export default function Page() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
               <Users className="h-4 w-4" />
             </span>
-            <h2 className="font-semibold text-fg">Consulter les CV profs</h2>
+            <h2 className="text-title-sm font-semibold text-fg">Consulter les CV profs</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
             Parcourez les professeurs et leur profil de CV extrait.

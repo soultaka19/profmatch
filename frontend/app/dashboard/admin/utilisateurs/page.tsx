@@ -40,7 +40,7 @@ export default function Page() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-fg">Utilisateurs</h1>
+          <h1 className="text-display font-semibold text-fg">Utilisateurs</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Gestion des comptes professeurs et responsables RH. Chaque nouvel utilisateur reçoit un lien d&apos;activation pour définir son mot de passe.
           </p>

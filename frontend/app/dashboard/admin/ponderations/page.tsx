@@ -30,7 +30,7 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg flex items-center gap-2">
+        <h1 className="text-display font-semibold text-fg flex items-center gap-2">
           <Scale className="h-6 w-6" />
           Pondérations W1–W4
         </h1>
