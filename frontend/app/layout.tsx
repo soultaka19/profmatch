@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Serif, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ConfirmProvider } from "@/components/confirm/ConfirmProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme/config";
@@ -49,7 +50,9 @@ export default function RootLayout({
       </head>
       <body className="font-sans">
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>
