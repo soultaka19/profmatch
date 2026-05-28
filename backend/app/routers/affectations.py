@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.affectation import (
     AffectationManuelleCreate,
     AffectationOut,
+    AffectationProfOut,
     AffectationValidateRequest,
     FeedbackCreate,
     FeedbackOut,
@@ -37,6 +38,11 @@ _RELATIONS = (
     selectinload(Affectation.professeur).selectinload(Professeur.user),
 )
 
+_RELATIONS_PROF = (
+    selectinload(Affectation.cours),
+    selectinload(Affectation.session),
+)
+
 
 def _to_out(aff: Affectation) -> AffectationOut:
     """Convertit une Affectation ORM en AffectationOut en résolvant les noms.
@@ -50,6 +56,14 @@ def _to_out(aff: Affectation) -> AffectationOut:
         out.cours_code = aff.cours.code
     if aff.professeur is not None and aff.professeur.user is not None:
         out.professeur_nom = aff.professeur.user.nom_complet
+    return out
+
+
+def _to_prof_out(aff: Affectation) -> AffectationProfOut:
+    out = AffectationProfOut.model_validate(aff)
+    out.session_nom = aff.session.nom if aff.session is not None else f"Session {aff.session_id}"
+    out.cours_code = aff.cours.code if aff.cours is not None else None
+    out.cours_nom = aff.cours.nom if aff.cours is not None else None
     return out
 
 
@@ -163,6 +177,32 @@ async def professeurs_disponibles(
         ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom)
         for pid, nom in profs
     ]
+
+
+@router.get(
+    "/mes-affectations",
+    response_model=list[AffectationProfOut],
+    summary="Mes affectations professeur",
+)
+async def mes_affectations(
+    current_user: User = Depends(require_role("prof")),
+    db: AsyncSession = Depends(get_db),
+) -> list[AffectationProfOut]:
+    prof_result = await db.execute(
+        select(Professeur).where(Professeur.user_id == current_user.id)
+    )
+    prof = prof_result.scalar_one_or_none()
+    if prof is None:
+        return []
+
+    result = await db.execute(
+        select(Affectation)
+        .options(*_RELATIONS_PROF)
+        .where(Affectation.professeur_id == prof.id)
+        .where(Affectation.statut == AffectationStatut.VALIDEE)
+        .order_by(Affectation.cree_le.desc())
+    )
+    return [_to_prof_out(aff) for aff in result.scalars().all()]
 
 
 @router.get("/{affectation_id}", response_model=AffectationOut)

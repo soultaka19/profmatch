@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type {
   AffectationOut,
+  AffectationProfOut,
   AffectationStatut,
   EtapeProgramme,
   EtapeStatut,
@@ -108,4 +109,7 @@ export const affectationsApi = {
     apiClient.get<ProfesseurDisponibleOut[]>(
       `/api/affectations/professeurs-disponibles?session_id=${sessionId}&cours_id=${coursId}`
     ),
+
+  mesAffectations: (): Promise<AffectationProfOut[]> =>
+    apiClient.get<AffectationProfOut[]>("/api/affectations/mes-affectations"),
 };

@@ -109,6 +109,29 @@ class AffectationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AffectationProfOut(BaseModel):
+    """Vue lecture seule des affectations du professeur connecte."""
+
+    id: int
+    session_id: int
+    cours_id: int
+    score_total: float
+    score_comp: float
+    score_exp: float
+    score_hist: float
+    score_sem: float
+    justification: Optional[str]
+    statut: AffectationStatut
+    origine: AffectationOrigine
+    valide_le: Optional[datetime]
+    cree_le: datetime
+    session_nom: str = ""
+    cours_code: Optional[str] = None
+    cours_nom: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class GenererAffectationsRequest(BaseModel):
     session_id: int
     programme_ids: list[int] = Field(min_length=1)
