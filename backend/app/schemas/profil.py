@@ -1,19 +1,18 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.user import UserRole
 
 
 class ProfilMeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: EmailStr
     nom_complet: str
     role: UserRole
     cree_le: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ProfilMeUpdate(BaseModel):
