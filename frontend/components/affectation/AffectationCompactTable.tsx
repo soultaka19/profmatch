@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, Eye, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/sheet";
 import type { AffectationOut } from "@/lib/types/api";
 
-import { JustificationBadge } from "./JustificationBadge";
 import { ScoreBreakdown } from "./ScoreBreakdown";
+import { getRecommendationFilter } from "./recommendation";
 
 interface Poids {
   w1: number;
@@ -35,13 +35,22 @@ interface Props {
 }
 
 /**
- * Vue tableau dense des propositions d'affectation — alternative à
- * `AffectationTable` (cartes groupées par cours). Optimisée pour le RH qui
- * veut tout voir d'un coup et trier visuellement par score, sans dérouler
- * cours par cours. Toutes les colonnes essentielles tiennent sur une ligne.
+ * Vue tableau compacte — alternative aux cartes empilées.
  *
- * Pour la lisibilité, la justification est tronquée en cellule ; le RH
- * peut cliquer sur la ligne pour ouvrir le panneau de détail complet.
+ * Organisation : un cours à la fois, paginé via les boutons Précédent /
+ * Suivant. À l'intérieur du cours, les candidats sont classés #1/#2/#3 par
+ * score décroissant. Le RH traite un cours à la fois, comme dans la vue
+ * cartes, mais avec une densité tabulaire et la hiérarchie d'actions
+ * Voir / Valider / Rejeter visible en bout de ligne.
+ *
+ * Choix UX :
+ * - Pas de texte de justification en cellule : trop encombrant. Accessible
+ *   via le bouton Voir (Eye) ou le clic sur la ligne.
+ * - Score en pourcentage entier avec code couleur basé sur la recommandation
+ *   (≥ 80 % vert, 60–80 % ambré, < 60 % gris) — lisibilité immédiate.
+ * - Rang #1 en pastille primary, suivants en outline neutre.
+ * - Actions hiérarchisées : Valider en plein primary (principale), Rejeter
+ *   en outline destructive (secondaire négative), Voir en ghost-icon (détail).
  */
 export function AffectationCompactTable({
   affectations,
@@ -54,13 +63,39 @@ export function AffectationCompactTable({
   pendingAction = null,
 }: Props) {
   const [detail, setDetail] = useState<AffectationOut | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const sorted = useMemo(
-    () => [...affectations].sort((a, b) => b.score_total - a.score_total),
-    [affectations],
-  );
+  // Regroupement par cours, à l'intérieur tri par score décroissant.
+  // L'ordre d'apparition des cours suit la 1ʳᵉ rencontre dans `affectations`,
+  // ce qui préserve l'ordre des filtres amont si l'appelant les a triés.
+  const groupes = useMemo(() => {
+    const map = new Map<number, AffectationOut[]>();
+    const ordreCours: number[] = [];
+    for (const aff of affectations) {
+      if (!map.has(aff.cours_id)) {
+        map.set(aff.cours_id, []);
+        ordreCours.push(aff.cours_id);
+      }
+      map.get(aff.cours_id)!.push(aff);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => b.score_total - a.score_total);
+    }
+    return ordreCours.map((coursId) => ({
+      coursId,
+      candidats: map.get(coursId)!,
+    }));
+  }, [affectations]);
 
-  if (sorted.length === 0) {
+  // Si le périmètre change (filtres parents), on remet la pagination à zéro
+  // pour éviter d'afficher l'index d'un cours qui n'existe plus.
+  useEffect(() => {
+    if (currentIndex >= groupes.length && groupes.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [groupes.length, currentIndex]);
+
+  if (groupes.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-fg-muted">
         Aucune proposition d&apos;affectation à afficher.
@@ -68,100 +103,147 @@ export function AffectationCompactTable({
     );
   }
 
-  return (
-    <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
-      <table className="w-full text-sm">
-        <thead className="border-b border-border bg-canvas text-xs uppercase tracking-wide text-fg-muted">
-          <tr>
-            <th scope="col" className="px-4 py-3 text-left font-medium">
-              Cours
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-medium">
-              Prof
-            </th>
-            <th scope="col" className="px-4 py-3 text-right font-medium">
-              Score
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-medium">
-              Justification
-            </th>
-            <th scope="col" className="px-4 py-3 text-right font-medium">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {sorted.map((aff) => {
-            const coursLabel = coursNames[aff.cours_id] ?? `Cours #${aff.cours_id}`;
-            const profLabel =
-              professorNames[aff.professeur_id] ?? `Prof #${aff.professeur_id}`;
-            const isPending = pendingActionId === aff.id;
-            const canAct = aff.statut === "proposee";
+  const groupeActuel = groupes[Math.min(currentIndex, groupes.length - 1)];
+  const coursLabel =
+    coursNames[groupeActuel.coursId] ?? `Cours #${groupeActuel.coursId}`;
+  const peutReculer = currentIndex > 0;
+  const peutAvancer = currentIndex < groupes.length - 1;
 
-            return (
-              <tr
-                key={aff.id}
-                className="cursor-pointer transition-colors hover:bg-canvas"
-                onClick={() => setDetail(aff)}
-              >
-                <td className="px-4 py-3 align-middle">
-                  <span className="font-medium text-fg">{coursLabel}</span>
-                </td>
-                <td className="px-4 py-3 align-middle text-fg-muted">
-                  {profLabel}
-                </td>
-                <td
-                  data-testid="score"
-                  className="px-4 py-3 text-right font-medium tabular-nums text-fg"
+  return (
+    <div className="space-y-3">
+      {/* Bandeau de pagination + titre du cours courant */}
+      <header className="flex flex-col gap-3 rounded-lg border border-border bg-canvas-pure px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-baseline gap-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            Cours {currentIndex + 1} / {groupes.length}
+          </span>
+          <h3 className="text-body font-semibold text-fg">{coursLabel}</h3>
+          <span className="text-xs text-fg-muted">
+            {groupeActuel.candidats.length} candidat
+            {groupeActuel.candidats.length > 1 ? "s" : ""}
+          </span>
+        </div>
+        <div className="inline-flex gap-2 self-end sm:self-auto">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            disabled={!peutReculer}
+            onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+            Précédent
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            disabled={!peutAvancer}
+            onClick={() =>
+              setCurrentIndex((i) => Math.min(groupes.length - 1, i + 1))
+            }
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
+      </header>
+
+      {/* Tableau des candidats du cours courant */}
+      <div className="overflow-hidden rounded-lg border border-border bg-canvas-pure">
+        <table className="w-full text-sm">
+          <thead className="border-b border-border bg-canvas text-xs uppercase tracking-wide text-fg-muted">
+            <tr>
+              <th scope="col" className="w-14 px-3 py-3 text-center font-medium">
+                Rang
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-medium">
+                Prof
+              </th>
+              <th scope="col" className="w-24 px-4 py-3 text-right font-medium">
+                Score
+              </th>
+              <th scope="col" className="w-64 px-4 py-3 text-right font-medium">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {groupeActuel.candidats.map((aff, rankIndex) => {
+              const profLabel =
+                professorNames[aff.professeur_id] ?? `Prof #${aff.professeur_id}`;
+              const isPending = pendingActionId === aff.id;
+              const canAct = aff.statut === "proposee";
+              const rank = rankIndex + 1;
+              const reco = getRecommendationFilter(aff.score_total);
+
+              return (
+                <tr
+                  key={aff.id}
+                  className="group transition-colors hover:bg-canvas focus-within:bg-canvas"
                 >
-                  {aff.score_total.toFixed(2)}
-                </td>
-                <td className="max-w-xs px-4 py-3 align-middle">
-                  <span className="inline-flex items-center gap-2">
-                    <JustificationBadge statut={aff.justification_statut} />
-                    <span className="truncate text-fg-muted">
-                      {aff.justification ?? "—"}
-                    </span>
-                  </span>
-                </td>
-                <td
-                  className="px-4 py-3 text-right align-middle"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {canAct ? (
-                    <span className="inline-flex gap-2">
+                  <td className="px-3 py-3 text-center align-middle">
+                    <RankBadge rank={rank} />
+                  </td>
+                  <td className="px-4 py-3 align-middle font-medium text-fg">
+                    {profLabel}
+                  </td>
+                  <td
+                    data-testid="score"
+                    className={`px-4 py-3 text-right align-middle font-semibold tabular-nums ${scoreClass(reco)}`}
+                  >
+                    {Math.round(aff.score_total * 100)} %
+                  </td>
+                  <td className="px-4 py-3 text-right align-middle">
+                    <div className="inline-flex items-center gap-1.5">
                       <Button
+                        type="button"
                         size="sm"
                         variant="ghost"
-                        className="h-8 px-2"
-                        disabled={isPending}
-                        onClick={() => onValidate(aff.id)}
-                        title="Valider"
+                        className="h-8 w-8 p-0 text-fg-muted hover:text-fg"
+                        onClick={() => setDetail(aff)}
+                        title="Voir la justification détaillée"
+                        aria-label="Voir"
                       >
-                        <Check className="h-4 w-4" aria-hidden />
-                        <span className="sr-only">Valider</span>
+                        <Eye className="h-4 w-4" aria-hidden />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-destructive hover:bg-destructive hover:text-white"
-                        disabled={isPending}
-                        onClick={() => onReject(aff.id)}
-                        title="Rejeter"
-                      >
-                        <X className="h-4 w-4" aria-hidden />
-                        <span className="sr-only">Rejeter</span>
-                      </Button>
-                    </span>
-                  ) : (
-                    <StatutDecide statut={aff.statut} />
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                      {canAct ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-8 gap-1 px-3"
+                            disabled={isPending}
+                            onClick={() => onValidate(aff.id)}
+                          >
+                            <Check className="h-3.5 w-3.5" aria-hidden />
+                            Valider
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1 border-destructive px-3 text-destructive hover:bg-destructive hover:text-white"
+                            disabled={isPending}
+                            onClick={() => onReject(aff.id)}
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden />
+                            Rejeter
+                          </Button>
+                        </>
+                      ) : (
+                        <StatutDecide statut={aff.statut} />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       <DetailSheet
         affectation={detail}
@@ -174,11 +256,41 @@ export function AffectationCompactTable({
   );
 }
 
+function scoreClass(reco: "forte" | "reserves" | "examiner"): string {
+  if (reco === "forte") return "text-emerald-700 dark:text-emerald-400";
+  if (reco === "reserves") return "text-amber-700 dark:text-amber-400";
+  return "text-fg-muted";
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  if (rank === 0) return null;
+  const tone =
+    rank === 1
+      ? "bg-primary text-primary-foreground"
+      : "border border-border bg-canvas-pure text-fg-muted";
+  return (
+    <span
+      className={`inline-flex h-6 min-w-[2rem] items-center justify-center rounded-full px-2 text-xs font-semibold tabular-nums ${tone}`}
+      aria-label={`Candidat n°${rank} pour ce cours`}
+    >
+      #{rank}
+    </span>
+  );
+}
+
 function StatutDecide({ statut }: { statut: "proposee" | "validee" | "rejetee" }) {
   if (statut === "validee") {
-    return <span className="text-xs text-primary">Validée</span>;
+    return (
+      <span className="rounded-full bg-primary/12 px-2.5 py-1 text-xs font-medium text-primary">
+        Validée
+      </span>
+    );
   }
-  return <span className="text-xs text-fg-muted">Rejetée</span>;
+  return (
+    <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+      Rejetée
+    </span>
+  );
 }
 
 function DetailSheet({

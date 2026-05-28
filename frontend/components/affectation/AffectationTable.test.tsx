@@ -201,16 +201,15 @@ describe("AffectationTable", () => {
       />
     );
 
-    // En cartes par défaut : pas de tableau, headings de cours visibles
+    // En cartes par défaut : pas de tableau, headings groupés par cours
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "PI-301 Algorithmes" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "PI-301 Algorithmes" })).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: /Vue tableau compact/i }));
 
-    // Maintenant un seul tableau avec toutes les lignes
+    // Maintenant un tableau (vue paginée par cours)
     expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "PI-301 Algorithmes" }),
-    ).not.toBeInTheDocument();
+    // Le bandeau de pagination affiche le cours courant
+    expect(screen.getByText(/Cours 1 \/ 2/i)).toBeInTheDocument();
   });
 });
