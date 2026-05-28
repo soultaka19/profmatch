@@ -8,7 +8,11 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.models.affectation import AffectationOrigine, AffectationStatut
+from app.models.affectation import (
+    AffectationOrigine,
+    AffectationStatut,
+    JustificationStatut,
+)
 from app.models.session import Semestre, SessionStatut
 
 
@@ -96,6 +100,7 @@ class AffectationOut(BaseModel):
     score_hist: float
     score_sem: float
     justification: Optional[str]
+    justification_statut: JustificationStatut = JustificationStatut.STATIQUE
     statut: AffectationStatut
     origine: AffectationOrigine
     valide_par_user_id: Optional[int]

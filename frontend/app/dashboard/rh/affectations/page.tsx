@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
+import { EnrichmentCounter } from "@/components/affectation/EnrichmentCounter";
 import { GenerationForm } from "@/components/affectation/GenerationForm";
 import { GenerationProgress } from "@/components/affectation/GenerationProgress";
 import { GenerationScopeSummary } from "@/components/affectation/GenerationScopeSummary";
@@ -46,6 +47,14 @@ export default function AffectationsPage() {
       setPhase("error");
     }
   }, [genStatus, phase]);
+
+  // Pendant l'enrichissement IA, chaque progression du counter doit rafraîchir
+  // les propositions pour que les badges « justification enrichie » apparaissent
+  // au fil de l'eau côté tableau. On utilise enrichie+echec comme signal de
+  // changement — c'est le seul qui monte de façon monotone vers `total`.
+  const traitees = genStatus?.totaux
+    ? genStatus.totaux.enrichie + genStatus.totaux.echec
+    : 0;
 
   // Périmètre exact de la génération courante (dérivé du scope choisi)
   const programmeIds = useMemo(() => scope?.programmes.map((p) => p.id) ?? [], [scope]);
@@ -92,6 +101,14 @@ export default function AffectationsPage() {
   const refreshReview = useCallback(async () => {
     await Promise.all([mutateCurrent(), mutateProgramme()]);
   }, [mutateCurrent, mutateProgramme]);
+
+  // Quand le counter d'enrichissement progresse, on rafraîchit les propositions
+  // pour faire apparaître les nouveaux badges « enrichie » sur le tableau RH.
+  useEffect(() => {
+    if (phase === "review" && traitees > 0) {
+      void mutateCurrent();
+    }
+  }, [phase, traitees, mutateCurrent]);
 
   // Pondérations pour afficher la barre de score
   const { data: ponderations } = useSWR<PonderationsOut>(
@@ -278,6 +295,9 @@ export default function AffectationsPage() {
           <p role="status" aria-live="polite" className="sr-only">
             Génération terminée. {proposals.length} propositions disponibles.
           </p>
+          <div className="flex justify-end">
+            <EnrichmentCounter totaux={genStatus?.totaux ?? undefined} />
+          </div>
           <ReviewSummary affectations={proposals} />
           <AffectationTable
             affectations={proposals}
