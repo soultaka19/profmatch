@@ -148,6 +148,46 @@ class GenererAffectationsResponse(BaseModel):
     message: str = "Génération des affectations en cours"
 
 
+class CompetenceRequiseOut(BaseModel):
+    """Compétence requise par un cours avec son état de couverture par le prof.
+
+    Sert au wireframe 'Match compétences' du panneau détail : aligne en
+    colonne les compétences attendues avec une coche ✓/✗ selon que le prof
+    les maîtrise. Le match se fait en insensible à la casse côté service."""
+
+    nom: str
+    importance: int = Field(ge=1, le=5)
+    couverte: bool
+
+
+class JustificationDetailOut(BaseModel):
+    """Détail enrichi d'une affectation pour le panneau de justification RH.
+
+    Regroupe en une seule réponse tout ce qui est utile à la décision :
+    compétences requises (avec couverture), compétences maîtrisées par le
+    prof, années d'expérience, historique RH (nb sessions + note moyenne),
+    similarité sémantique, scores et narration. Le frontend ouvre ça au
+    clic sur 'Voir' depuis le tableau ou les cartes."""
+
+    affectation_id: int
+    score_total: float
+    score_comp: float
+    score_exp: float
+    score_hist: float
+    score_sem: float
+    similarite_semantique: float
+    annees_experience: int
+    nb_sessions_precedentes: int
+    note_rh_moyenne: float
+    competences_requises: list[CompetenceRequiseOut]
+    competences_maitrisees: list[str]
+    justification: Optional[str]
+    justification_statut: JustificationStatut
+    nom_professeur: str
+    code_cours: str
+    titre_cours: str
+
+
 class JustificationTotaux(BaseModel):
     """Décompte des justifications d'une session par statut d'enrichissement.
 

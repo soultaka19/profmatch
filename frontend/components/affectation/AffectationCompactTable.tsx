@@ -1,19 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Eye, Sparkles, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
+import useSWR from "swr";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import type { AffectationOut } from "@/lib/types/api";
+import { affectationsApi } from "@/lib/api/affectations";
+import type { AffectationOut, JustificationDetailOut } from "@/lib/types/api";
 
-import { ScoreBreakdown } from "./ScoreBreakdown";
+import { JustificationDetailSheet } from "./JustificationDetailSheet";
 import { getRecommendationFilter } from "./recommendation";
 
 interface Poids {
@@ -62,8 +57,20 @@ export function AffectationCompactTable({
   pendingActionId = null,
   pendingAction = null,
 }: Props) {
-  const [detail, setDetail] = useState<AffectationOut | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Fetch détail (wireframe B) à la demande. SWR garde le cache entre
+  // les ouvertures d'un même id — pas de re-fetch si on rouvre la même
+  // affectation. Aucune requête tant que detailId est null.
+  const { data: detail, isLoading: detailLoading } =
+    useSWR<JustificationDetailOut>(
+      detailId !== null ? `justification:${detailId}` : null,
+      detailId !== null
+        ? () => affectationsApi.getJustificationDetail(detailId)
+        : null,
+      { revalidateOnFocus: false },
+    );
 
   // Regroupement par cours, à l'intérieur tri par score décroissant.
   // L'ordre d'apparition des cours suit la 1ʳᵉ rencontre dans `affectations`,
@@ -203,7 +210,7 @@ export function AffectationCompactTable({
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-fg-muted hover:text-fg"
-                        onClick={() => setDetail(aff)}
+                        onClick={() => setDetailId(aff.id)}
                         title="Voir la justification détaillée"
                         aria-label="Voir"
                       >
@@ -245,12 +252,19 @@ export function AffectationCompactTable({
         </table>
       </div>
 
-      <DetailSheet
-        affectation={detail}
-        coursName={detail ? coursNames[detail.cours_id] : undefined}
-        professorName={detail ? professorNames[detail.professeur_id] : undefined}
-        poids={poids}
-        onClose={() => setDetail(null)}
+      <JustificationDetailSheet
+        open={detailId !== null}
+        loading={detailLoading}
+        detail={detail ?? null}
+        onClose={() => setDetailId(null)}
+        onValidate={(id) => {
+          onValidate(id);
+          setDetailId(null);
+        }}
+        onReject={(id) => {
+          onReject(id);
+          setDetailId(null);
+        }}
       />
     </div>
   );
@@ -293,53 +307,3 @@ function StatutDecide({ statut }: { statut: "proposee" | "validee" | "rejetee" }
   );
 }
 
-function DetailSheet({
-  affectation,
-  coursName,
-  professorName,
-  poids,
-  onClose,
-}: {
-  affectation: AffectationOut | null;
-  coursName?: string;
-  professorName?: string;
-  poids: Poids;
-  onClose: () => void;
-}) {
-  return (
-    <Sheet open={Boolean(affectation)} onOpenChange={(open) => !open && onClose()}>
-      {affectation && (
-        <SheetContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-5 sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-7">
-          <SheetHeader>
-            <SheetTitle className="text-title-sm font-semibold">
-              Justification IA
-            </SheetTitle>
-            <SheetDescription>
-              {coursName ?? `Cours #${affectation.cours_id}`} ·{" "}
-              {professorName ?? `Prof #${affectation.professeur_id}`}
-            </SheetDescription>
-          </SheetHeader>
-          <ScoreBreakdown
-            scores={{
-              comp: affectation.score_comp,
-              exp: affectation.score_exp,
-              hist: affectation.score_hist,
-              sem: affectation.score_sem,
-            }}
-            poids={poids}
-            total={affectation.score_total}
-          />
-          <div className="rounded-md bg-canvas px-4 py-3">
-            <p className="mb-2 flex items-center gap-2 text-sm font-medium text-fg">
-              <Sparkles className="h-4 w-4" />
-              Analyse détaillée
-            </p>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-fg-muted">
-              {affectation.justification}
-            </p>
-          </div>
-        </SheetContent>
-      )}
-    </Sheet>
-  );
-}

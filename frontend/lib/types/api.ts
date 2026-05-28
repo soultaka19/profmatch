@@ -232,6 +232,36 @@ export interface JustificationTotaux {
   echec: number;
 }
 
+export interface CompetenceRequiseOut {
+  nom: string;
+  importance: number; // 1..5
+  couverte: boolean;
+}
+
+/**
+ * Détail enrichi d'une affectation pour le panneau Match compétences.
+ * Backend : GET /api/affectations/{id}/justification.
+ */
+export interface JustificationDetailOut {
+  affectation_id: number;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  similarite_semantique: number;
+  annees_experience: number;
+  nb_sessions_precedentes: number;
+  note_rh_moyenne: number;
+  competences_requises: CompetenceRequiseOut[];
+  competences_maitrisees: string[];
+  justification: string | null;
+  justification_statut: JustificationStatut;
+  nom_professeur: string;
+  code_cours: string;
+  titre_cours: string;
+}
+
 export interface GenerationStatus {
   status: GenerationPhase;
   result?: { session_id: number; nb_affectations: number };

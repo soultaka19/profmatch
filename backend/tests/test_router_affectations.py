@@ -514,3 +514,78 @@ async def test_generation_status_done_avec_compteurs_enrichissement(
     assert body["totaux"] == {
         "total": 5, "statique": 2, "en_cours": 1, "enrichie": 1, "echec": 1,
     }
+
+
+# ── GET /{id}/justification : détail wireframe B ──────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_justification_renvoie_detail_complet(
+    db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+    professeur_prof: Professeur,
+):
+    """Le RH récupère compétences requises + couverture + métadonnées au clic."""
+    from app.models.cours_competence import CoursCompetence
+    from app.models.competence import Competence, CompetenceNiveau
+
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    cours = Cours(code="JR-001", nom="Cours détail")
+    db_session.add(cours)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    await db_session.refresh(cours)
+    db_session.add_all([
+        CoursCompetence(cours_id=cours.id, nom="Python", importance=5),
+        CoursCompetence(cours_id=cours.id, nom="Docker", importance=3),
+    ])
+    db_session.add(
+        Competence(professeur_id=professeur_prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE)
+    )
+    aff = Affectation(
+        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
+        score_total=Decimal("0.72"), score_comp=Decimal("0.625"),
+        score_exp=Decimal("0.5"), score_hist=Decimal("0"),
+        score_sem=Decimal("0.6"),
+        statut=AffectationStatut.PROPOSEE,
+        justification="ma narration",
+    )
+    db_session.add(aff)
+    await db_session.commit()
+    await db_session.refresh(aff)
+
+    resp = await client.get(
+        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["affectation_id"] == aff.id
+    assert body["code_cours"] == "JR-001"
+    competences = {c["nom"]: c["couverte"] for c in body["competences_requises"]}
+    assert competences == {"Python": True, "Docker": False}
+    assert "Python" in body["competences_maitrisees"]
+    assert body["score_total"] == pytest.approx(0.72)
+    assert body["justification"] == "ma narration"
+
+
+@pytest.mark.asyncio
+async def test_get_justification_inexistante_renvoie_404(
+    client: AsyncClient, auth_headers_rh: dict[str, str]
+):
+    resp = await client.get(
+        "/api/affectations/999999/justification", headers=auth_headers_rh
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_justification_refuse_prof(
+    client: AsyncClient, auth_headers_prof: dict[str, str]
+):
+    """Endpoint réservé RH/Admin : un prof ne peut pas y accéder."""
+    resp = await client.get(
+        "/api/affectations/1/justification", headers=auth_headers_prof
+    )
+    assert resp.status_code == 403

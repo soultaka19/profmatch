@@ -22,6 +22,7 @@ from app.schemas.affectation import (
     GenerationStatusOut,
     GenererAffectationsRequest,
     GenererAffectationsResponse,
+    JustificationDetailOut,
     JustificationTotaux,
     ProfesseurDisponibleOut,
 )
@@ -31,6 +32,7 @@ from app.services.affectation_service import (
     lister_professeurs_disponibles,
     valider_affectation,
 )
+from app.services.justification_detail import get_justification_detail
 from app.tasks.affectation_tasks import generer_affectations_task
 from app.worker import celery_app
 
@@ -270,6 +272,26 @@ async def get_affectation(
         if not prof or aff.professeur_id != prof.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     return _to_out(aff)
+
+
+@router.get(
+    "/{affectation_id}/justification",
+    response_model=JustificationDetailOut,
+)
+async def get_justification(
+    affectation_id: int,
+    current_user: User = Depends(require_role("rh", "admin")),
+    db: AsyncSession = Depends(get_db),
+) -> JustificationDetailOut:
+    """Détail enrichi d'une affectation pour le panneau de justification RH.
+
+    Renvoie les compétences requises (avec couverture par le prof), les
+    compétences maîtrisées, années d'expérience, historique RH et similarité
+    sémantique — tout ce qu'il faut pour décider rapidement."""
+    try:
+        return await get_justification_detail(affectation_id, db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 @router.patch("/{affectation_id}", response_model=AffectationOut)
