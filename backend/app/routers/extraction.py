@@ -29,6 +29,28 @@ async def _get_professeur(db: AsyncSession, user_id: int) -> Professeur:
     return result.scalar_one()
 
 
+async def _get_owned_or_404(
+    db: AsyncSession,
+    entity_class,
+    entity_id: int,
+    professeur_id: int,
+    label: str,
+):
+    """Charge une entité possédée par le professeur ou lève 404 — factorise
+    le motif `select(X).where(id, professeur_id) ; 404` répété dans les
+    8 endpoints update/delete de cette extension (compétences, expériences,
+    formations, langues)."""
+    obj = (await db.execute(
+        select(entity_class).where(
+            entity_class.id == entity_id,
+            entity_class.professeur_id == professeur_id,
+        )
+    )).scalar_one_or_none()
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} introuvable")
+    return obj
+
+
 # ────────────────────────────────────────────────────────────────
 # GET /cv/me/extraction — lecture globale
 # ────────────────────────────────────────────────────────────────
@@ -111,22 +133,12 @@ async def update_competence(
     db: AsyncSession = Depends(get_db),
 ) -> CompetenceResponse:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Competence).where(
-            Competence.id == competence_id,
-            Competence.professeur_id == prof.id,
-        )
-    )
-    comp = result.scalar_one_or_none()
-    if comp is None:
-        raise HTTPException(status_code=404, detail="Compétence introuvable")
-
+    comp = await _get_owned_or_404(db, Competence, competence_id, prof.id, "Compétence")
     if body.nom is not None:
         comp.nom = body.nom
     if body.niveau is not None:
         comp.niveau = CompetenceNiveau(body.niveau)
     comp.source = SourceOrigine.MANUAL
-
     await db.commit()
     await db.refresh(comp)
     return CompetenceResponse.model_validate(comp)
@@ -139,15 +151,7 @@ async def delete_competence(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Competence).where(
-            Competence.id == competence_id,
-            Competence.professeur_id == prof.id,
-        )
-    )
-    comp = result.scalar_one_or_none()
-    if comp is None:
-        raise HTTPException(status_code=404, detail="Compétence introuvable")
+    comp = await _get_owned_or_404(db, Competence, competence_id, prof.id, "Compétence")
     await db.delete(comp)
     await db.commit()
 
@@ -199,18 +203,10 @@ async def update_experience(
     db: AsyncSession = Depends(get_db),
 ) -> ExperienceResponse:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Experience).where(Experience.id == exp_id, Experience.professeur_id == prof.id)
-    )
-    exp = result.scalar_one_or_none()
-    if exp is None:
-        raise HTTPException(status_code=404, detail="Expérience introuvable")
-
-    update_data = body.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
+    exp = await _get_owned_or_404(db, Experience, exp_id, prof.id, "Expérience")
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(exp, field, value)
     exp.source = SourceOrigine.MANUAL
-
     await db.commit()
     await db.refresh(exp)
     return ExperienceResponse.model_validate(exp)
@@ -223,12 +219,7 @@ async def delete_experience(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Experience).where(Experience.id == exp_id, Experience.professeur_id == prof.id)
-    )
-    exp = result.scalar_one_or_none()
-    if exp is None:
-        raise HTTPException(status_code=404, detail="Expérience introuvable")
+    exp = await _get_owned_or_404(db, Experience, exp_id, prof.id, "Expérience")
     await db.delete(exp)
     await db.commit()
 
@@ -267,18 +258,10 @@ async def update_formation(
     db: AsyncSession = Depends(get_db),
 ) -> FormationResponse:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Formation).where(Formation.id == formation_id, Formation.professeur_id == prof.id)
-    )
-    form = result.scalar_one_or_none()
-    if form is None:
-        raise HTTPException(status_code=404, detail="Formation introuvable")
-
-    update_data = body.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
+    form = await _get_owned_or_404(db, Formation, formation_id, prof.id, "Formation")
+    for field, value in body.model_dump(exclude_unset=True).items():
         setattr(form, field, value)
     form.source = SourceOrigine.MANUAL
-
     await db.commit()
     await db.refresh(form)
     return FormationResponse.model_validate(form)
@@ -291,12 +274,7 @@ async def delete_formation(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Formation).where(Formation.id == formation_id, Formation.professeur_id == prof.id)
-    )
-    form = result.scalar_one_or_none()
-    if form is None:
-        raise HTTPException(status_code=404, detail="Formation introuvable")
+    form = await _get_owned_or_404(db, Formation, formation_id, prof.id, "Formation")
     await db.delete(form)
     await db.commit()
 
@@ -332,19 +310,12 @@ async def update_langue(
     db: AsyncSession = Depends(get_db),
 ) -> LangueResponse:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Langue).where(Langue.id == langue_id, Langue.professeur_id == prof.id)
-    )
-    lang = result.scalar_one_or_none()
-    if lang is None:
-        raise HTTPException(status_code=404, detail="Langue introuvable")
-
+    lang = await _get_owned_or_404(db, Langue, langue_id, prof.id, "Langue")
     if body.langue is not None:
         lang.langue = body.langue
     if body.niveau is not None:
         lang.niveau = LangueNiveau(body.niveau)
     lang.source = SourceOrigine.MANUAL
-
     await db.commit()
     await db.refresh(lang)
     return LangueResponse.model_validate(lang)
@@ -357,11 +328,6 @@ async def delete_langue(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     prof = await _get_professeur(db, current_user.id)
-    result = await db.execute(
-        select(Langue).where(Langue.id == langue_id, Langue.professeur_id == prof.id)
-    )
-    lang = result.scalar_one_or_none()
-    if lang is None:
-        raise HTTPException(status_code=404, detail="Langue introuvable")
+    lang = await _get_owned_or_404(db, Langue, langue_id, prof.id, "Langue")
     await db.delete(lang)
     await db.commit()
