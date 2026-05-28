@@ -237,11 +237,16 @@ async def valider_ou_rejeter(
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
     try:
-        return await valider_affectation(
+        aff = await valider_affectation(
             affectation_id, current_user.id, payload.statut, db
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+    result = await db.execute(
+        select(Affectation).options(*_RELATIONS).where(Affectation.id == aff.id)
+    )
+    return _to_out(result.scalar_one())
 
 
 @router.post(
