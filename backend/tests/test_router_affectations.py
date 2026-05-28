@@ -119,6 +119,104 @@ async def test_list_affectations_enrichit_noms(
     assert body[0]["professeur_nom"] == test_user_prof.nom_complet
 
 
+@pytest.mark.asyncio
+async def test_mes_affectations_prof_retourne_uniquement_ses_affectations(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    auth_headers_prof: dict[str, str],
+    professeur_prof: Professeur,
+):
+    """GET /api/affectations/mes-affectations isole les donnees du prof connecte."""
+    from app.core.security import hash_password
+    from app.models.user import User, UserRole
+    from sqlalchemy import select as _sel
+
+    session = Session(annee=2031, semestre=Semestre.AUTOMNE)
+    cours_prof = Cours(code="PROF-101", nom="Cours du prof", credits=3)
+    cours_autre = Cours(code="PROF-202", nom="Cours autre prof", credits=3)
+    autre_user = User(
+        email="autre.prof@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Autre Prof",
+    )
+    db_session.add_all([session, cours_prof, cours_autre, autre_user])
+    await db_session.commit()
+    await db_session.refresh(session)
+    await db_session.refresh(cours_prof)
+    await db_session.refresh(cours_autre)
+    await db_session.refresh(autre_user)
+    autre_prof = (
+        await db_session.execute(_sel(Professeur).where(Professeur.user_id == autre_user.id))
+    ).scalar_one()
+
+    db_session.add_all(
+        [
+            Affectation(
+                session_id=session.id,
+                professeur_id=professeur_prof.id,
+                cours_id=cours_prof.id,
+                score_total=Decimal("0.840"),
+                score_comp=Decimal("0.900"),
+                score_exp=Decimal("0.800"),
+                score_hist=Decimal("0.700"),
+                score_sem=Decimal("0.600"),
+                justification="Profil pertinent pour le cours.",
+            ),
+            Affectation(
+                session_id=session.id,
+                professeur_id=autre_prof.id,
+                cours_id=cours_autre.id,
+                score_total=Decimal("0.910"),
+                score_comp=Decimal("0.900"),
+                score_exp=Decimal("0.900"),
+                score_hist=Decimal("0.900"),
+                score_sem=Decimal("0.900"),
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    resp = await client.get("/api/affectations/mes-affectations", headers=auth_headers_prof)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["cours_code"] == "PROF-101"
+    assert body[0]["cours_nom"] == "Cours du prof"
+    assert body[0]["session_nom"] == "Automne 2031"
+    assert body[0]["justification"] == "Profil pertinent pour le cours."
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_refuse_rh_et_admin(
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+    auth_headers_admin: dict[str, str],
+):
+    """La consultation personnelle des affectations est reservee au role prof."""
+    for headers in (auth_headers_rh, auth_headers_admin):
+        resp = await client.get("/api/affectations/mes-affectations", headers=headers)
+        assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_mes_affectations_prof_sans_fiche_retourne_liste_vide(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    auth_headers_prof: dict[str, str],
+    professeur_prof: Professeur,
+):
+    """Un compte prof sans ligne professeur ne fuit aucune donnee."""
+    await db_session.delete(professeur_prof)
+    await db_session.commit()
+
+    resp = await client.get("/api/affectations/mes-affectations", headers=auth_headers_prof)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
 # ── Override manuel (REV-04) ─────────────────────────────────────────────────
 
 
