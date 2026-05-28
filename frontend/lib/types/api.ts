@@ -17,6 +17,14 @@ export interface UserOut {
   nom_complet: string;
 }
 
+export interface ProfilMe {
+  id: number;
+  email: string;
+  nom_complet: string;
+  role: UserRole;
+  cree_le: string;
+}
+
 // ── CV ──────────────────────────────────────────────────────────────────────
 
 export type CVStatus = "aucun" | "en_cours" | "traite" | "erreur";
