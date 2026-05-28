@@ -148,7 +148,7 @@ export default function HistoriquePage() {
             >
               ← Sessions
             </Button>
-            <h2 className="text-lg font-semibold text-fg">
+            <h2 className="text-title-sm font-semibold text-fg">
               {selectedSession.nom}
             </h2>
             <Badge

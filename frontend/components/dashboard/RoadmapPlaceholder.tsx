@@ -36,7 +36,7 @@ export function RoadmapPlaceholder({
           {heroIcon}
         </div>
         <div className="flex-1">
-          <div className="text-[15px] font-semibold text-fg">{heroTitle}</div>
+          <div className="text-body font-semibold text-fg">{heroTitle}</div>
           <div className="mt-1 text-sm leading-relaxed text-fg-muted">{heroSub}</div>
         </div>
         {heroEta && (
@@ -62,7 +62,7 @@ export function RoadmapPlaceholder({
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
                 {card.icon}
               </div>
-              <div className="text-[15px] font-semibold text-fg">{card.title}</div>
+              <div className="text-body font-semibold text-fg">{card.title}</div>
             </div>
             <div className="mt-3 text-sm leading-relaxed text-fg-muted">{card.description}</div>
           </div>

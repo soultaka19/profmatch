@@ -52,7 +52,7 @@ export default function Page() {
       <div className="flex items-start justify-between">
         <div>
           <p className="font-mono text-sm text-fg-muted">{cours.code}</p>
-          <h1 className="text-2xl font-semibold text-fg">{cours.nom}</h1>
+          <h1 className="text-display font-semibold text-fg">{cours.nom}</h1>
           {cours.description && (
             <p className="mt-2 text-sm text-fg-muted max-w-2xl">{cours.description}</p>
           )}

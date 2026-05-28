@@ -226,7 +226,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="xl:col-span-2">
-        <h2 className="text-xl font-semibold text-fg">
+        <h2 className="text-title-sm font-semibold text-fg">
           {"Générer les affectations"}
         </h2>
         <p className="mt-1 text-sm text-fg-muted">
@@ -343,7 +343,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
       {/* Sliders W1-W4 */}
       {selectedSessionId && (
         <aside className="space-y-4 rounded-lg border border-border bg-canvas-pure p-5 xl:col-start-2 xl:row-start-2 xl:row-span-3">
-          <h3 className="text-sm font-semibold text-fg">Pondérations et lancement</h3>
+          <h3 className="text-body-sm font-semibold text-fg">Pondérations et lancement</h3>
           <WeightSliders
             value={weights}
             onChange={setWeights}

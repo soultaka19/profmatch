@@ -39,7 +39,7 @@ export function FormationSection({ items, onMutate }: Props) {
       <header className="flex items-center justify-between border-b border-border-soft px-7 py-4">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">03</span>
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">Formations</h3>
+          <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">Formations</h3>
           <span className="text-xs text-fg-subtle tabular-nums">{items.length}</span>
         </div>
         <Button variant="outline" size="sm" onClick={openAdd}>
@@ -58,7 +58,7 @@ export function FormationSection({ items, onMutate }: Props) {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-4">
-                    <h4 className="text-[15px] font-semibold text-fg truncate">{f.diplome}</h4>
+                    <h4 className="text-body font-semibold text-fg truncate">{f.diplome}</h4>
                     <span className="flex-shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">{f.annee}</span>
                   </div>
                   <p className="mt-0.5 text-sm text-fg-muted">{f.etablissement}</p>

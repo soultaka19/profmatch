@@ -66,7 +66,7 @@ export default function Page() {
       <div className="flex items-start justify-between">
         <div>
           <p className="font-mono text-sm text-fg-muted">{programme.code}</p>
-          <h1 className="text-2xl font-semibold text-fg">{programme.nom}</h1>
+          <h1 className="text-display font-semibold text-fg">{programme.nom}</h1>
           {programme.departement && (
             <p className="mt-1 text-sm text-fg-muted">{programme.departement}</p>
           )}
@@ -87,7 +87,7 @@ export default function Page() {
       <ProgrammeCalendarPanel programmeId={programmeId} />
 
       <div>
-        <h2 className="text-lg font-semibold text-fg mb-3">Étapes et cours</h2>
+        <h2 className="text-title-sm font-semibold text-fg mb-3">Étapes et cours</h2>
         {etapesSwr.isLoading ? (
           <p className="text-sm text-fg-muted">Chargement…</p>
         ) : (

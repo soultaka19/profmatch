@@ -43,7 +43,7 @@ export function ExperienceSection({ items, onMutate }: Props) {
       <header className="flex items-center justify-between border-b border-border-soft px-7 py-4">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">02</span>
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-fg">Expériences</h3>
+          <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">Expériences</h3>
           <span className="text-xs text-fg-subtle tabular-nums">{items.length}</span>
         </div>
         <Button variant="outline" size="sm" onClick={openAdd}>
@@ -63,7 +63,7 @@ export function ExperienceSection({ items, onMutate }: Props) {
                 <div className="min-w-0 flex-1">
                   {/* Ligne 1 : poste + période alignée à droite */}
                   <div className="flex items-baseline justify-between gap-4">
-                    <h4 className="text-[15px] font-semibold text-fg truncate">{exp.poste}</h4>
+                    <h4 className="text-body font-semibold text-fg truncate">{exp.poste}</h4>
                     <span className="flex-shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
                       {formatPeriode(exp.annee_debut, exp.annee_fin)}
                     </span>

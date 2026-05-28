@@ -50,7 +50,7 @@ export default function Page() {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-fg">{data.nom}</h1>
+          <h1 className="text-display font-semibold text-fg">{data.nom}</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Session académique #{data.id} — créée le{" "}
             {new Date(data.cree_le).toLocaleDateString("fr-CA")}.

@@ -32,7 +32,7 @@ export function ProfilHeaderCard({ nomComplet, email }: Props) {
         {initials}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h2 className="text-2xl font-semibold tracking-tight text-fg">
+        <h2 className="text-title font-semibold text-fg">
           {nomComplet || "—"}
         </h2>
         <div className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">

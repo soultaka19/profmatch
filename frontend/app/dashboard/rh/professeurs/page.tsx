@@ -41,7 +41,7 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg">Professeurs</h1>
+        <h1 className="text-display font-semibold text-fg">Professeurs</h1>
         <p className="mt-1 text-sm text-fg-muted">
           Consultez les profils extraits des CV. Lecture seule — aucune modification possible.
         </p>
