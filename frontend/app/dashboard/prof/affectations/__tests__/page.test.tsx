@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import MesAffectationsPage from "../page";
 import type { AffectationProfOut } from "@/lib/types/api";
@@ -59,11 +59,11 @@ describe("MesAffectationsPage", () => {
     expect(screen.getByText(/aucune affectation pour le moment/i)).toBeInTheDocument();
   });
 
-  it("groupe les affectations par session et filtre par statut", () => {
+  it("groupe les affectations validees par session sans filtres de statut", () => {
     swrState = {
       isLoading: false,
       data: [
-        affectation,
+        { ...affectation, statut: "validee" },
         {
           ...affectation,
           id: 2,
@@ -79,11 +79,8 @@ describe("MesAffectationsPage", () => {
     expect(screen.getAllByText(/Hiver 2026/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/IFM-30733/)).toBeInTheDocument();
     expect(screen.getByText(/IAI-301/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /validees/i }));
-
-    expect(screen.queryByText(/IFM-30733/)).not.toBeInTheDocument();
-    expect(screen.getByText(/IAI-301/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /proposees/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /rejetees/i })).not.toBeInTheDocument();
   });
 
   it("affiche une erreur de chargement", () => {

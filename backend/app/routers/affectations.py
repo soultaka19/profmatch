@@ -199,6 +199,7 @@ async def mes_affectations(
         select(Affectation)
         .options(*_RELATIONS_PROF)
         .where(Affectation.professeur_id == prof.id)
+        .where(Affectation.statut == AffectationStatut.VALIDEE)
         .order_by(Affectation.cree_le.desc())
     )
     return [_to_prof_out(aff) for aff in result.scalars().all()]

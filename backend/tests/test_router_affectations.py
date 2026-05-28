@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.affectation import Affectation
+from app.models.affectation import Affectation, AffectationStatut
 from app.models.cours import Cours
 from app.models.professeur import Professeur
 from app.models.session import Semestre, Session
@@ -162,6 +162,19 @@ async def test_mes_affectations_prof_retourne_uniquement_ses_affectations(
                 score_hist=Decimal("0.700"),
                 score_sem=Decimal("0.600"),
                 justification="Profil pertinent pour le cours.",
+                statut=AffectationStatut.VALIDEE,
+            ),
+            Affectation(
+                session_id=session.id,
+                professeur_id=professeur_prof.id,
+                cours_id=cours_autre.id,
+                score_total=Decimal("0.640"),
+                score_comp=Decimal("0.600"),
+                score_exp=Decimal("0.600"),
+                score_hist=Decimal("0.600"),
+                score_sem=Decimal("0.600"),
+                justification="Proposition non encore validee.",
+                statut=AffectationStatut.PROPOSEE,
             ),
             Affectation(
                 session_id=session.id,
@@ -186,6 +199,7 @@ async def test_mes_affectations_prof_retourne_uniquement_ses_affectations(
     assert body[0]["cours_nom"] == "Cours du prof"
     assert body[0]["session_nom"] == "Automne 2031"
     assert body[0]["justification"] == "Profil pertinent pour le cours."
+    assert body[0]["statut"] == "validee"
 
 
 @pytest.mark.asyncio
