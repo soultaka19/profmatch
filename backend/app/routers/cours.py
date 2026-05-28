@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.crud_helpers import get_or_404
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.cours import Cours
@@ -18,14 +19,6 @@ from app.schemas.programme import CoursReadOnlyOut
 from app.services.embeddings import build_cours_text, compute_embedding
 
 router = APIRouter()
-
-
-async def _get_cours_or_404(cours_id: int, db: AsyncSession) -> Cours:
-    result = await db.execute(select(Cours).where(Cours.id == cours_id))
-    cours = result.scalar_one_or_none()
-    if cours is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable")
-    return cours
 
 
 async def _compute_cours_embedding(nom: str, description: str | None) -> list[float]:
@@ -79,7 +72,7 @@ async def get_cours(
     _: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
 ) -> CoursOut:
-    return await _get_cours_or_404(cours_id, db)
+    return await get_or_404(Cours, cours_id, db, label="Cours")
 
 
 @router.put("/{cours_id}", response_model=CoursOut)
@@ -89,7 +82,7 @@ async def update_cours(
     _: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> CoursOut:
-    cours = await _get_cours_or_404(cours_id, db)
+    cours = await get_or_404(Cours, cours_id, db, label="Cours")
     texte_modifie = payload.nom is not None or payload.description is not None
     if payload.nom is not None:
         cours.nom = payload.nom
@@ -112,7 +105,7 @@ async def delete_cours(
     _: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    cours = await _get_cours_or_404(cours_id, db)
+    cours = await get_or_404(Cours, cours_id, db, label="Cours")
     await db.delete(cours)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
