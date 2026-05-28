@@ -56,3 +56,28 @@ def generer_affectations_task(
         if self.request.retries < self.max_retries:
             raise self.retry(exc=exc)
         raise
+
+
+@celery_app.task(bind=True, max_retries=0, time_limit=60)
+def enrichir_justification_xai_task(self, affectation_id: int, ctx_dict: dict) -> dict:
+    """Enrichit une affectation avec la narration XAI LLM.
+
+    Pattern : 1 tentative LLM unique, idempotente, sans retry interne (le LLM
+    compétition est intermittent — préférer un échec rapide marqué ECHEC plutôt
+    qu'un blocage). En cas de timeout/erreur, la justification statique posée
+    par la génération reste intacte et le statut bascule en ECHEC pour visibilité.
+
+    `ctx_dict` est la sérialisation JSON du `ContexteJustification` qu'on avait
+    en main au moment de la génération — évite de devoir recharger 10 entités
+    pour reconstruire le contexte côté worker.
+    """
+    import asyncio
+
+    async def _run():
+        from app.services.affectation_enrichissement import enrichir_justification_xai
+
+        SessionLocal = _async_session_factory()
+        async with SessionLocal() as db:
+            return await enrichir_justification_xai(affectation_id, ctx_dict, db)
+
+    return asyncio.run(_run())

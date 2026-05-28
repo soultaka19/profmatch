@@ -23,7 +23,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.affectation import Affectation, AffectationOrigine, AffectationStatut
+from app.models.affectation import (
+    Affectation,
+    AffectationOrigine,
+    AffectationStatut,
+    JustificationStatut,
+)
 from app.models.affectation_feedback import AffectationFeedback
 from app.models.cours import Cours
 from app.models.cours_competence import CoursCompetence
@@ -46,13 +51,46 @@ from app.services.scoring import (
     score_semantique,
 )
 
-TOP_N_PAR_COURS: int = 3
 
-# Borne le parallélisme des appels LLM XAI : sans borne, lancer 50+ requêtes
-# simultanées vers l'API compétition (mono-instance vLLM) déclenche timeouts en
-# masse + retries internes du SDK OpenAI (~3 min par appel échoué). Avec 8 en vol,
-# le LLM reste réactif et la durée totale = N_appels × latence_moy / 8.
-XAI_MAX_CONCURRENCE: int = 8
+def _ctx_to_dict(ctx: ContexteJustification) -> dict:
+    """Sérialise un ContexteJustification pour le passer en argument Celery
+    (JSON-compatible). Les Decimal deviennent des float, tout le reste passe
+    nativement. La désérialisation symétrique vit dans `affectation_enrichissement`."""
+    return {
+        "nom_professeur": ctx.nom_professeur,
+        "code_cours": ctx.code_cours,
+        "titre_cours": ctx.titre_cours,
+        "nb_comp_couvertes": ctx.nb_comp_couvertes,
+        "nb_comp_requises": ctx.nb_comp_requises,
+        "competences_maitrisees": list(ctx.competences_maitrisees),
+        "annees_experience": ctx.annees_experience,
+        "nb_sessions_precedentes": ctx.nb_sessions_precedentes,
+        "note_rh_moyenne": float(ctx.note_rh_moyenne),
+        "similarite_semantique": float(ctx.similarite_semantique),
+        "score_global_pct": float(ctx.score_global_pct),
+        "poids": {
+            "w1": float(ctx.poids.w1), "w2": float(ctx.poids.w2),
+            "w3": float(ctx.poids.w3), "w4": float(ctx.poids.w4),
+        },
+        "composants": {
+            "score_comp": float(ctx.composants.score_comp),
+            "score_exp": float(ctx.composants.score_exp),
+            "score_hist": float(ctx.composants.score_hist),
+            "score_sem": float(ctx.composants.score_sem),
+        },
+    }
+
+
+def _enqueue_enrichissement(affectation_id: int, ctx_dict: dict) -> None:
+    """Lance la tâche Celery d'enrichissement narration LLM.
+
+    Isolée dans une fonction module-level pour pouvoir être monkeypatchée par
+    les tests sans avoir à toucher au broker Celery. L'import de la tâche est
+    différé pour ne pas créer de cycle module↔tasks au chargement."""
+    from app.tasks.affectation_tasks import enrichir_justification_xai_task
+    enrichir_justification_xai_task.delay(affectation_id, ctx_dict)
+
+TOP_N_PAR_COURS: int = 3
 
 
 async def _charger_ponderations(session_id: int, db: AsyncSession) -> tuple[PoidsScoring, bool]:
@@ -357,30 +395,35 @@ async def generer_affectations(
         top = sorted(scores_par_prof, key=lambda x: x[0], reverse=True)[:TOP_N_PAR_COURS]
         top_par_cours.extend((aff, ctx) for _, aff, ctx in top)
 
-    # Phase 2 — justifications XAI EN PARALLÈLE (asyncio.gather) avec un
-    # sémaphore qui borne la concurrence : sans borne, lancer toutes les
-    # requêtes simultanément sature le LLM compétition et le rend inutilisable
-    # (timeouts + retries du SDK). Le sémaphore garde le débit utile tout en
-    # protégeant le serveur distant.
-    sem = asyncio.Semaphore(XAI_MAX_CONCURRENCE)
-
-    async def _bornee(ctx: ContexteJustification) -> str:
-        async with sem:
-            return await _rediger_justification(ctx, xai_actif)
-
-    justifications = await asyncio.gather(*[
-        _bornee(ctx) for _, ctx in top_par_cours
-    ])
-
+    # Phase 2 — COMMIT IMMÉDIAT avec justification STATIQUE. Le RH voit son
+    # tableau en quelques secondes. Aucun appel LLM en synchrone : c'est le
+    # point pivot du Niveau 2 (découplage décision/narration). La narration
+    # LLM, instable et lente, est déléguée à des tâches Celery asynchrones
+    # via la phase 3.
     nouvelles_affectations: list[Affectation] = []
-    for (aff, _), justif in zip(top_par_cours, justifications):
-        aff.justification = justif
+    contextes: list[ContexteJustification] = []
+    for aff, ctx in top_par_cours:
+        aff.justification = generer_justification_statique(ctx)
+        aff.justification_statut = JustificationStatut.STATIQUE
         db.add(aff)
         nouvelles_affectations.append(aff)
+        contextes.append(ctx)
 
     await db.commit()
     for aff in nouvelles_affectations:
         await db.refresh(aff)
+
+    # Phase 3 — Enqueue l'enrichissement LLM (best-effort, idempotent côté
+    # worker). Si `xai_actif=False`, la statique est la version définitive,
+    # rien à enrichir. Une exception au moment du delay (broker indispo) ne
+    # doit pas remettre en cause les affectations déjà commitées : on log et
+    # on continue, le RH a son tableau et c'est l'essentiel.
+    if xai_actif:
+        for aff, ctx in zip(nouvelles_affectations, contextes):
+            try:
+                _enqueue_enrichissement(aff.id, _ctx_to_dict(ctx))
+            except Exception:  # broker Redis down ou autre — non bloquant
+                pass
 
     return nouvelles_affectations, exclus_ids
 
