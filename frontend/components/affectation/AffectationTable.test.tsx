@@ -168,4 +168,49 @@ describe("AffectationTable", () => {
     expect(screen.queryByRole("button", { name: "Cours suivant" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Affecter un autre professeur/i)).not.toBeInTheDocument();
   });
+
+  it("propose un toggle pour basculer entre vue cartes et vue tableau compact", () => {
+    render(
+      <AffectationTable
+        affectations={affectations}
+        coursNames={coursNames}
+        professorNames={professorNames}
+        poids={poids}
+        sessionId={1}
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Vue cartes/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Vue tableau compact/i })).toBeInTheDocument();
+  });
+
+  it("affiche un tableau quand on bascule en vue compacte", () => {
+    render(
+      <AffectationTable
+        affectations={affectations}
+        coursNames={coursNames}
+        professorNames={professorNames}
+        poids={poids}
+        sessionId={1}
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
+      />
+    );
+
+    // En cartes par défaut : pas de tableau, headings de cours visibles
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "PI-301 Algorithmes" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Vue tableau compact/i }));
+
+    // Maintenant un seul tableau avec toutes les lignes
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "PI-301 Algorithmes" }),
+    ).not.toBeInTheDocument();
+  });
 });
