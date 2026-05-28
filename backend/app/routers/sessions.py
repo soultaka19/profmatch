@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.crud_helpers import get_or_404
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.programme import Programme
@@ -65,11 +66,7 @@ async def get_session(
     current_user: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
 ) -> SessionOut:
-    result = await db.execute(select(Session).where(Session.id == session_id))
-    sess = result.scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
-    return sess
+    return await get_or_404(Session, session_id, db, label="Session")
 
 
 @router.put("/{session_id}", response_model=SessionOut)
@@ -79,10 +76,7 @@ async def update_session(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> SessionOut:
-    result = await db.execute(select(Session).where(Session.id == session_id))
-    sess = result.scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    sess = await get_or_404(Session, session_id, db, label="Session")
     sess.statut = payload.statut
     await db.commit()
     await db.refresh(sess)
@@ -95,10 +89,7 @@ async def delete_session(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    result = await db.execute(select(Session).where(Session.id == session_id))
-    sess = result.scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    sess = await get_or_404(Session, session_id, db, label="Session")
     await db.delete(sess)
     await db.commit()
 
@@ -111,10 +102,7 @@ async def list_programmes_eligibles(
 ) -> list[Programme]:
     """Programmes dont le rythme d'admission permet de dispenser des étapes
     durant cette session (dérivé de Programme.semestres_admission)."""
-    sess_row = await db.execute(select(Session).where(Session.id == session_id))
-    sess = sess_row.scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
+    sess = await get_or_404(Session, session_id, db, label="Session")
     progs = (await db.execute(select(Programme).order_by(Programme.code))).scalars().all()
     return [p for p in progs if programme_actif_pour_session(p, sess)]
 
@@ -130,12 +118,8 @@ async def list_etapes_statut(
     db: AsyncSession = Depends(get_db),
 ) -> list[EtapeStatutOut]:
     """Étapes d'un programme avec leur statut d'affectation pour la session."""
-    sess = (await db.execute(select(Session).where(Session.id == session_id))).scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session introuvable")
-    prog = (await db.execute(select(Programme).where(Programme.id == programme_id))).scalar_one_or_none()
-    if not prog:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable")
+    await get_or_404(Session, session_id, db, label="Session")
+    await get_or_404(Programme, programme_id, db, label="Programme")
     statuts = await lister_etapes_avec_statut(session_id, programme_id, db)
     return [EtapeStatutOut.model_validate(s) for s in statuts]
 
