@@ -320,8 +320,8 @@ async def generer_affectations(
             if statut == AffectationStatut.VALIDEE:
                 cours_couverts.add(cid)
 
-    nouvelles_affectations: list[Affectation] = []
-
+    # Phase 1 — scoring pur + sélection du top-3 par cours (sans I/O)
+    top_par_cours: list[tuple[Affectation, ContexteJustification]] = []
     for cours in cours_list:
         if cours.id in cours_couverts:
             continue  # cours déjà couvert par une VALIDEE → pas de re-proposition
@@ -348,13 +348,22 @@ async def generer_affectations(
             )
             scores_par_prof.append((float(score_total), aff, ctx))
 
-        # La justification (LLM coûteux ou statique) n'est rédigée que pour le
-        # top-3 réellement conservé, jamais pour tous les candidats scorés.
         top = sorted(scores_par_prof, key=lambda x: x[0], reverse=True)[:TOP_N_PAR_COURS]
-        for _, aff, ctx in top:
-            aff.justification = await _rediger_justification(ctx, xai_actif)
-            db.add(aff)
-            nouvelles_affectations.append(aff)
+        top_par_cours.extend((aff, ctx) for _, aff, ctx in top)
+
+    # Phase 2 — justifications XAI EN PARALLÈLE (asyncio.gather). Chaque appel
+    # LLM (~2 s) doublait la latence en séquentiel : pour C cours × top-3 on
+    # passait par C×3 attentes successives. Gather ramène ça à la latence
+    # d'un seul appel (à parallélisme près du LLM).
+    justifications = await asyncio.gather(*[
+        _rediger_justification(ctx, xai_actif) for _, ctx in top_par_cours
+    ])
+
+    nouvelles_affectations: list[Affectation] = []
+    for (aff, _), justif in zip(top_par_cours, justifications):
+        aff.justification = justif
+        db.add(aff)
+        nouvelles_affectations.append(aff)
 
     await db.commit()
     for aff in nouvelles_affectations:

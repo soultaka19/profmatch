@@ -1000,6 +1000,79 @@ async def test_generer_justification_reflete_historique_reel(db_session):
     assert "4.0 sur 5" in aff.justification
 
 
+# ── generer_affectations : parallélisation des appels LLM (perf) ──────────────
+
+
+@pytest.mark.asyncio
+async def test_generer_parallelise_les_appels_xai(db_session):
+    """Les justifications XAI du top-3 de tous les cours doivent être rédigées
+    en parallèle (asyncio.gather), pas séquentiellement.
+
+    Sans parallélisation, 6 appels qui dorment chacun 100 ms prennent ~600 ms
+    et `in_flight` reste à 1. Avec parallélisation, ils prennent ~100-200 ms
+    et `in_flight` monte au-dessus de 1.
+
+    Régression perf identifiée : sur 26 cours × top-3 ≈ 78 appels LLM
+    séquentiels → ~2 min 30 par génération.
+    """
+    import asyncio as _asyncio
+    import time
+    from unittest.mock import patch
+
+    from app.models.cours_competence import CoursCompetence
+
+    prog = await _make_programme_int(db_session, "PAR-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    profs = []
+    for i in range(3):
+        p = await _make_prof_traite(
+            db_session, f"par{i}@test.ca", f"Par{i}", ["Python"]
+        )
+        profs.append(p)
+    c1 = await _make_cours_int(db_session, "PAR-C1")
+    c2 = await _make_cours_int(db_session, "PAR-C2")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await _make_lien_int(db_session, prog.id, etape.id, c2.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    db_session.add(CoursCompetence(cours_id=c2.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    DELAY = 0.1
+    appels = {"n": 0}
+    in_flight = {"current": 0, "max": 0}
+
+    async def fake_justif(ctx, xai_actif):
+        appels["n"] += 1
+        in_flight["current"] += 1
+        in_flight["max"] = max(in_flight["max"], in_flight["current"])
+        await _asyncio.sleep(DELAY)
+        in_flight["current"] -= 1
+        return "justif-mockée"
+
+    with patch(
+        "app.services.affectation_service._rediger_justification", fake_justif
+    ):
+        start = time.perf_counter()
+        affectations, _ = await generer_affectations(
+            sess.id, [prog.id], db_session, etape_ids=[etape.id]
+        )
+        elapsed = time.perf_counter() - start
+
+    # 2 cours × top-3 candidats = 6 justifications attendues
+    assert appels["n"] == 6
+    # Critère de parallélisation : au moins 2 justifications en vol simultanément
+    assert in_flight["max"] >= 2, (
+        f"Pas de parallélisation détectée : in_flight.max={in_flight['max']}"
+    )
+    # Critère de durée : ~2 vagues max (vs 6 vagues si séquentiel) — large marge
+    assert elapsed < 5 * DELAY, (
+        f"Génération trop lente ({elapsed:.2f}s) — appels probablement séquentiels"
+    )
+    # Toutes les affectations ont bien reçu la justification
+    assert all(a.justification == "justif-mockée" for a in affectations)
+
+
 # ── _charger_bonus_historique : préagrégation W3 (anti N+1) ───────────────────
 
 
