@@ -16,8 +16,11 @@ async def test_get_profil_returns_current_user(client, test_user_prof, auth_head
 
 @pytest.mark.asyncio
 async def test_get_profil_requires_auth(client):
+    # Sans header Authorization : 401 (absence/invalidité de token),
+    # cohérent avec get_current_user dans app/core/deps.py — 403 est réservé
+    # à un rôle non autorisé (require_role).
     response = await client.get("/api/profil/me")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
