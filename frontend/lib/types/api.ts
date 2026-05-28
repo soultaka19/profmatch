@@ -184,6 +184,25 @@ export interface AffectationOut {
   professeur_nom: string | null;
 }
 
+export interface AffectationProfOut {
+  id: number;
+  session_id: number;
+  cours_id: number;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  justification: string | null;
+  statut: AffectationStatut;
+  origine: "algo" | "manuel";
+  valide_le: string | null;
+  cree_le: string;
+  session_nom: string;
+  cours_code: string | null;
+  cours_nom: string | null;
+}
+
 export interface ProfesseurDisponibleOut {
   professeur_id: number;
   nom_complet: string;
