@@ -47,7 +47,7 @@ export function JustificationDetailSheet({
 }: Props) {
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-0 sm:left-1/2 sm:top-1/2 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2">
+      <SheetContent className="p-0">
         {loading || !detail ? (
           <LoadingState />
         ) : (

@@ -277,7 +277,7 @@ export function AffectationTable({
         </div>
       )}
 
-      <JustificationDialog
+      <JustificationDrawer
         affectation={justification}
         coursName={justification ? coursNames[justification.cours_id] : undefined}
         professorName={justification ? professorNames[justification.professeur_id] : undefined}
@@ -288,7 +288,7 @@ export function AffectationTable({
   );
 }
 
-function JustificationDialog({
+function JustificationDrawer({
   affectation,
   coursName,
   professorName,
@@ -304,7 +304,7 @@ function JustificationDialog({
   return (
     <Sheet open={Boolean(affectation)} onOpenChange={(open) => !open && onClose()}>
       {affectation && (
-        <SheetContent className="inset-3 left-3 top-3 max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-lg p-5 sm:left-1/2 sm:top-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:p-7">
+        <SheetContent>
           <SheetHeader>
             <SheetTitle className="text-title-sm font-semibold">Justification IA</SheetTitle>
             <SheetDescription>
