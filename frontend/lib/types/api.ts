@@ -326,3 +326,16 @@ export interface EtapeStatut {
   cours_couverts: number;
   affectation_complete: boolean;
 }
+
+export interface AdminStatsOut {
+  utilisateurs_total: number;
+  professeurs_total: number;
+  cv_traites: number;
+  cv_en_attente: number;
+  cours_total: number;
+  programmes_total: number;
+  sessions_total: number;
+  sessions_ouvertes: number;
+  affectations_total: number;
+  affectations_validees: number;
+}
