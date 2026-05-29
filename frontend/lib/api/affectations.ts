@@ -21,15 +21,6 @@ export const sessionsApi = {
   getPonderations: (sessionId: number): Promise<PonderationsOut> =>
     apiClient.get<PonderationsOut>(`/api/sessions/${sessionId}/ponderations`),
 
-  updatePonderations: (
-    sessionId: number,
-    weights: { w1: number; w2: number; w3: number; w4: number }
-  ): Promise<PonderationsOut> =>
-    apiClient.put<PonderationsOut>(
-      `/api/sessions/${sessionId}/ponderations`,
-      weights
-    ),
-
   programmesEligibles: (sessionId: number): Promise<Programme[]> =>
     apiClient.get<Programme[]>(
       `/api/sessions/${sessionId}/programmes-eligibles`
