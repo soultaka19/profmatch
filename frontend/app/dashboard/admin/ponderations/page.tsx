@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { PonderationsOut, Session } from "@/lib/types/api";
 import { SessionStatutBadge } from "@/components/admin/SessionStatutBadge";
 import { PonderationsBar } from "@/components/admin/PonderationsBar";
+import { SessionDetailDrawer } from "@/components/admin/SessionDetailDrawer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Scale } from "lucide-react";
 import { AdminTableEmpty, AdminTableLoading, AdminTableShell, AdminTableToolbar } from "@/components/admin/AdminDataTable";
@@ -16,7 +18,8 @@ interface SessionWithPond {
 }
 
 export default function Page() {
-  const { data, isLoading } = useSWR<SessionWithPond[]>("ponderations:list", async () => {
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const { data, isLoading, mutate } = useSWR<SessionWithPond[]>("ponderations:list", async () => {
     const sessions = await sessionsApi.list();
     const pairs = await Promise.all(
       sessions.map(async (s) => ({
@@ -87,12 +90,15 @@ export default function Page() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href="/dashboard/admin/sessions">
-                      <Button size="sm" variant="outline">
-                        <span>Éditer</span>
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDetailId(session.id)}
+                      aria-label={`Éditer ${session.nom}`}
+                    >
+                      <span>Éditer</span>
+                      <ArrowRight className="ml-1 h-3 w-3" />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -107,6 +113,13 @@ export default function Page() {
           </div>
         </AdminTableShell>
       )}
+
+      <SessionDetailDrawer
+        sessionId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+        onChanged={() => mutate()}
+      />
     </div>
   );
 }
