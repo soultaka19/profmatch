@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
 import { coursApi } from "@/lib/api/cours";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   onCreated: () => void;
@@ -28,7 +29,6 @@ export function CoursCreateDialog({ onCreated }: Props) {
   const [credits, setCredits] = useState<string>("");
   const [heures, setHeures] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setCode("");
@@ -36,12 +36,10 @@ export function CoursCreateDialog({ onCreated }: Props) {
     setDescription("");
     setCredits("");
     setHeures("");
-    setError(null);
   }
 
   async function handleSubmit() {
     setSubmitting(true);
-    setError(null);
     try {
       await coursApi.create({
         code: code.trim(),
@@ -50,11 +48,12 @@ export function CoursCreateDialog({ onCreated }: Props) {
         credits: credits.trim() === "" ? null : Number(credits),
         heures: heures.trim() === "" ? null : Number(heures),
       });
+      toastSuccess(`Cours ${code.trim()} créé.`);
       onCreated();
       setOpen(false);
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Création impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +99,6 @@ export function CoursCreateDialog({ onCreated }: Props) {
               <Input id="heures" type="number" min={0} max={999} value={heures} onChange={(e) => setHeures(e.target.value)} />
             </div>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>

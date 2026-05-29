@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2 } from "lucide-react";
 import { etapesApi } from "@/lib/api/etapes";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programmeId: number;
@@ -26,24 +27,22 @@ export function EtapeCreateDialog({ programmeId, onCreated }: Props) {
   const [ordre, setOrdre] = useState<number>(1);
   const [nom, setNom] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setOrdre(1);
     setNom("");
-    setError(null);
   }
 
   async function handleSubmit() {
     setSubmitting(true);
-    setError(null);
     try {
       await etapesApi.create(programmeId, { ordre, nom: nom.trim() || null });
+      toastSuccess("Étape créée.");
       onCreated();
       setOpen(false);
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Création impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -77,7 +76,6 @@ export function EtapeCreateDialog({ programmeId, onCreated }: Props) {
             <Label htmlFor="enom">Nom (optionnel)</Label>
             <Input id="enom" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Étape 1" />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>

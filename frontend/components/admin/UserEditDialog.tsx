@@ -22,6 +22,7 @@ import {
 import { usersApi } from "@/lib/api/utilisateurs";
 import type { UserAdmin, UserRole, UserUpdateInput } from "@/lib/types/api";
 import { Loader2 } from "lucide-react";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   user: UserAdmin | null;
@@ -33,29 +34,27 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
   const [nom, setNom] = useState("");
   const [role, setRole] = useState<UserRole>("prof");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       setNom(user.nom_complet);
       setRole(user.role);
-      setError(null);
     }
   }, [user]);
 
   async function handleSubmit() {
     if (!user) return;
-    setError(null);
     setSubmitting(true);
     try {
       const payload: UserUpdateInput = {};
       if (nom !== user.nom_complet) payload.nom_complet = nom;
       if (role !== user.role) payload.role = role;
       await usersApi.update(user.id, payload);
+      toastSuccess("Utilisateur mis à jour.");
       onUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la modification");
+      toastError(err, "Mise à jour impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +101,6 @@ export function UserEditDialog({ user, onClose, onUpdated }: Props) {
               </SelectContent>
             </Select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <SheetFooter>

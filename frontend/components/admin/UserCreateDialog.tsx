@@ -24,6 +24,7 @@ import { usersApi } from "@/lib/api/utilisateurs";
 import type { CreatableRole, UserCreateResponse } from "@/lib/types/api";
 import { UserPlus, Loader2 } from "lucide-react";
 import { ActivationLinkPanel } from "./ActivationLinkPanel";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   onCreated: () => void;
@@ -35,26 +36,24 @@ export function UserCreateDialog({ onCreated }: Props) {
   const [role, setRole] = useState<CreatableRole>("prof");
   const [nom, setNom] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [createdResponse, setCreatedResponse] = useState<UserCreateResponse | null>(null);
 
   function reset() {
     setEmail("");
     setRole("prof");
     setNom("");
-    setError(null);
     setCreatedResponse(null);
   }
 
   async function handleSubmit() {
-    setError(null);
     setSubmitting(true);
     try {
       const res = await usersApi.create({ email, role, nom_complet: nom });
       setCreatedResponse(res);
+      toastSuccess("Utilisateur créé.");
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la création");
+      toastError(err, "Création impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -144,7 +143,6 @@ export function UserCreateDialog({ onCreated }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
 
             <SheetFooter>

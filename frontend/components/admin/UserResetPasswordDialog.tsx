@@ -14,6 +14,7 @@ import {
 import { usersApi } from "@/lib/api/utilisateurs";
 import type { UserAdmin, UserCreateResponse } from "@/lib/types/api";
 import { ActivationLinkPanel } from "./ActivationLinkPanel";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   user: UserAdmin | null;
@@ -24,12 +25,10 @@ interface Props {
 export function UserResetPasswordDialog({ user, onClose, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [response, setResponse] = useState<UserCreateResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       setResponse(null);
-      setError(null);
       setSubmitting(false);
     }
   }, [user]);
@@ -37,13 +36,13 @@ export function UserResetPasswordDialog({ user, onClose, onDone }: Props) {
   async function handleConfirm() {
     if (!user) return;
     setSubmitting(true);
-    setError(null);
     try {
       const res = await usersApi.reinitPassword(user.id);
       setResponse(res);
+      toastSuccess("Mot de passe réinitialisé.");
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
+      toastError(err, "Réinitialisation impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +83,6 @@ export function UserResetPasswordDialog({ user, onClose, onDone }: Props) {
                 sera généré (valable 72h, usage unique). Cette opération invalide tous les liens précédents.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            {error && <p className="text-sm text-destructive">{error}</p>}
             <AlertDialogFooter>
               <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
               <AlertDialogAction onClick={handleConfirm} disabled={submitting}>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Session } from "@/lib/types/api";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   session: Session | null;
@@ -22,18 +23,17 @@ interface Props {
 
 export function SessionDeleteDialog({ session, onClose, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
     if (!session) return;
     setSubmitting(true);
-    setError(null);
     try {
       await sessionsApi.remove(session.id);
+      toastSuccess("Session supprimée.");
       onDone();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Suppression impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +49,6 @@ export function SessionDeleteDialog({ session, onClose, onDone }: Props) {
             toutes les affectations rattachées. Cette action est irréversible.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={submitting}>

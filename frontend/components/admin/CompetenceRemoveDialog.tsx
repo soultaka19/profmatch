@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { coursCompetencesApi } from "@/lib/api/coursCompetences";
 import type { CoursCompetence } from "@/lib/types/cours";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   coursId: number;
@@ -23,18 +24,17 @@ interface Props {
 
 export function CompetenceRemoveDialog({ coursId, competence, onClose, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
     if (!competence) return;
     setSubmitting(true);
-    setError(null);
     try {
       await coursCompetencesApi.remove(coursId, competence.id);
+      toastSuccess("Compétence retirée.");
       onDone();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Retrait impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +49,6 @@ export function CompetenceRemoveDialog({ coursId, competence, onClose, onDone }:
             <strong>{competence?.nom}</strong> sera retirée des compétences requises pour ce cours.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={submitting}>
