@@ -1,16 +1,21 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
+// eslint-config-next v16 expose une config plate native (ESLint 9), sans le
+// patch @rushstack/eslint-patch qui cassait l'ancien FlatCompat sous ESLint 9.
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  ...nextCoreWebVitals,
   {
     ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts"],
+  },
+  {
+    rules: {
+      // Règle introduite par react-hooks v7 (tirée par eslint-config-next v16).
+      // Elle signale des patterns légitimes et déjà répandus dans la base
+      // (init de formulaire à l'ouverture d'un dialog, lecture localStorage au
+      // montage). Jamais appliquée jusqu'ici → on la garde en avertissement
+      // (visible, non bloquant) plutôt que d'imposer un refactor transverse.
+      "react-hooks/set-state-in-effect": "warn",
+    },
   },
 ];
 
