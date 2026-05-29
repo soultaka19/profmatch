@@ -12,6 +12,7 @@ from app.routers import affectations as affectations_router
 from app.routers import utilisateurs as utilisateurs_router
 from app.routers import rh_professeurs as rh_professeurs_router
 from app.routers import admin_maintenance as admin_maintenance_router
+from app.routers import admin_stats as admin_stats_router
 
 app = FastAPI(
     title="ProfMatch API",
@@ -47,6 +48,7 @@ app.include_router(
     prefix="/api/admin/maintenance",
     tags=["admin-maintenance"],
 )
+app.include_router(admin_stats_router.router, prefix="/api/admin/stats", tags=["admin-stats"])
 
 
 @app.get("/health", tags=["system"])
