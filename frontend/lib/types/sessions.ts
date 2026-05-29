@@ -13,13 +13,12 @@ export const STATUT_LABEL: Record<SessionStatut, string> = {
   fermee: "Fermée",
 };
 
+// Couleurs dérivées des tokens de design (themes via data-theme), jamais de
+// palette Tailwind brute : planifiée = neutre, ouverte = succès, fermée = atténuée.
 export const STATUT_CLASSES: Record<SessionStatut, string> = {
-  planifiee:
-    "border-slate-300 bg-slate-50 text-slate-800 dark:bg-slate-900/40 dark:text-slate-200 dark:border-slate-700",
-  ouverte:
-    "border-emerald-300 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800",
-  fermee:
-    "border-zinc-300 bg-zinc-100 text-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-300 dark:border-zinc-700",
+  planifiee: "border-border bg-surface text-fg-muted",
+  ouverte: "border-success-border bg-success-bg text-success",
+  fermee: "border-border-soft bg-surface-subtle text-fg-subtle",
 };
 
 export interface SessionCreateInput {

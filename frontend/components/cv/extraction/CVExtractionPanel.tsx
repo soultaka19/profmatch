@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useExtraction } from "@/lib/hooks/useExtraction";
 import { CVTextPreview } from "@/components/cv/CVTextPreview";
@@ -17,10 +16,19 @@ export function CVExtractionPanel() {
   const { user } = useAuth();
 
   if (isLoading) {
+    // Skeleton plutôt qu'un spinner centré : le CV est déjà « analysé », le
+    // contenu du dossier arrive — on évite une impression de contradiction.
     return (
-      <div className="mt-8 flex flex-col items-center gap-3 py-16">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        <p className="text-xs italic text-fg-subtle">Chargement de votre dossier…</p>
+      <div className="mt-6 space-y-4" role="status" aria-live="polite">
+        <div className="h-24 animate-pulse rounded-lg border border-border bg-canvas-pure" />
+        <div className="h-16 animate-pulse rounded-lg border border-border bg-canvas-pure" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-32 animate-pulse rounded-lg border border-border bg-canvas-pure"
+          />
+        ))}
+        <span className="sr-only">Chargement de votre dossier…</span>
       </div>
     );
   }

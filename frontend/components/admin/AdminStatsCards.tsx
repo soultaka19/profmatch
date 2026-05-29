@@ -56,7 +56,7 @@ export function AdminStatsCards({
         <Link
           key={c.title}
           href={c.href}
-          className="rounded-lg border border-border bg-canvas-pure p-5 transition hover:bg-surface-hover"
+          className="rounded-lg border border-border bg-canvas-pure p-5 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
         >
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-fg-muted">{c.title}</span>

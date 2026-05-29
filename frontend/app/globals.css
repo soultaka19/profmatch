@@ -162,7 +162,8 @@
   --canvas: #FBF8F1;
 
   --fg-muted: #555F5A;
-  --fg-subtle: #88918C;
+  /* Assombri (#88918C -> #6B746E) pour atteindre ~4.5:1 sur --canvas (WCAG AA). */
+  --fg-subtle: #6B746E;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -180,7 +181,8 @@
   --canvas: #FAFAF8;
 
   --fg-muted: #5F6673;
-  --fg-subtle: #8B95A1;
+  /* Assombri (#8B95A1 -> #6C7682) pour atteindre ~4.5:1 sur --canvas (WCAG AA). */
+  --fg-subtle: #6C7682;
 }
 
 /* Theme : Violet ardoise */
@@ -196,7 +198,8 @@
   --canvas: #FBFAFC;
 
   --fg-muted: #5D5668;
-  --fg-subtle: #8A8294;
+  /* Assombri (#8A8294 -> #6B6376) pour atteindre ~4.5:1 sur --canvas (WCAG AA). */
+  --fg-subtle: #6B6376;
 }
 
 :root {

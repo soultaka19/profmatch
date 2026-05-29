@@ -5,19 +5,9 @@ import useSWR from "swr";
 import { affectationsApi, sessionsApi } from "@/lib/api/affectations";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
 import type { AffectationOut, PonderationsOut, Session } from "@/lib/types/api";
-import { STATUT_LABEL } from "@/lib/types/sessions";
-import { Badge } from "@/components/ui/badge";
+import { SessionStatutBadge } from "@/components/admin/SessionStatutBadge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ChevronRight, Loader2 } from "lucide-react";
-
-const STATUT_BADGE: Record<
-  string,
-  "default" | "secondary" | "outline"
-> = {
-  planifiee: "outline",
-  ouverte: "default",
-  fermee: "secondary",
-};
 
 export default function HistoriquePage() {
   const { data: sessions, error: sessionsError, isLoading } = useSWR<Session[]>(
@@ -124,9 +114,7 @@ export default function HistoriquePage() {
             >
               <div className="flex items-center gap-3">
                 <span className="font-medium text-fg">{sess.nom}</span>
-                <Badge variant={STATUT_BADGE[sess.statut] ?? "outline"}>
-                  {STATUT_LABEL[sess.statut]}
-                </Badge>
+                <SessionStatutBadge statut={sess.statut} />
               </div>
               <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                 Voir les affectations
@@ -151,11 +139,7 @@ export default function HistoriquePage() {
             <h2 className="text-title-sm font-semibold text-fg">
               {selectedSession.nom}
             </h2>
-            <Badge
-              variant={STATUT_BADGE[selectedSession.statut] ?? "outline"}
-            >
-              {STATUT_LABEL[selectedSession.statut]}
-            </Badge>
+            <SessionStatutBadge statut={selectedSession.statut} />
           </div>
 
           {!affectationsLoading && !affectationsError && (

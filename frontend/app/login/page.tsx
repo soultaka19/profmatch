@@ -49,7 +49,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer — text-caption (12px) */}
-        <p className="relative text-caption text-primary-foreground/55">
+        <p className="relative text-caption text-primary-foreground/75">
           Défi Informatique La Cité 2026 · 2ᵉ édition
         </p>
       </section>
