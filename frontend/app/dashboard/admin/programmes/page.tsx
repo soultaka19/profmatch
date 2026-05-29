@@ -8,6 +8,7 @@ import { ProgrammesTable } from "@/components/admin/ProgrammesTable";
 import { ProgrammeCreateDialog } from "@/components/admin/ProgrammeCreateDialog";
 import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
 import { ProgrammeDeleteDialog } from "@/components/admin/ProgrammeDeleteDialog";
+import { ProgrammeDetailDrawer } from "@/components/admin/ProgrammeDetailDrawer";
 import {
   AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
   TableSearch, TablePagination,
@@ -24,6 +25,7 @@ export default function Page() {
   );
   const [editing, setEditing] = useState<Programme | null>(null);
   const [deleting, setDeleting] = useState<Programme | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const ctrl = useTableControls(programmes ?? [], matchProgramme);
 
@@ -59,6 +61,7 @@ export default function Page() {
         <>
           <ProgrammesTable
             programmes={ctrl.pageItems}
+            onOpen={(p) => setDetailId(p.id)}
             onEdit={setEditing}
             onDelete={setDeleting}
           />
@@ -78,6 +81,15 @@ export default function Page() {
         programme={deleting}
         onClose={() => setDeleting(null)}
         onDone={() => mutate()}
+      />
+
+      <ProgrammeDetailDrawer
+        programmeId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+        onChanged={() => mutate()}
       />
     </div>
   );

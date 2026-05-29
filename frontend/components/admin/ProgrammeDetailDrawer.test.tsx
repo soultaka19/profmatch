@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import Page from "../[id]/page";
-
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "3" }),
-  useRouter: () => ({ push: vi.fn() }),
-}));
+import { ProgrammeDetailDrawer } from "./ProgrammeDetailDrawer";
 
 vi.mock("@/lib/api/programmes", () => ({
   programmesApi: {
@@ -51,9 +46,11 @@ vi.mock("@/components/admin/ProgrammeEditDialog", () => ({
   ProgrammeEditDialog: () => null,
 }));
 
-describe("Détail programme", () => {
-  it("affiche le département et le nombre d'étapes", async () => {
-    render(<Page />);
+describe("ProgrammeDetailDrawer", () => {
+  it("affiche le département et le nombre d'étapes quand ouvert", async () => {
+    render(
+      <ProgrammeDetailDrawer programmeId={3} open onOpenChange={vi.fn()} />,
+    );
     await waitFor(() => expect(screen.getByText("TI")).toBeInTheDocument());
     expect(screen.getByText(/1 étape configurée/)).toBeInTheDocument();
   });

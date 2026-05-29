@@ -7,6 +7,7 @@ import type { Session } from "@/lib/types/api";
 import { SessionsTable } from "@/components/admin/SessionsTable";
 import { SessionCreateDialog } from "@/components/admin/SessionCreateDialog";
 import { SessionDeleteDialog } from "@/components/admin/SessionDeleteDialog";
+import { SessionDetailDrawer } from "@/components/admin/SessionDetailDrawer";
 import {
   AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
   TableSearch, TablePagination,
@@ -22,6 +23,7 @@ export default function Page() {
     () => sessionsApi.list(),
   );
   const [deleting, setDeleting] = useState<Session | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const ctrl = useTableControls(sessions ?? [], matchSession);
 
@@ -56,7 +58,7 @@ export default function Page() {
         />
       ) : (
         <>
-          <SessionsTable sessions={ctrl.pageItems} onDelete={setDeleting} />
+          <SessionsTable sessions={ctrl.pageItems} onOpen={(s) => setDetailId(s.id)} onDelete={setDeleting} />
           <TablePagination
             page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
             total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
@@ -68,6 +70,15 @@ export default function Page() {
         session={deleting}
         onClose={() => setDeleting(null)}
         onDone={() => mutate()}
+      />
+
+      <SessionDetailDrawer
+        sessionId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+        onChanged={() => mutate()}
       />
     </div>
   );

@@ -87,7 +87,7 @@ export default function Page() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/dashboard/admin/sessions/${session.id}`}>
+                    <Link href="/dashboard/admin/sessions">
                       <Button size="sm" variant="outline">
                         <span>Éditer</span>
                         <ArrowRight className="ml-1 h-3 w-3" />

@@ -9,6 +9,7 @@ import { CoursTable } from "@/components/admin/CoursTable";
 import { CoursCreateDialog } from "@/components/admin/CoursCreateDialog";
 import { CoursEditDialog } from "@/components/admin/CoursEditDialog";
 import { CoursDeleteDialog } from "@/components/admin/CoursDeleteDialog";
+import { CoursDetailDrawer } from "@/components/admin/CoursDetailDrawer";
 import {
   AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
   TableSearch, TablePagination,
@@ -25,6 +26,7 @@ export default function Page() {
   );
   const [editing, setEditing] = useState<Cours | null>(null);
   const [deleting, setDeleting] = useState<CoursReadOnly | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const ctrl = useTableControls(cours ?? [], matchCours);
 
@@ -63,7 +65,7 @@ export default function Page() {
         />
       ) : (
         <>
-          <CoursTable cours={ctrl.pageItems} onEdit={openEdit} onDelete={setDeleting} />
+          <CoursTable cours={ctrl.pageItems} onOpen={(c) => setDetailId(c.id)} onEdit={openEdit} onDelete={setDeleting} />
           <TablePagination
             page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
             total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
@@ -73,6 +75,15 @@ export default function Page() {
 
       <CoursEditDialog cours={editing} onClose={() => setEditing(null)} onUpdated={() => mutate()} />
       <CoursDeleteDialog cours={deleting} onClose={() => setDeleting(null)} onDone={() => mutate()} />
+
+      <CoursDetailDrawer
+        coursId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+        onChanged={() => mutate()}
+      />
     </div>
   );
 }

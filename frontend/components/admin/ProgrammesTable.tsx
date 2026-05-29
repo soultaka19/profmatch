@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Programme } from "@/lib/types/api";
 import { Pencil, Trash2, ArrowRight } from "lucide-react";
@@ -9,11 +8,12 @@ import { AdminTableShell } from "./AdminDataTable";
 
 interface Props {
   programmes: Programme[];
+  onOpen: (p: Programme) => void;
   onEdit: (p: Programme) => void;
   onDelete: (p: Programme) => void;
 }
 
-export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
+export function ProgrammesTable({ programmes, onOpen, onEdit, onDelete }: Props) {
   if (programmes.length === 0) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun programme.</p>;
   }
@@ -39,11 +39,9 @@ export function ProgrammesTable({ programmes, onEdit, onDelete }: Props) {
                 <SemestresAdmissionBadges semestres={p.semestres_admission} />
               </td>
               <td className="px-4 py-3 text-right space-x-1">
-                <Link href={`/dashboard/admin/programmes/${p.id}`}>
-                  <Button size="sm" variant="ghost" title="Ouvrir" aria-label={`Ouvrir ${p.nom}`}>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button size="sm" variant="ghost" onClick={() => onOpen(p)} title="Ouvrir" aria-label={`Ouvrir ${p.nom}`}>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => onEdit(p)} title="Modifier" aria-label={`Modifier ${p.nom}`}>
                   <Pencil className="h-4 w-4" />
                 </Button>
