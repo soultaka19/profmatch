@@ -1,6 +1,7 @@
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.base import Base
 from app.models.affectation import Affectation, AffectationStatut
 from app.models.cours import Cours
 from app.models.cv import CV, CVStatut
@@ -11,7 +12,9 @@ from app.models.user import User
 from app.schemas.admin_stats import AdminStatsOut
 
 
-async def _count(db: AsyncSession, model, *conditions) -> int:
+async def _count(
+    db: AsyncSession, model: type[Base], *conditions: ColumnElement[bool]
+) -> int:
     stmt = select(func.count()).select_from(model)
     for cond in conditions:
         stmt = stmt.where(cond)
@@ -24,6 +27,7 @@ async def compute_admin_stats(db: AsyncSession) -> AdminStatsOut:
         utilisateurs_total=await _count(db, User),
         professeurs_total=await _count(db, Professeur),
         cv_traites=await _count(db, CV, CV.statut == CVStatut.TRAITE),
+        # « en attente » = tout CV pas encore traité (EN_ATTENTE, EN_COURS, ERREUR).
         cv_en_attente=await _count(db, CV, CV.statut != CVStatut.TRAITE),
         cours_total=await _count(db, Cours),
         programmes_total=await _count(db, Programme),
