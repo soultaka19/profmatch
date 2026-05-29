@@ -60,7 +60,7 @@ export default function Page() {
       <AdminTableToolbar countLabel={`${ctrl.total} utilisateur${ctrl.total === 1 ? "" : "s"}`}>
         <TableSearch
           label="Rechercher un utilisateur"
-          placeholder="Rechercher par nom ou email…"
+          placeholder="Rechercher par nom ou courriel…"
           value={ctrl.query}
           onChange={ctrl.setQuery}
         />
