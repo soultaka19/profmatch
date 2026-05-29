@@ -14,10 +14,22 @@ interface CardDef {
 export function AdminStatsCards({
   stats,
   isLoading,
+  error,
 }: {
   stats: AdminStatsOut | undefined;
   isLoading: boolean;
+  error?: boolean;
 }) {
+  if (error && !isLoading && !stats) {
+    return (
+      <div
+        role="alert"
+        className="rounded-lg border border-destructive/40 bg-canvas-pure px-4 py-6 text-center text-sm text-destructive"
+      >
+        Impossible de charger les statistiques pour le moment. Réessayez plus tard.
+      </div>
+    );
+  }
   if (isLoading || !stats) {
     return (
       <div role="status" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

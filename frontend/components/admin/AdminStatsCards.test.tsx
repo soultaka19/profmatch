@@ -16,4 +16,9 @@ describe("AdminStatsCards", () => {
     expect(screen.getByText("8")).toBeInTheDocument(); // cours
     expect(screen.getByText(/Cours/)).toBeInTheDocument();
   });
+
+  it("affiche une alerte si le chargement échoue", () => {
+    render(<AdminStatsCards stats={undefined} isLoading={false} error />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Impossible de charger les statistiques/i);
+  });
 });

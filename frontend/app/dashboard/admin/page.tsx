@@ -7,7 +7,7 @@ import type { AdminStatsOut } from "@/lib/types/api";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 
 export default function Page() {
-  const { data, isLoading } = useSWR<AdminStatsOut>("admin:stats", adminStatsApi.get);
+  const { data, isLoading, error } = useSWR<AdminStatsOut>("admin:stats", adminStatsApi.get);
 
   return (
     <div className="space-y-6">
@@ -20,7 +20,7 @@ export default function Page() {
           Vue d&apos;ensemble du système : comptes, catalogue, sessions et affectations.
         </p>
       </div>
-      <AdminStatsCards stats={data} isLoading={isLoading} />
+      <AdminStatsCards stats={data} isLoading={isLoading} error={Boolean(error)} />
     </div>
   );
 }
