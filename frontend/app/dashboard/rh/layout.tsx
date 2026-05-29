@@ -7,7 +7,7 @@ import { rhNav } from "@/lib/nav/rhNav";
 export default function RhLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute allowedRoles={["rh"]}>
-      <AppShell navigation={rhNav} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines" homeHref="/dashboard/rh">
+      <AppShell navigation={rhNav} breadcrumb="Tableau de bord" sectionLabel="Ressources humaines" contentWidth="wide" homeHref="/dashboard/rh">
         {children}
       </AppShell>
     </ProtectedRoute>
