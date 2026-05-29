@@ -7,6 +7,7 @@ import type {
   EtapeStatut,
   GenerationResponse,
   GenerationStatus,
+  JustificationDetailOut,
   PonderationsOut,
   ProfesseurDisponibleOut,
   Programme,
@@ -68,6 +69,11 @@ export const affectationsApi = {
   getGenerationStatus: (taskId: string): Promise<GenerationStatus> =>
     apiClient.get<GenerationStatus>(
       `/api/affectations/generation/${taskId}`
+    ),
+
+  getJustificationDetail: (id: number): Promise<JustificationDetailOut> =>
+    apiClient.get<JustificationDetailOut>(
+      `/api/affectations/${id}/justification`
     ),
 
   list: (

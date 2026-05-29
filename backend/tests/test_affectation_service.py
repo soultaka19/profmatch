@@ -910,23 +910,32 @@ async def _setup_un_cours_un_prof(db_session, suffixe: str):
 
 
 @pytest.mark.asyncio
-async def test_generer_avec_xai_actif_produit_justification_llm(db_session):
-    """xai_actif=True : la justification du top-3 est produite par le LLM
-    (format narratif), pas la version statique technique."""
-    from unittest.mock import patch
+async def test_generer_avec_xai_actif_pose_statique_et_enqueue_enrichissement(
+    db_session, monkeypatch
+):
+    """xai_actif=True (Niveau 2) : la justification posée au commit reste
+    statique (le RH voit son tableau tout de suite). C'est une tâche
+    asynchrone d'enrichissement qui produira la narration LLM ensuite."""
+    from app.models.affectation import JustificationStatut
 
     prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, "ON")
 
-    with patch(
-        "app.services.llm_client.get_llm_client", return_value=_xai_llm_client()
-    ):
-        affectations, _ = await generer_affectations(
-            sess.id, [prog.id], db_session, etape_ids=[etape.id]
-        )
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
 
     aff = next(a for a in affectations if a.cours_id == cours.id)
-    assert "Recommandation narrative distinctive du LLM." in aff.justification
-    assert "W1 =" not in aff.justification  # narratif, pas le gabarit statique
+    # Justification commitée = statique, statut cohérent
+    assert "W1 =" in aff.justification
+    assert aff.justification_statut == JustificationStatut.STATIQUE
+    # L'enrichissement LLM a bien été enqueué
+    assert any(aff_id == aff.id for aff_id, _ in delays)
 
 
 @pytest.mark.asyncio
@@ -998,6 +1007,103 @@ async def test_generer_justification_reflete_historique_reel(db_session):
     )
     assert "1 session(s) précédente(s)" in aff.justification
     assert "4.0 sur 5" in aff.justification
+
+
+# ── generer_affectations : découplage décision / narration LLM (Niveau 2) ────
+
+
+@pytest.mark.asyncio
+async def test_generer_commit_statique_immediatement(db_session, monkeypatch):
+    """Niveau 2 : la génération commit IMMÉDIATEMENT toutes les affectations
+    en STATIQUE et délègue la narration LLM à des tâches Celery asynchrones.
+
+    Le RH voit son tableau en quelques secondes, jamais bloqué par le LLM.
+    Contrat fort : `generer_affectations` ne fait AUCUN appel LLM en direct.
+    """
+    import time
+    from app.models.affectation import JustificationStatut
+    from app.models.cours_competence import CoursCompetence
+    from app.services import affectation_service
+
+    prog = await _make_programme_int(db_session, "DEC-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    for i in range(3):
+        await _make_prof_traite(db_session, f"dec{i}@test.ca", f"Dec{i}", ["Python"])
+    c1 = await _make_cours_int(db_session, "DEC-C1")
+    c2 = await _make_cours_int(db_session, "DEC-C2")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    await _make_lien_int(db_session, prog.id, etape.id, c2.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    db_session.add(CoursCompetence(cours_id=c2.id, nom="Python", importance=5))
+    await db_session.commit()
+
+    # Intercepter les delays d'enrichissement sans réellement déclencher la tâche
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    start = time.perf_counter()
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+    elapsed = time.perf_counter() - start
+
+    # Commit rapide (pas de blocage LLM, juste calcul + statique + insert)
+    assert elapsed < 1.0, f"Génération trop lente ({elapsed:.2f}s)"
+    # Toutes les affectations marquées STATIQUE
+    assert all(a.justification_statut == JustificationStatut.STATIQUE for a in affectations)
+    # Justifications statiques non vides
+    assert all(a.justification and len(a.justification) > 20 for a in affectations)
+    # 6 tâches d'enrichissement enqueuées (2 cours × top-3 candidats)
+    assert len(delays) == 6
+    enqueued_ids = {aff_id for aff_id, _ in delays}
+    assert enqueued_ids == {a.id for a in affectations}
+
+
+@pytest.mark.asyncio
+async def test_generer_n_enqueue_rien_si_xai_inactif(db_session, monkeypatch):
+    """Quand `xai_actif=False`, la génération ne déclenche AUCUNE tâche LLM :
+    la justification statique est la version définitive, pas un placeholder."""
+    from app.models.cours_competence import CoursCompetence
+    from app.models.ponderations_session import PonderationsSession
+    from sqlalchemy import select as _sel
+
+    prog = await _make_programme_int(db_session, "OFF-P", [Semestre.AUTOMNE])
+    sess = await _make_session_int(db_session, Semestre.AUTOMNE)
+    etape = await _make_etape_int(db_session, prog.id, 1)
+    await _make_prof_traite(db_session, "off@test.ca", "Off", ["Python"])
+    c1 = await _make_cours_int(db_session, "OFF-C1")
+    await _make_lien_int(db_session, prog.id, etape.id, c1.id)
+    db_session.add(CoursCompetence(cours_id=c1.id, nom="Python", importance=5))
+    pond = (await db_session.execute(
+        _sel(PonderationsSession).where(PonderationsSession.session_id == sess.id)
+    )).scalar_one()
+    pond.xai_actif = False
+    await db_session.commit()
+
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    await generer_affectations(sess.id, [prog.id], db_session, etape_ids=[etape.id])
+
+    assert delays == []
+
+
+# ── generer_affectations : parallélisation des appels LLM (perf) ──────────────
+
+
+# Note : les anciens tests `test_generer_parallelise_les_appels_xai` et
+# `test_generer_borne_la_concurrence_xai` ont été retirés. Le concept de
+# « parallélisme borné des LLM dans la génération » n'existe plus depuis le
+# Niveau 2 : la phase 2 ne fait plus aucun appel LLM. L'enrichissement
+# narratif est désormais testé dans `test_affectation_enrichissement.py`,
+# qui valide la tâche Celery dédiée (1 tentative, idempotence, fallback).
 
 
 # ── _charger_bonus_historique : préagrégation W3 (anti N+1) ───────────────────

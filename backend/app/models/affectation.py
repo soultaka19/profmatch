@@ -36,6 +36,25 @@ class AffectationOrigine(str, Enum):
     MANUEL = "manuel"   # affectée manuellement par le RH
 
 
+class JustificationStatut(str, Enum):
+    """État de la justification XAI sur une affectation.
+
+    L'architecture découple la décision (scoring W1-W4 commitée immédiatement
+    avec une justification statique) de la narration LLM (enrichie en arrière-
+    plan par une tâche Celery dédiée, idempotente, une seule tentative).
+
+    STATIQUE : gabarit déterministe, posé au commit initial (≤ 30 s pour le RH).
+    EN_COURS : enrichissement LLM en cours côté worker.
+    ENRICHIE : narration LLM XAI réussie, remplace la statique.
+    ECHEC    : LLM injoignable / réponse invalide, on conserve la statique.
+    """
+
+    STATIQUE = "statique"
+    EN_COURS = "en_cours"
+    ENRICHIE = "enrichie"
+    ECHEC = "echec"
+
+
 class Affectation(Base):
     """Proposition d'affectation Professeur ↔ Cours pour une Session donnée.
 
@@ -80,6 +99,16 @@ class Affectation(Base):
     score_sem: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False)
 
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
+    justification_statut: Mapped[JustificationStatut] = mapped_column(
+        SQLEnum(
+            JustificationStatut,
+            name="justification_statut",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+        default=JustificationStatut.STATIQUE,
+        server_default=JustificationStatut.STATIQUE.value,
+    )
     statut: Mapped[AffectationStatut] = mapped_column(
         SQLEnum(
             AffectationStatut,

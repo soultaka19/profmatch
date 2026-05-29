@@ -87,6 +87,7 @@ export interface Affectation {
   score_sem: number;
   statut: AffectationStatus;
   justification: string | null;
+  justification_statut?: JustificationStatut;
   valide_par: number | null;
   cree_le: string;
 }
@@ -182,6 +183,7 @@ export interface AffectationOut {
   score_hist: number;
   score_sem: number;
   justification: string | null;
+  justification_statut?: JustificationStatut;
   statut: AffectationStatut;
   origine: "algo" | "manuel";
   valide_par_user_id: number | null;
@@ -220,10 +222,51 @@ export interface ProfesseurDisponibleOut {
 
 export type GenerationPhase = "pending" | "queued" | "processing" | "done" | "error";
 
+export type JustificationStatut = "statique" | "en_cours" | "enrichie" | "echec";
+
+export interface JustificationTotaux {
+  total: number;
+  statique: number;
+  en_cours: number;
+  enrichie: number;
+  echec: number;
+}
+
+export interface CompetenceRequiseOut {
+  nom: string;
+  importance: number; // 1..5
+  couverte: boolean;
+}
+
+/**
+ * Détail enrichi d'une affectation pour le panneau Match compétences.
+ * Backend : GET /api/affectations/{id}/justification.
+ */
+export interface JustificationDetailOut {
+  affectation_id: number;
+  score_total: number;
+  score_comp: number;
+  score_exp: number;
+  score_hist: number;
+  score_sem: number;
+  similarite_semantique: number;
+  annees_experience: number;
+  nb_sessions_precedentes: number;
+  note_rh_moyenne: number;
+  competences_requises: CompetenceRequiseOut[];
+  competences_maitrisees: string[];
+  justification: string | null;
+  justification_statut: JustificationStatut;
+  nom_professeur: string;
+  code_cours: string;
+  titre_cours: string;
+}
+
 export interface GenerationStatus {
   status: GenerationPhase;
   result?: { session_id: number; nb_affectations: number };
   detail?: string;
+  totaux?: JustificationTotaux | null;
 }
 
 export interface GenerationResponse {

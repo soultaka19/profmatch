@@ -168,4 +168,48 @@ describe("AffectationTable", () => {
     expect(screen.queryByRole("button", { name: "Cours suivant" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Affecter un autre professeur/i)).not.toBeInTheDocument();
   });
+
+  it("propose un toggle pour basculer entre vue cartes et vue tableau compact", () => {
+    render(
+      <AffectationTable
+        affectations={affectations}
+        coursNames={coursNames}
+        professorNames={professorNames}
+        poids={poids}
+        sessionId={1}
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Vue cartes/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Vue tableau compact/i })).toBeInTheDocument();
+  });
+
+  it("affiche un tableau quand on bascule en vue compacte", () => {
+    render(
+      <AffectationTable
+        affectations={affectations}
+        coursNames={coursNames}
+        professorNames={professorNames}
+        poids={poids}
+        sessionId={1}
+        onValidate={vi.fn()}
+        onReject={vi.fn()}
+        onManualAssigned={vi.fn()}
+      />
+    );
+
+    // En cartes par défaut : pas de tableau, headings groupés par cours
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "PI-301 Algorithmes" })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /Vue tableau compact/i }));
+
+    // Maintenant un tableau (vue paginée par cours)
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    // Le bandeau de pagination affiche le cours courant
+    expect(screen.getByText(/Cours 1 \/ 2/i)).toBeInTheDocument();
+  });
 });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, LayoutGrid, Rows3, Sparkles } from "lucide-react";
 import { AffectationCard } from "./AffectationCard";
+import { AffectationCompactTable } from "./AffectationCompactTable";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { ManualAssignDialog } from "./ManualAssignDialog";
 import { getRecommendationFilter, type RecommendationFilter } from "./recommendation";
@@ -42,6 +43,20 @@ interface AffectationTableProps {
   onManualAssigned?: () => void;
 }
 
+type ViewMode = "cards" | "compact";
+
+const VIEW_STORAGE_KEY = "profmatch.affectations.view";
+
+function readInitialView(): ViewMode {
+  if (typeof window === "undefined") return "cards";
+  try {
+    const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
+    return v === "compact" ? "compact" : "cards";
+  } catch {
+    return "cards";
+  }
+}
+
 export function AffectationTable({
   mode = "review",
   affectations,
@@ -61,6 +76,22 @@ export function AffectationTable({
     useState<RecommendationFilter>("all");
   const [selectedCoursId, setSelectedCoursId] = useState<string>("all");
   const [justification, setJustification] = useState<AffectationOut | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+
+  // Hydratation côté client : on lit la préférence persistée après le 1er rendu
+  // pour ne pas casser le rendu SSR de Next 16. Le défaut "cards" reste neutre.
+  useEffect(() => {
+    setViewMode(readInitialView());
+  }, []);
+
+  // Mémorisation du choix d'affichage entre les sessions
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
+    } catch {
+      // localStorage désactivé (private browsing) — silence, défaut OK
+    }
+  }, [viewMode]);
 
   const coursIds = useMemo(
     () => Array.from(new Set(affectations.map((aff) => aff.cours_id))).sort((a, b) => a - b),
@@ -149,6 +180,40 @@ export function AffectationTable({
             <ChevronRight className="h-4 w-4" />
           </Button>
         )}
+        <div
+          role="group"
+          aria-label="Affichage des affectations"
+          className="inline-flex h-10 self-end overflow-hidden rounded-md border border-border"
+        >
+          <button
+            type="button"
+            aria-pressed={viewMode === "cards"}
+            aria-label="Vue cartes groupées par cours"
+            onClick={() => setViewMode("cards")}
+            className={
+              viewMode === "cards"
+                ? "flex h-full items-center gap-1.5 bg-primary px-3 text-xs font-medium text-primary-foreground"
+                : "flex h-full items-center gap-1.5 bg-canvas-pure px-3 text-xs font-medium text-fg-muted transition-colors hover:bg-canvas"
+            }
+          >
+            <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+            Cartes
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "compact"}
+            aria-label="Vue tableau compact"
+            onClick={() => setViewMode("compact")}
+            className={
+              viewMode === "compact"
+                ? "flex h-full items-center gap-1.5 border-l border-border bg-primary px-3 text-xs font-medium text-primary-foreground"
+                : "flex h-full items-center gap-1.5 border-l border-border bg-canvas-pure px-3 text-xs font-medium text-fg-muted transition-colors hover:bg-canvas"
+            }
+          >
+            <Rows3 className="h-3.5 w-3.5" aria-hidden />
+            Tableau
+          </button>
+        </div>
       </div>
 
       {displayedCoursIds.length === 0 && (
@@ -157,47 +222,60 @@ export function AffectationTable({
         </p>
       )}
 
-      <div className="space-y-8">
-        {displayedCoursIds.map((coursId) => {
-          const group = groups[coursId];
-          const coursName = coursNames[coursId] ?? `Cours #${coursId}`;
-          return (
-            <section key={coursId}>
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-body font-semibold text-fg">{coursName}</h3>
-                  <span className="text-xs text-fg-muted">
-                    {group.length} candidat{group.length > 1 ? "s" : ""}
-                  </span>
+      {viewMode === "compact" ? (
+        <AffectationCompactTable
+          affectations={filtered}
+          coursNames={coursNames}
+          professorNames={professorNames}
+          poids={poids}
+          onValidate={onValidate}
+          onReject={onReject}
+          pendingActionId={pendingActionId}
+          pendingAction={pendingAction}
+        />
+      ) : (
+        <div className="space-y-8">
+          {displayedCoursIds.map((coursId) => {
+            const group = groups[coursId];
+            const coursName = coursNames[coursId] ?? `Cours #${coursId}`;
+            return (
+              <section key={coursId}>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="text-body font-semibold text-fg">{coursName}</h3>
+                    <span className="text-xs text-fg-muted">
+                      {group.length} candidat{group.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {sessionId !== undefined && onManualAssigned && (
+                    <ManualAssignDialog
+                      sessionId={sessionId}
+                      coursId={coursId}
+                      onAssigned={onManualAssigned}
+                    />
+                  )}
                 </div>
-                {sessionId !== undefined && onManualAssigned && (
-                  <ManualAssignDialog
-                    sessionId={sessionId}
-                    coursId={coursId}
-                    onAssigned={onManualAssigned}
-                  />
-                )}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {group.map((aff) => (
-                  <AffectationCard
-                    key={aff.id}
-                    aff={aff}
-                    poids={poids}
-                    professorName={professorNames[aff.professeur_id] ?? `Prof #${aff.professeur_id}`}
-                    onValidate={onValidate}
-                    onReject={onReject}
-                    pendingAction={pendingActionId === aff.id ? pendingAction : null}
-                    actionFeedback={actionFeedback[aff.id] ?? null}
-                    onViewJustification={setJustification}
-                    focusPrimaryAction={focusCandidateId === aff.id}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.map((aff) => (
+                    <AffectationCard
+                      key={aff.id}
+                      aff={aff}
+                      poids={poids}
+                      professorName={professorNames[aff.professeur_id] ?? `Prof #${aff.professeur_id}`}
+                      onValidate={onValidate}
+                      onReject={onReject}
+                      pendingAction={pendingActionId === aff.id ? pendingAction : null}
+                      actionFeedback={actionFeedback[aff.id] ?? null}
+                      onViewJustification={setJustification}
+                      focusPrimaryAction={focusCandidateId === aff.id}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       <JustificationDialog
         affectation={justification}

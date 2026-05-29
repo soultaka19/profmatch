@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreBreakdown } from "./ScoreBreakdown";
+import { JustificationBadge } from "./JustificationBadge";
 import { Check, Loader2, Sparkles, X } from "lucide-react";
 import type { AffectationOut, AffectationStatut } from "@/lib/types/api";
 import type { ActionFeedback } from "./types";
@@ -88,11 +89,14 @@ export function AffectationCard({
           type="button"
           variant="ghost"
           size="sm"
-          className="w-full justify-start px-0 text-fg-muted hover:text-fg"
+          className="w-full justify-start gap-2 px-0 text-fg-muted hover:text-fg"
           onClick={() => onViewJustification(aff)}
         >
-          <Sparkles className="h-3.5 w-3.5" />
-          Voir la justification
+          <JustificationBadge statut={aff.justification_statut} />
+          <span className="inline-flex items-center gap-1">
+            <Sparkles className="h-3.5 w-3.5" />
+            Voir la justification
+          </span>
         </Button>
       )}
 
