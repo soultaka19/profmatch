@@ -12,13 +12,32 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Loader2, X } from "lucide-react";
 import { coursApi } from "@/lib/api/cours";
+import { coursCompetencesApi } from "@/lib/api/coursCompetences";
 import { toastSuccess, toastError } from "@/lib/toast";
+import { IMPORTANCE_OPTIONS } from "./competence-options";
 
 interface Props {
   onCreated: () => void;
+}
+
+type DraftComp = { nom: string; importance: number };
+
+function importanceLabel(importance: number): string {
+  return (
+    IMPORTANCE_OPTIONS.find((o) => o.value === String(importance))?.label ??
+    String(importance)
+  );
 }
 
 export function CoursCreateDialog({ onCreated }: Props) {
@@ -28,6 +47,9 @@ export function CoursCreateDialog({ onCreated }: Props) {
   const [description, setDescription] = useState("");
   const [credits, setCredits] = useState<string>("");
   const [heures, setHeures] = useState<string>("");
+  const [comps, setComps] = useState<DraftComp[]>([]);
+  const [compNom, setCompNom] = useState("");
+  const [compImp, setCompImp] = useState("3");
   const [submitting, setSubmitting] = useState(false);
 
   function reset() {
@@ -36,19 +58,46 @@ export function CoursCreateDialog({ onCreated }: Props) {
     setDescription("");
     setCredits("");
     setHeures("");
+    setComps([]);
+    setCompNom("");
+    setCompImp("3");
+  }
+
+  function addComp() {
+    const nom = compNom.trim();
+    if (!nom) return;
+    setComps((prev) => [...prev, { nom, importance: Number(compImp) }]);
+    setCompNom("");
+    setCompImp("3");
+  }
+
+  function removeComp(i: number) {
+    setComps((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      await coursApi.create({
+      const cours = await coursApi.create({
         code: code.trim(),
         nom: nom.trim(),
         description: description.trim() || null,
         credits: credits.trim() === "" ? null : Number(credits),
         heures: heures.trim() === "" ? null : Number(heures),
       });
-      toastSuccess(`Cours ${code.trim()} créé.`);
+      const echecs: string[] = [];
+      for (const c of comps) {
+        try {
+          await coursCompetencesApi.create(cours.id, { nom: c.nom, importance: c.importance });
+        } catch {
+          echecs.push(c.nom);
+        }
+      }
+      if (echecs.length === 0) {
+        toastSuccess(`Cours ${cours.code} créé${comps.length ? ` avec ${comps.length} compétence(s)` : ""}.`);
+      } else {
+        toastError(null, `Cours créé, mais ces compétences n'ont pas été ajoutées : ${echecs.join(", ")}. Complétez-les depuis le détail du cours.`);
+      }
       onCreated();
       setOpen(false);
       reset();
@@ -87,7 +136,7 @@ export function CoursCreateDialog({ onCreated }: Props) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description (optionnel)</Label>
-            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -98,6 +147,46 @@ export function CoursCreateDialog({ onCreated }: Props) {
               <Label htmlFor="heures">Heures</Label>
               <Input id="heures" type="number" min={0} max={999} value={heures} onChange={(e) => setHeures(e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="comp-nom">Compétence requise</Label>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Input
+                  id="comp-nom"
+                  value={compNom}
+                  onChange={(e) => setCompNom(e.target.value)}
+                  placeholder="Python"
+                />
+              </div>
+              <Select value={compImp} onValueChange={setCompImp}>
+                <SelectTrigger className="w-[160px]" aria-label="Importance">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMPORTANCE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addComp} disabled={!compNom.trim()}>
+              <Plus className="mr-2 h-4 w-4" />Ajouter à la liste
+            </Button>
+            {comps.length > 0 && (
+              <ul className="space-y-1 pt-1">
+                {comps.map((c, i) => (
+                  <li key={`${c.nom}-${i}`} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+                    <span>
+                      {c.nom} <span className="text-muted-foreground">· {importanceLabel(c.importance)}</span>
+                    </span>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeComp(i)} aria-label={`Retirer ${c.nom}`}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         <SheetFooter>
