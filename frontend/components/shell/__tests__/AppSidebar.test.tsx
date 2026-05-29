@@ -1,10 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { FileText } from "lucide-react";
 import { AppSidebar } from "../AppSidebar";
 import { toast } from "sonner";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/prof" }));
+
+// La déconnexion passe désormais par une confirmation (useConfirm). On la
+// neutralise en l'auto-confirmant pour exercer l'appel à logout sans provider.
+vi.mock("@/components/confirm/ConfirmProvider", () => ({
+  useConfirm: () => () => Promise.resolve(true),
+}));
 
 const logout = vi.fn();
 vi.mock("@/components/auth/AuthProvider", () => ({
@@ -56,10 +62,11 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("expose une action de déconnexion explicite distincte de l'identité", () => {
+  it("expose une action de déconnexion explicite distincte de l'identité", async () => {
     render(<AppSidebar navigation={[]} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Se déconnecter" }));
-    expect(logout).toHaveBeenCalled();
+    // logout est appelé après résolution de la confirmation (microtâche).
+    await waitFor(() => expect(logout).toHaveBeenCalled());
   });
 });
