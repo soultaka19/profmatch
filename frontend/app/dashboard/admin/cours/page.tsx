@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import useSWR from "swr";
 import { coursApi } from "@/lib/api/cours";
 import type { CoursReadOnly } from "@/lib/types/programmes";
@@ -9,23 +9,28 @@ import { CoursTable } from "@/components/admin/CoursTable";
 import { CoursCreateDialog } from "@/components/admin/CoursCreateDialog";
 import { CoursEditDialog } from "@/components/admin/CoursEditDialog";
 import { CoursDeleteDialog } from "@/components/admin/CoursDeleteDialog";
-import { Input } from "@/components/ui/input";
-import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
+import {
+  AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
+  TableSearch, TablePagination,
+} from "@/components/admin/AdminDataTable";
+import { useTableControls } from "@/lib/hooks/useTableControls";
+
+const matchCours = (c: CoursReadOnly, q: string) =>
+  `${c.code} ${c.nom}`.toLowerCase().includes(q.toLowerCase());
 
 export default function Page() {
-  const [search, setSearch] = useState("");
-  const swrKey = `cours:list:${search}`;
   const { data: cours, mutate, isLoading } = useSWR<CoursReadOnly[]>(
-    swrKey,
-    () => coursApi.list(search || undefined)
+    "cours:list",
+    () => coursApi.list(),
   );
   const [editing, setEditing] = useState<Cours | null>(null);
   const [deleting, setDeleting] = useState<CoursReadOnly | null>(null);
 
-  async function openEdit(c: CoursReadOnly) {
-    const full = await coursApi.get(c.id);
-    setEditing(full);
-  }
+  const ctrl = useTableControls(cours ?? [], matchCours);
+
+  const openEdit = useCallback(async (c: CoursReadOnly) => {
+    setEditing(await coursApi.get(c.id));
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -40,42 +45,34 @@ export default function Page() {
         <CoursCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <AdminTableToolbar countLabel={`${cours?.length ?? 0} cours`}>
-        <Input
-          type="search"
-          aria-label="Rechercher un cours"
-          className="w-full sm:w-72"
+      <AdminTableToolbar countLabel={`${ctrl.total} cours`}>
+        <TableSearch
+          label="Rechercher un cours"
           placeholder="Rechercher par code ou nom…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={ctrl.query}
+          onChange={ctrl.setQuery}
         />
       </AdminTableToolbar>
 
       {isLoading ? (
         <AdminTableLoading />
-      ) : !cours?.length ? (
+      ) : ctrl.total === 0 ? (
         <AdminTableEmpty
           title="Aucun cours trouvé"
-          description={search ? "Modifiez votre recherche ou créez un cours." : "Créez le premier cours."}
+          description={ctrl.query ? "Modifiez votre recherche." : "Créez le premier cours."}
         />
       ) : (
-        <CoursTable
-          cours={cours}
-          onEdit={openEdit}
-          onDelete={setDeleting}
-        />
+        <>
+          <CoursTable cours={ctrl.pageItems} onEdit={openEdit} onDelete={setDeleting} />
+          <TablePagination
+            page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
+            total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
+          />
+        </>
       )}
 
-      <CoursEditDialog
-        cours={editing}
-        onClose={() => setEditing(null)}
-        onUpdated={() => mutate()}
-      />
-      <CoursDeleteDialog
-        cours={deleting}
-        onClose={() => setDeleting(null)}
-        onDone={() => mutate()}
-      />
+      <CoursEditDialog cours={editing} onClose={() => setEditing(null)} onUpdated={() => mutate()} />
+      <CoursDeleteDialog cours={deleting} onClose={() => setDeleting(null)} onDone={() => mutate()} />
     </div>
   );
 }
