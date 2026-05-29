@@ -182,7 +182,6 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
     setLaunchError(null);
     setIsSaving(true);
     try {
-      await sessionsApi.updatePonderations(selectedSessionId, weights);
       const etapeIds =
         selectedEtapeIds.length > 0 ? selectedEtapeIds : undefined;
       const res = await affectationsApi.generer(
@@ -344,11 +343,7 @@ export function GenerationForm({ onTaskStarted }: GenerationFormProps) {
       {selectedSessionId && (
         <aside className="space-y-4 rounded-lg border border-border bg-canvas-pure p-5 xl:col-start-2 xl:row-start-2 xl:row-span-3">
           <h3 className="text-body-sm font-semibold text-fg">Pondérations et lancement</h3>
-          <WeightSliders
-            value={weights}
-            onChange={setWeights}
-            disabled={isSaving}
-          />
+          <WeightSliders value={weights} readOnly />
           {launchError && <p className="text-sm text-destructive">{launchError}</p>}
           <Button
             onClick={handleLaunch}

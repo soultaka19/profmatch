@@ -81,6 +81,23 @@ async def test_update_ponderations(client: AsyncClient, db_session: AsyncSession
 
 
 @pytest.mark.asyncio
+async def test_update_ponderations_refuse_rh(
+    client: AsyncClient, auth_headers_rh: dict, db_session: AsyncSession
+):
+    sess = Session(annee=2029, semestre=Semestre.AUTOMNE, statut=SessionStatut.OUVERTE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+
+    r = await client.put(
+        f"/api/sessions/{sess.id}/ponderations",
+        json={"w1": 0.4, "w2": 0.3, "w3": 0.2, "w4": 0.1},
+        headers=auth_headers_rh,
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_update_ponderations_invalides(client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict):
     sess = Session(annee=2028, semestre=Semestre.ETE)
     db_session.add(sess)
