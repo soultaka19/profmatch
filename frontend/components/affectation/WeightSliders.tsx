@@ -12,8 +12,9 @@ export interface Weights {
 
 interface WeightSlidersProps {
   value: Weights;
-  onChange: (weights: Weights) => void;
+  onChange?: (weights: Weights) => void;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 const WEIGHT_META: {
@@ -31,12 +32,14 @@ export function WeightSliders({
   value,
   onChange,
   disabled = false,
+  readOnly = false,
 }: WeightSlidersProps) {
   // Coercion défensive : l'API peut retourner des strings Decimal
   const sum = Number(value.w1) + Number(value.w2) + Number(value.w3) + Number(value.w4);
   const isValid = Math.abs(sum - 1) <= 0.001;
 
   function handleChange(key: keyof Weights, newVal: number) {
+    if (readOnly || !onChange) return;
     onChange({ ...value, [key]: Math.round(newVal * 1000) / 1000 });
   }
 
@@ -49,7 +52,9 @@ export function WeightSliders({
         </Badge>
       </div>
       <p className="text-xs text-fg-muted">
-        La somme des pondérations doit rester exactement à 1.000 pour lancer la génération.
+        {readOnly
+          ? "Définies par l'administrateur pour cette session."
+          : "La somme des pondérations doit rester exactement à 1.000 pour lancer la génération."}
       </p>
       {!isValid && (
         <p className="text-xs text-destructive">
@@ -73,7 +78,7 @@ export function WeightSliders({
               min={0}
               max={1}
               step={0.01}
-              disabled={disabled}
+              disabled={disabled || readOnly}
               aria-label={`${label} ${description}`}
             />
           </div>

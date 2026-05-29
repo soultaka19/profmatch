@@ -45,4 +45,21 @@ describe("WeightSliders", () => {
     expect(screen.getByText(/Historique/i)).toBeInTheDocument();
     expect(screen.getByText(/Sémantique/i)).toBeInTheDocument();
   });
+
+  it("désactive les sliders et n'appelle pas onChange en lecture seule", () => {
+    const onChange = vi.fn();
+    render(<WeightSliders value={defaultWeights} onChange={onChange} readOnly />);
+    const sliders = screen.getAllByRole("slider");
+    expect(sliders.length).toBeGreaterThanOrEqual(4);
+    for (const slider of sliders) {
+      // Radix expose l'état désactivé via data-disabled / aria-disabled
+      expect(slider).toHaveAttribute("data-disabled");
+    }
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("affiche le message administrateur en lecture seule", () => {
+    render(<WeightSliders value={defaultWeights} onChange={vi.fn()} readOnly />);
+    expect(screen.getByText(/définies par l'administrateur/i)).toBeInTheDocument();
+  });
 });

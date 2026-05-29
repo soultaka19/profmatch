@@ -25,6 +25,7 @@ import { Plus, Loader2, Check, BookPlus } from "lucide-react";
 import { coursApi } from "@/lib/api/cours";
 import { cursusApi } from "@/lib/api/cursus";
 import type { CoursReadOnly } from "@/lib/types/programmes";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programmeId: number;
@@ -48,7 +49,6 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
   const [newHeures, setNewHeures] = useState<string>("");
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +69,6 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
     setNewNom("");
     setNewCredits("");
     setNewHeures("");
-    setError(null);
   }
 
   function switchToCreate(prefillNom?: string) {
@@ -78,20 +77,19 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
     setNewNom(prefillNom ?? search.trim());
     setNewCredits("");
     setNewHeures("");
-    setError(null);
   }
 
   async function handleAttachExisting() {
     if (coursId === null) return;
     setSubmitting(true);
-    setError(null);
     try {
       await cursusApi.create(programmeId, etapeId, { cours_id: coursId });
+      toastSuccess("Cours rattaché à l'étape.");
       onAdded();
       setOpen(false);
       resetAll();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Rattachement impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +97,6 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
 
   async function handleCreateAndAttach() {
     setSubmitting(true);
-    setError(null);
     try {
       const created = await coursApi.create({
         code: newCode.trim(),
@@ -109,11 +106,12 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
         heures: newHeures.trim() === "" ? null : Number(newHeures),
       });
       await cursusApi.create(programmeId, etapeId, { cours_id: created.id });
+      toastSuccess("Cours rattaché à l'étape.");
       onAdded();
       setOpen(false);
       resetAll();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Rattachement impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -210,8 +208,6 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
                 </CommandGroup>
               </CommandList>
             </Command>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
 
           <SheetFooter>
@@ -287,7 +283,6 @@ export function CursusAddDialog({ programmeId, etapeId, onAdded }: Props) {
                 />
               </div>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <SheetFooter>
             <Button variant="ghost" onClick={() => setMode("select")}>

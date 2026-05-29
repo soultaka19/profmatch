@@ -22,46 +22,38 @@ import {
 } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
 import { coursCompetencesApi } from "@/lib/api/coursCompetences";
+import { toastSuccess, toastError } from "@/lib/toast";
+import { IMPORTANCE_OPTIONS } from "./competence-options";
 
 interface Props {
   coursId: number;
   onAdded: () => void;
 }
 
-const IMPORTANCE_OPTIONS = [
-  { value: "1", label: "1 — Faible" },
-  { value: "2", label: "2 — Modérée" },
-  { value: "3", label: "3 — Standard" },
-  { value: "4", label: "4 — Importante" },
-  { value: "5", label: "5 — Critique" },
-];
-
 export function CompetenceAddDialog({ coursId, onAdded }: Props) {
   const [open, setOpen] = useState(false);
   const [nom, setNom] = useState("");
   const [importance, setImportance] = useState<string>("3");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setNom("");
     setImportance("3");
-    setError(null);
   }
 
   async function handleSubmit() {
     setSubmitting(true);
-    setError(null);
     try {
       await coursCompetencesApi.create(coursId, {
         nom: nom.trim(),
         importance: Number(importance),
       });
+      toastSuccess("Compétence ajoutée.");
       onAdded();
       setOpen(false);
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Ajout impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +91,6 @@ export function CompetenceAddDialog({ coursId, onAdded }: Props) {
               </SelectContent>
             </Select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>

@@ -18,6 +18,7 @@ import type { Programme } from "@/lib/types/api";
 import type { SemestreAdmission } from "@/lib/types/programmes";
 import { SEMESTRES_ADMISSION } from "@/lib/types/programmes";
 import { SemestresAdmissionPicker } from "./SemestresAdmissionPicker";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programme: Programme | null;
@@ -35,31 +36,29 @@ export function ProgrammeEditDialog({ programme, onClose, onUpdated }: Props) {
   const [departement, setDepartement] = useState("");
   const [semestres, setSemestres] = useState<SemestreAdmission[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (programme) {
       setNom(programme.nom);
       setDepartement(programme.departement ?? "");
       setSemestres(filterDisplayable(programme.semestres_admission));
-      setError(null);
     }
   }, [programme]);
 
   async function handleSubmit() {
     if (!programme) return;
     setSubmitting(true);
-    setError(null);
     try {
       await programmesApi.update(programme.id, {
         nom: nom.trim() || undefined,
         departement: departement.trim() || null,
         semestres_admission: semestres,
       });
+      toastSuccess("Programme mis à jour.");
       onUpdated();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Mise à jour impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +90,6 @@ export function ProgrammeEditDialog({ programme, onClose, onUpdated }: Props) {
               <p className="text-xs text-destructive">Sélectionnez au moins un semestre.</p>
             )}
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button variant="ghost" onClick={onClose}>Annuler</Button>

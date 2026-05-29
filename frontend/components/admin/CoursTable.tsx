@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ArrowRight } from "lucide-react";
 import type { CoursReadOnly } from "@/lib/types/programmes";
@@ -8,11 +7,12 @@ import { AdminTableShell } from "./AdminDataTable";
 
 interface Props {
   cours: CoursReadOnly[];
+  onOpen: (c: CoursReadOnly) => void;
   onEdit: (c: CoursReadOnly) => void;
   onDelete: (c: CoursReadOnly) => void;
 }
 
-export function CoursTable({ cours, onEdit, onDelete }: Props) {
+export function CoursTable({ cours, onOpen, onEdit, onDelete }: Props) {
   if (cours.length === 0) {
     return <p className="text-sm text-fg-muted py-8 text-center">Aucun cours.</p>;
   }
@@ -36,11 +36,9 @@ export function CoursTable({ cours, onEdit, onDelete }: Props) {
               <td className="px-4 py-3 text-fg-muted">{c.credits ?? "—"}</td>
               <td className="px-4 py-3 text-fg-muted">{c.heures ?? "—"}</td>
               <td className="px-4 py-3 text-right space-x-1">
-                <Link href={`/dashboard/admin/cours/${c.id}`}>
-                  <Button size="sm" variant="ghost" title="Ouvrir" aria-label={`Ouvrir ${c.nom}`}>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button size="sm" variant="ghost" onClick={() => onOpen(c)} title="Ouvrir" aria-label={`Ouvrir ${c.nom}`}>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => onEdit(c)} title="Modifier" aria-label={`Modifier ${c.nom}`}>
                   <Pencil className="h-4 w-4" />
                 </Button>

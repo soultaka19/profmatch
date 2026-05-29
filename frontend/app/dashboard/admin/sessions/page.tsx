@@ -7,7 +7,15 @@ import type { Session } from "@/lib/types/api";
 import { SessionsTable } from "@/components/admin/SessionsTable";
 import { SessionCreateDialog } from "@/components/admin/SessionCreateDialog";
 import { SessionDeleteDialog } from "@/components/admin/SessionDeleteDialog";
-import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
+import { SessionDetailDrawer } from "@/components/admin/SessionDetailDrawer";
+import {
+  AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
+  TableSearch, TablePagination,
+} from "@/components/admin/AdminDataTable";
+import { useTableControls } from "@/lib/hooks/useTableControls";
+
+const matchSession = (s: Session, q: string) =>
+  s.nom.toLowerCase().includes(q.toLowerCase());
 
 export default function Page() {
   const { data: sessions, mutate, isLoading } = useSWR<Session[]>(
@@ -15,6 +23,9 @@ export default function Page() {
     () => sessionsApi.list(),
   );
   const [deleting, setDeleting] = useState<Session | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
+
+  const ctrl = useTableControls(sessions ?? [], matchSession);
 
   return (
     <div className="space-y-6">
@@ -29,20 +40,45 @@ export default function Page() {
         <SessionCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <AdminTableToolbar countLabel={`${sessions?.length ?? 0} session${sessions?.length === 1 ? "" : "s"}`} />
+      <AdminTableToolbar countLabel={`${ctrl.total} session${ctrl.total === 1 ? "" : "s"}`}>
+        <TableSearch
+          label="Rechercher une session"
+          placeholder="Rechercher par nom…"
+          value={ctrl.query}
+          onChange={ctrl.setQuery}
+        />
+      </AdminTableToolbar>
 
       {isLoading ? (
         <AdminTableLoading />
-      ) : !sessions?.length ? (
-        <AdminTableEmpty title="Aucune session" description="Créez une session académique pour commencer." />
+      ) : ctrl.total === 0 ? (
+        <AdminTableEmpty
+          title="Aucune session"
+          description={ctrl.query ? "Modifiez votre recherche." : "Créez une session académique pour commencer."}
+        />
       ) : (
-        <SessionsTable sessions={sessions} onDelete={setDeleting} />
+        <>
+          <SessionsTable sessions={ctrl.pageItems} onOpen={(s) => setDetailId(s.id)} onDelete={setDeleting} />
+          <TablePagination
+            page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
+            total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
+          />
+        </>
       )}
 
       <SessionDeleteDialog
         session={deleting}
         onClose={() => setDeleting(null)}
         onDone={() => mutate()}
+      />
+
+      <SessionDetailDrawer
+        sessionId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+        onChanged={() => mutate()}
       />
     </div>
   );

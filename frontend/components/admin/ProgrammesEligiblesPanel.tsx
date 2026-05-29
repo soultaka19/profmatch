@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import useSWR from "swr";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Programme } from "@/lib/types/api";
 import { SemestresAdmissionBadges } from "./SemestresAdmissionBadges";
-import { GraduationCap, ArrowRight } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
 interface Props {
   sessionId: number;
@@ -58,13 +57,6 @@ export function ProgrammesEligiblesPanel({ sessionId }: Props) {
                   <SemestresAdmissionBadges semestres={p.semestres_admission} />
                 </div>
               </div>
-              <Link
-                href={`/dashboard/admin/programmes/${p.id}`}
-                className="text-fg-muted hover:text-fg"
-                title="Ouvrir"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </Link>
             </li>
           ))}
         </ul>

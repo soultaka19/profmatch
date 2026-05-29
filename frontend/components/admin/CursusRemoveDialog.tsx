@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cursusApi } from "@/lib/api/cursus";
 import type { CursusItem, CoursReadOnly } from "@/lib/types/programmes";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programmeId: number;
@@ -30,18 +31,17 @@ export function CursusRemoveDialog({
   onDone,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
     if (!item) return;
     setSubmitting(true);
-    setError(null);
     try {
       await cursusApi.remove(programmeId, etapeId, item.cursus.id);
+      toastSuccess("Cours retiré de l'étape.");
       onDone();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Retrait impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -61,7 +61,6 @@ export function CursusRemoveDialog({
             reste dans le référentiel.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={submitting}>

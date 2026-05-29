@@ -8,7 +8,15 @@ import { ProgrammesTable } from "@/components/admin/ProgrammesTable";
 import { ProgrammeCreateDialog } from "@/components/admin/ProgrammeCreateDialog";
 import { ProgrammeEditDialog } from "@/components/admin/ProgrammeEditDialog";
 import { ProgrammeDeleteDialog } from "@/components/admin/ProgrammeDeleteDialog";
-import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
+import { ProgrammeDetailDrawer } from "@/components/admin/ProgrammeDetailDrawer";
+import {
+  AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
+  TableSearch, TablePagination,
+} from "@/components/admin/AdminDataTable";
+import { useTableControls } from "@/lib/hooks/useTableControls";
+
+const matchProgramme = (p: Programme, q: string) =>
+  `${p.code} ${p.nom} ${p.departement ?? ""}`.toLowerCase().includes(q.toLowerCase());
 
 export default function Page() {
   const { data: programmes, mutate, isLoading } = useSWR<Programme[]>(
@@ -17,6 +25,9 @@ export default function Page() {
   );
   const [editing, setEditing] = useState<Programme | null>(null);
   const [deleting, setDeleting] = useState<Programme | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
+
+  const ctrl = useTableControls(programmes ?? [], matchProgramme);
 
   return (
     <div className="space-y-6">
@@ -30,18 +41,35 @@ export default function Page() {
         <ProgrammeCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <AdminTableToolbar countLabel={`${programmes?.length ?? 0} programme${programmes?.length === 1 ? "" : "s"}`} />
+      <AdminTableToolbar countLabel={`${ctrl.total} programme${ctrl.total === 1 ? "" : "s"}`}>
+        <TableSearch
+          label="Rechercher un programme"
+          placeholder="Rechercher par code, nom ou département…"
+          value={ctrl.query}
+          onChange={ctrl.setQuery}
+        />
+      </AdminTableToolbar>
 
       {isLoading ? (
         <AdminTableLoading />
-      ) : !programmes?.length ? (
-        <AdminTableEmpty title="Aucun programme" description="Créez un programme pour structurer le cursus." />
-      ) : (
-        <ProgrammesTable
-          programmes={programmes}
-          onEdit={setEditing}
-          onDelete={setDeleting}
+      ) : ctrl.total === 0 ? (
+        <AdminTableEmpty
+          title="Aucun programme"
+          description={ctrl.query ? "Modifiez votre recherche." : "Créez un programme pour structurer le cursus."}
         />
+      ) : (
+        <>
+          <ProgrammesTable
+            programmes={ctrl.pageItems}
+            onOpen={(p) => setDetailId(p.id)}
+            onEdit={setEditing}
+            onDelete={setDeleting}
+          />
+          <TablePagination
+            page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
+            total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
+          />
+        </>
       )}
 
       <ProgrammeEditDialog
@@ -53,6 +81,15 @@ export default function Page() {
         programme={deleting}
         onClose={() => setDeleting(null)}
         onDone={() => mutate()}
+      />
+
+      <ProgrammeDetailDrawer
+        programmeId={detailId}
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+        onChanged={() => mutate()}
       />
     </div>
   );

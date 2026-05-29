@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { programmesApi } from "@/lib/api/programmes";
 import type { Programme } from "@/lib/types/api";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programme: Programme | null;
@@ -22,18 +23,17 @@ interface Props {
 
 export function ProgrammeDeleteDialog({ programme, onClose, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
     if (!programme) return;
     setSubmitting(true);
-    setError(null);
     try {
       await programmesApi.remove(programme.id);
+      toastSuccess(`Programme ${programme.code} supprimé.`);
       onDone();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Suppression impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +49,6 @@ export function ProgrammeDeleteDialog({ programme, onClose, onDone }: Props) {
             définitivement. Cette action est irréversible.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={submitting}>

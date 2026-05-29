@@ -1,39 +1,26 @@
 "use client";
 
-import { RoadmapPlaceholder } from "@/components/dashboard/RoadmapPlaceholder";
-import { UserCog, BookOpen, Calendar, Scale } from "lucide-react";
+import useSWR from "swr";
+import { Scale } from "lucide-react";
+import { adminStatsApi } from "@/lib/api/adminStats";
+import type { AdminStatsOut } from "@/lib/types/api";
+import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 
 export default function Page() {
+  const { data, isLoading, error } = useSWR<AdminStatsOut>("admin:stats", adminStatsApi.get);
+
   return (
-    <RoadmapPlaceholder
-      title="Espace administrateur"
-      lead="Cet espace réunira la configuration globale du système : utilisateurs, catalogue de cours, sessions académiques et les pondérations de l'algorithme d'affectation."
-      heroIcon={<Scale className="h-6 w-6 text-primary" />}
-      heroTitle="Module en cours de développement"
-      heroSub="La configuration académique et le réglage des pondérations W1–W4 sont en cours d'implémentation."
-      heroEta="4 juin 2026"
-      cards={[
-        {
-          icon: <UserCog className="h-4 w-4 text-primary" />,
-          title: "Utilisateurs",
-          description: "Création / activation des comptes prof, rh, admin. Hashage bcrypt 12 rounds.",
-        },
-        {
-          icon: <BookOpen className="h-4 w-4 text-primary" />,
-          title: "Cours & programmes",
-          description: "CRUD du catalogue : sigle, titre, programme, charge horaire, prérequis.",
-        },
-        {
-          icon: <Calendar className="h-4 w-4 text-primary" />,
-          title: "Sessions",
-          description: "Sessions d'affectation : Automne 2026, Hiver 2027, etc. Statut ouverte / clôturée.",
-        },
-        {
-          icon: <Scale className="h-4 w-4 text-primary" />,
-          title: "Pondérations W1–W4",
-          description: "Sliders pour ajuster les poids du scoring composite. Recalcul temps réel sur le top 3.",
-        },
-      ]}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-display font-semibold text-fg flex items-center gap-2">
+          <Scale className="h-6 w-6 text-primary" />
+          Espace administrateur
+        </h1>
+        <p className="mt-1 text-sm text-fg-muted">
+          Vue d&apos;ensemble du système : comptes, catalogue, sessions et affectations.
+        </p>
+      </div>
+      <AdminStatsCards stats={data} isLoading={isLoading} error={Boolean(error)} />
+    </div>
   );
 }

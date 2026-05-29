@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usersApi } from "@/lib/api/utilisateurs";
 import type { UserAdmin } from "@/lib/types/api";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   user: UserAdmin | null;
@@ -30,8 +31,11 @@ export function UserToggleActifDialog({ user, mode, onClose, onDone }: Props) {
     try {
       if (mode === "deactivate") await usersApi.deactivate(user.id);
       else await usersApi.restore(user.id);
+      toastSuccess("Statut du compte modifié.");
       onDone();
       onClose();
+    } catch (e) {
+      toastError(e, "Modification impossible.");
     } finally {
       setSubmitting(false);
     }

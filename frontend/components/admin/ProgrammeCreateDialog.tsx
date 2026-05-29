@@ -17,6 +17,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { programmesApi } from "@/lib/api/programmes";
 import type { SemestreAdmission } from "@/lib/types/programmes";
 import { SemestresAdmissionPicker } from "./SemestresAdmissionPicker";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   onCreated: () => void;
@@ -29,18 +30,15 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
   const [departement, setDepartement] = useState("");
   const [semestres, setSemestres] = useState<SemestreAdmission[]>(["automne"]);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setCode("");
     setNom("");
     setDepartement("");
     setSemestres(["automne"]);
-    setError(null);
   }
 
   async function handleSubmit() {
-    setError(null);
     setSubmitting(true);
     try {
       await programmesApi.create({
@@ -49,11 +47,12 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
         departement: departement.trim() || null,
         semestres_admission: semestres,
       });
+      toastSuccess(`Programme ${code.trim()} créé.`);
       onCreated();
       setOpen(false);
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur de création");
+      toastError(e, "Création impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +99,6 @@ export function ProgrammeCreateDialog({ onCreated }: Props) {
               <p className="text-xs text-destructive">Sélectionnez au moins un semestre.</p>
             )}
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button variant="ghost" onClick={() => { reset(); setOpen(false); }}>Annuler</Button>

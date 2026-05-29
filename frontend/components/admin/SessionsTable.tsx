@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Session } from "@/lib/types/api";
 import { ArrowRight, Trash2 } from "lucide-react";
@@ -9,10 +8,11 @@ import { AdminTableShell } from "./AdminDataTable";
 
 interface Props {
   sessions: Session[];
+  onOpen: (s: Session) => void;
   onDelete: (s: Session) => void;
 }
 
-export function SessionsTable({ sessions, onDelete }: Props) {
+export function SessionsTable({ sessions, onOpen, onDelete }: Props) {
   if (sessions.length === 0) {
     return (
       <p className="text-sm text-fg-muted py-8 text-center">
@@ -40,11 +40,9 @@ export function SessionsTable({ sessions, onDelete }: Props) {
                 <SessionStatutBadge statut={s.statut} />
               </td>
               <td className="px-4 py-3 text-right space-x-1">
-                <Link href={`/dashboard/admin/sessions/${s.id}`}>
-                  <Button size="sm" variant="ghost" title="Ouvrir" aria-label={`Ouvrir ${s.nom}`}>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button size="sm" variant="ghost" onClick={() => onOpen(s)} title="Ouvrir" aria-label={`Ouvrir ${s.nom}`}>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"

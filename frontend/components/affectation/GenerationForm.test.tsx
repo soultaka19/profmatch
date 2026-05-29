@@ -4,7 +4,6 @@ import { GenerationForm } from "./GenerationForm";
 
 const controls = vi.hoisted(() => ({
   mode: "loading" as "loading" | "ready",
-  updatePonderations: vi.fn(),
   generer: vi.fn(),
   sessions: [{ id: 7, nom: "Hiver 2027", annee: 2027, semestre: "hiver", statut: "ouverte" }],
   programmes: [{ id: 46, code: "51046", nom: "Programmation informatique", departement: null, semestres_admission: [] }],
@@ -40,7 +39,6 @@ vi.mock("@/lib/api/affectations", () => ({
   sessionsApi: {
     list: vi.fn(),
     getPonderations: vi.fn(),
-    updatePonderations: controls.updatePonderations,
     programmesEligibles: vi.fn(),
     etapesStatut: vi.fn(),
   },
@@ -53,7 +51,6 @@ vi.mock("@/lib/api/affectations", () => ({
 describe("GenerationForm", () => {
   beforeEach(() => {
     controls.mode = "loading";
-    controls.updatePonderations.mockReset();
     controls.generer.mockReset();
   });
 
@@ -66,7 +63,6 @@ describe("GenerationForm", () => {
 
   it("transmet le périmètre choisi après préparation de la génération", async () => {
     controls.mode = "ready";
-    controls.updatePonderations.mockResolvedValue({});
     controls.generer.mockResolvedValue({ task_id: "task-7" });
     const onTaskStarted = vi.fn();
     render(<GenerationForm onTaskStarted={onTaskStarted} />);

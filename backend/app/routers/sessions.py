@@ -144,7 +144,7 @@ async def get_ponderations(
 async def update_session_ponderations(
     session_id: int,
     payload: PonderationsUpdate,
-    current_user: User = Depends(require_role("admin", "rh")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> PonderationsOut:
     try:

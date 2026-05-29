@@ -17,6 +17,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Semestre, SessionStatut } from "@/lib/types/api";
 import { SEMESTRE_LABEL_LONG, STATUT_LABEL } from "@/lib/types/sessions";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 const SEMESTRES: Semestre[] = ["printemps", "automne", "hiver", "ete"];
 const STATUTS: SessionStatut[] = ["planifiee", "ouverte", "fermee"];
@@ -32,25 +33,23 @@ export function SessionCreateDialog({ onCreated }: Props) {
   const [semestre, setSemestre] = useState<Semestre>("automne");
   const [statut, setStatut] = useState<SessionStatut>("planifiee");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setAnnee(currentYear);
     setSemestre("automne");
     setStatut("planifiee");
-    setError(null);
   }
 
   async function handleSubmit() {
-    setError(null);
     setSubmitting(true);
     try {
       await sessionsApi.create({ annee, semestre, statut });
+      toastSuccess("Session créée.");
       onCreated();
       setOpen(false);
       reset();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur de création");
+      toastError(e, "Création impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +120,6 @@ export function SessionCreateDialog({ onCreated }: Props) {
               ))}
             </select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <SheetFooter>
           <Button

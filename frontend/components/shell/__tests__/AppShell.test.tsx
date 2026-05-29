@@ -20,6 +20,12 @@ vi.mock("@/components/theme/ThemeSwitcher", () => ({
   ThemeSwitcher: () => <button type="button">Thème</button>,
 }));
 
+// SidebarUserCard consomme useConfirm ; ce shell test ne couvre pas la
+// confirmation, on neutralise le hook (sinon il exige un ConfirmProvider).
+vi.mock("@/components/confirm/ConfirmProvider", () => ({
+  useConfirm: () => () => Promise.resolve(true),
+}));
+
 const rhNavigation = [
   {
     label: "Ressources humaines",

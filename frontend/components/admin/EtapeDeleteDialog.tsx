@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { etapesApi } from "@/lib/api/etapes";
 import type { Etape } from "@/lib/types/programmes";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 interface Props {
   programmeId: number;
@@ -23,18 +24,17 @@ interface Props {
 
 export function EtapeDeleteDialog({ programmeId, etape, onClose, onDone }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
     if (!etape) return;
     setSubmitting(true);
-    setError(null);
     try {
       await etapesApi.remove(programmeId, etape.id);
+      toastSuccess("Étape supprimée.");
       onDone();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      toastError(e, "Suppression impossible.");
     } finally {
       setSubmitting(false);
     }
@@ -50,7 +50,6 @@ export function EtapeDeleteDialog({ programmeId, etape, onClose, onDone }: Props
             cours rattachés (cursus) seront supprimés.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Annuler</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={submitting}>

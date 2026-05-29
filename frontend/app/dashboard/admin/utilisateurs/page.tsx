@@ -16,9 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AdminTableEmpty, AdminTableLoading, AdminTableToolbar } from "@/components/admin/AdminDataTable";
+import {
+  AdminTableEmpty, AdminTableLoading, AdminTableToolbar,
+  TableSearch, TablePagination,
+} from "@/components/admin/AdminDataTable";
+import { useTableControls } from "@/lib/hooks/useTableControls";
 
 type Filter = "all" | "actifs" | "inactifs";
+
+const matchUser = (u: UserAdmin, q: string) =>
+  `${u.nom_complet} ${u.email}`.toLowerCase().includes(q.toLowerCase());
 
 export default function Page() {
   const [filter, setFilter] = useState<Filter>("all");
@@ -36,6 +43,8 @@ export default function Page() {
     return usersApi.list();
   });
 
+  const ctrl = useTableControls(users ?? [], matchUser);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -48,7 +57,13 @@ export default function Page() {
         <UserCreateDialog onCreated={() => mutate()} />
       </div>
 
-      <AdminTableToolbar countLabel={`${users?.length ?? 0} utilisateur${users?.length === 1 ? "" : "s"}`}>
+      <AdminTableToolbar countLabel={`${ctrl.total} utilisateur${ctrl.total === 1 ? "" : "s"}`}>
+        <TableSearch
+          label="Rechercher un utilisateur"
+          placeholder="Rechercher par nom ou courriel…"
+          value={ctrl.query}
+          onChange={ctrl.setQuery}
+        />
         <span className="text-sm text-fg-muted">Statut</span>
         <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <SelectTrigger className="w-44">
@@ -64,16 +79,25 @@ export default function Page() {
 
       {isLoading ? (
         <AdminTableLoading />
-      ) : !users?.length ? (
-        <AdminTableEmpty title="Aucun utilisateur" description="Aucun compte ne correspond au filtre sélectionné." />
-      ) : (
-        <UsersTable
-          users={users}
-          onEdit={setEditing}
-          onDeactivate={(u) => setToggling({ user: u, mode: "deactivate" })}
-          onRestore={(u) => setToggling({ user: u, mode: "restore" })}
-          onResetPassword={setResetting}
+      ) : ctrl.total === 0 ? (
+        <AdminTableEmpty
+          title="Aucun utilisateur"
+          description={ctrl.query ? "Modifiez votre recherche." : "Aucun compte ne correspond au filtre sélectionné."}
         />
+      ) : (
+        <>
+          <UsersTable
+            users={ctrl.pageItems}
+            onEdit={setEditing}
+            onDeactivate={(u) => setToggling({ user: u, mode: "deactivate" })}
+            onRestore={(u) => setToggling({ user: u, mode: "restore" })}
+            onResetPassword={setResetting}
+          />
+          <TablePagination
+            page={ctrl.page} pageCount={ctrl.pageCount} pageSize={ctrl.pageSize}
+            total={ctrl.total} onPageChange={ctrl.setPage} onPageSizeChange={ctrl.setPageSize}
+          />
+        </>
       )}
 
       <UserEditDialog
