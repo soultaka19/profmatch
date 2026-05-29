@@ -74,6 +74,15 @@ export default function Page() {
             <span className="text-xs uppercase text-fg-muted">Admission :</span>
             <SemestresAdmissionBadges semestres={programme.semestres_admission} />
           </div>
+          {etapesSwr.data !== undefined && (
+            <p className="mt-2 text-sm text-fg-muted">
+              {etapesSwr.data.length === 0
+                ? "Aucune étape configurée"
+                : etapesSwr.data.length === 1
+                  ? "1 étape configurée"
+                  : `${etapesSwr.data.length} étapes configurées`}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditing(true)}>Modifier le programme</Button>

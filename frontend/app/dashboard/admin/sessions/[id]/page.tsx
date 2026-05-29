@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Session } from "@/lib/types/api";
 import { SessionStatusSwitcher } from "@/components/admin/SessionStatusSwitcher";
+import { SessionStatutBadge } from "@/components/admin/SessionStatutBadge";
 import { PonderationsPanel } from "@/components/admin/PonderationsPanel";
 import { ProgrammesEligiblesPanel } from "@/components/admin/ProgrammesEligiblesPanel";
+import { SEMESTRE_LABEL_LONG } from "@/lib/types/sessions";
 
 export default function Page() {
   const params = useParams<{ id: string }>();
@@ -50,9 +52,12 @@ export default function Page() {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-display font-semibold text-fg">{data.nom}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-display font-semibold text-fg">{data.nom}</h1>
+            <SessionStatutBadge statut={data.statut} />
+          </div>
           <p className="mt-1 text-sm text-fg-muted">
-            Session académique #{data.id} — créée le{" "}
+            {SEMESTRE_LABEL_LONG[data.semestre]} {data.annee} — créée le{" "}
             {new Date(data.cree_le).toLocaleDateString("fr-CA")}.
           </p>
         </div>
