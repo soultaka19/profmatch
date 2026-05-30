@@ -40,5 +40,9 @@ class Settings(BaseSettings):
     # Frontend (utilisé pour construire l'URL d'activation envoyée à l'admin)
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Mode démo : auto-bootstrap des comptes + panneau admin seed/reset.
+    # TOUJOURS false hors démo (comptes à mot de passe connu = faille en prod).
+    DEMO_MODE: bool = False
+
 
 settings = Settings()

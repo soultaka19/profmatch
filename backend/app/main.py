@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
+
 from app.routers import auth, cv, extraction, profil as profil_router
 from app.routers import sessions as sessions_router
 from app.routers import programmes as programmes_router
@@ -53,4 +55,9 @@ app.include_router(admin_stats_router.router, prefix="/api/admin/stats", tags=["
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:
-    return {"status": "ok", "service": "profmatch-api", "version": "0.1.0"}
+    return {
+        "status": "ok",
+        "service": "profmatch-api",
+        "version": "0.1.0",
+        "demo_mode": settings.DEMO_MODE,
+    }
