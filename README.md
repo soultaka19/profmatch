@@ -197,9 +197,12 @@ Comptes créés :
 
 | Rôle | Email | Mot de passe |
 |---|---|---|
-| Professeur | prof@lacite.ca | demo1234 |
-| Responsable RH | rh@lacite.ca | demo1234 |
-| Administrateur | admin@lacite.ca | demo1234 |
+| Professeur | prof@defi-lacite.ca | Prof@LaCite2026! |
+| Responsable RH | rh@defi-lacite.ca | Rh@LaCite2026! |
+| Administrateur | admin@defi-lacite.ca | Admin@LaCite2026! |
+
+> En **mode démo** (`DEMO_MODE=true`), ces 3 comptes sont créés automatiquement
+> au démarrage de l'application — aucune commande à lancer.
 
 ---
 
