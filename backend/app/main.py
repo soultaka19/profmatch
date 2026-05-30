@@ -1,7 +1,10 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.services.demo_seed_service import bootstrap_on_startup
 
 from app.routers import auth, cv, extraction, profil as profil_router
 from app.routers import sessions as sessions_router
@@ -16,12 +19,19 @@ from app.routers import rh_professeurs as rh_professeurs_router
 from app.routers import admin_maintenance as admin_maintenance_router
 from app.routers import admin_stats as admin_stats_router
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await bootstrap_on_startup()
+    yield
+
+
 app = FastAPI(
     title="ProfMatch API",
     version="0.1.0",
     description="Gestion de CV et affectation des professeurs — Défi La Cité 2026",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
