@@ -910,12 +910,13 @@ async def _setup_un_cours_un_prof(db_session, suffixe: str):
 
 
 @pytest.mark.asyncio
-async def test_generer_avec_xai_actif_pose_statique_et_enqueue_enrichissement(
+async def test_generer_avec_xai_actif_pose_statique_et_n_enqueue_rien(
     db_session, monkeypatch
 ):
-    """xai_actif=True (Niveau 2) : la justification posée au commit reste
-    statique (le RH voit son tableau tout de suite). C'est une tâche
-    asynchrone d'enrichissement qui produira la narration LLM ensuite."""
+    """xai_actif=True (Niveau 2bis) : la génération pose la justification
+    STATIQUE et n'enqueue PLUS aucun enrichissement de masse — l'enrichissement
+    LLM est désormais lazy (déclenché à la consultation). C'est ce qui supprime
+    la saturation de la file Celery par les générations successives."""
     from app.models.affectation import JustificationStatut
 
     prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, "ON")
@@ -934,8 +935,8 @@ async def test_generer_avec_xai_actif_pose_statique_et_enqueue_enrichissement(
     # Justification commitée = statique, statut cohérent
     assert "W1 =" in aff.justification
     assert aff.justification_statut == JustificationStatut.STATIQUE
-    # L'enrichissement LLM a bien été enqueué
-    assert any(aff_id == aff.id for aff_id, _ in delays)
+    # La génération n'enqueue plus AUCUNE tâche d'enrichissement
+    assert delays == []
 
 
 @pytest.mark.asyncio
@@ -1057,10 +1058,8 @@ async def test_generer_commit_statique_immediatement(db_session, monkeypatch):
     assert all(a.justification_statut == JustificationStatut.STATIQUE for a in affectations)
     # Justifications statiques non vides
     assert all(a.justification and len(a.justification) > 20 for a in affectations)
-    # 6 tâches d'enrichissement enqueuées (2 cours × top-3 candidats)
-    assert len(delays) == 6
-    enqueued_ids = {aff_id for aff_id, _ in delays}
-    assert enqueued_ids == {a.id for a in affectations}
+    # AUCUN enrichissement enqueué à la génération (lazy à la consultation)
+    assert delays == []
 
 
 @pytest.mark.asyncio
@@ -1142,3 +1141,126 @@ async def test_charger_bonus_historique_agrege(db_session):
     assert nb == 2
     assert note_moy == pytest.approx(4.5)
     assert bonus == pytest.approx(0.9)  # note_moy / 5
+
+
+# ── declencher_enrichissement_si_besoin : enrichissement XAI lazy ─────────────
+
+
+async def _aff_statique(db_session, suffixe: str):
+    """Génère 1 cours / 1 prof et retourne l'unique affectation STATIQUE."""
+    prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, suffixe)
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+    return affectations[0]
+
+
+@pytest.mark.asyncio
+async def test_declencher_enrichissement_enqueue_une_fois_et_flip_en_cours(
+    db_session, monkeypatch
+):
+    """1er appel : statut STATIQUE → EN_COURS + 1 enqueue. La narration LLM
+    n'est plus déclenchée en masse, mais à la consultation de CETTE ligne."""
+    from app.models.affectation import JustificationStatut
+    from app.services.affectation_service import declencher_enrichissement_si_besoin
+
+    aff = await _aff_statique(db_session, "LAZ1")
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    res = await declencher_enrichissement_si_besoin(aff.id, db_session)
+    await db_session.refresh(aff)
+
+    assert res == {"statut": "en_cours"}
+    assert aff.justification_statut == JustificationStatut.EN_COURS
+    assert len(delays) == 1
+    assert delays[0][0] == aff.id
+    # ctx_dict sérialisé est exploitable par la tâche (clés clés présentes)
+    assert delays[0][1]["code_cours"]
+    assert "poids" in delays[0][1] and "composants" in delays[0][1]
+
+
+@pytest.mark.asyncio
+async def test_declencher_enrichissement_idempotent_sur_polling(
+    db_session, monkeypatch
+):
+    """Le polling du front rappelle l'endpoint : le 2e passage (EN_COURS) ne
+    doit PAS re-enqueue — sinon on relance le LLM à chaque tick."""
+    from app.services.affectation_service import declencher_enrichissement_si_besoin
+
+    aff = await _aff_statique(db_session, "LAZ2")
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    await declencher_enrichissement_si_besoin(aff.id, db_session)
+    res2 = await declencher_enrichissement_si_besoin(aff.id, db_session)
+
+    assert res2 == {"skip": "en_cours"}
+    assert len(delays) == 1  # un seul enqueue malgré 2 appels
+
+
+@pytest.mark.asyncio
+async def test_declencher_enrichissement_noop_si_xai_inactif(db_session, monkeypatch):
+    """xai_actif=False : la statique est définitive, aucun enqueue."""
+    from sqlalchemy import select as _sel
+    from app.services.affectation_service import declencher_enrichissement_si_besoin
+
+    prog, sess, etape, cours = await _setup_un_cours_un_prof(db_session, "LAZ3")
+    pond = (await db_session.execute(
+        _sel(PonderationsSession).where(PonderationsSession.session_id == sess.id)
+    )).scalar_one()
+    pond.xai_actif = False
+    await db_session.commit()
+    affectations, _ = await generer_affectations(
+        sess.id, [prog.id], db_session, etape_ids=[etape.id]
+    )
+    aff = affectations[0]
+
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    res = await declencher_enrichissement_si_besoin(aff.id, db_session)
+
+    assert res == {"skip": "xai_inactif"}
+    assert delays == []
+
+
+@pytest.mark.asyncio
+async def test_declencher_enrichissement_noop_si_deja_enrichie(
+    db_session, monkeypatch
+):
+    """Une justification déjà ENRICHIE n'est jamais re-déclenchée."""
+    from app.models.affectation import JustificationStatut
+    from app.services.affectation_service import declencher_enrichissement_si_besoin
+
+    aff = await _aff_statique(db_session, "LAZ4")
+    aff.justification_statut = JustificationStatut.ENRICHIE
+    await db_session.commit()
+
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    res = await declencher_enrichissement_si_besoin(aff.id, db_session)
+
+    assert res == {"skip": "enrichie"}
+    assert delays == []
+
+
+@pytest.mark.asyncio
+async def test_declencher_enrichissement_introuvable(db_session):
+    from app.services.affectation_service import declencher_enrichissement_si_besoin
+
+    res = await declencher_enrichissement_si_besoin(999999, db_session)
+    assert res == {"skip": "introuvable"}

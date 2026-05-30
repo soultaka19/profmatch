@@ -571,6 +571,57 @@ async def test_get_justification_renvoie_detail_complet(
 
 
 @pytest.mark.asyncio
+async def test_get_justification_declenche_enrichissement_lazy(
+    db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+    professeur_prof: Professeur,
+    monkeypatch,
+):
+    """Consulter une justification STATIQUE déclenche l'enrichissement LLM
+    (lazy) : statut → EN_COURS + 1 enqueue. Un 2e GET (polling) ne ré-enqueue
+    pas."""
+    from app.models.affectation import JustificationStatut
+
+    sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
+    cours = Cours(code="LZ-001", nom="Cours lazy")
+    db_session.add_all([sess, cours])
+    await db_session.commit()
+    await db_session.refresh(sess)
+    await db_session.refresh(cours)
+    aff = Affectation(
+        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
+        score_total=Decimal("0.7"), score_comp=Decimal("0.7"),
+        score_exp=Decimal("0.7"), score_hist=Decimal("0.7"), score_sem=Decimal("0.7"),
+        statut=AffectationStatut.PROPOSEE,
+        justification="statique",
+        justification_statut=JustificationStatut.STATIQUE,
+    )
+    db_session.add(aff)
+    await db_session.commit()
+    await db_session.refresh(aff)
+
+    delays: list[tuple] = []
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
+    )
+
+    r1 = await client.get(
+        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
+    )
+    assert r1.status_code == 200
+    assert r1.json()["justification_statut"] == "en_cours"
+    assert len(delays) == 1
+
+    r2 = await client.get(
+        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
+    )
+    assert r2.status_code == 200
+    assert len(delays) == 1  # polling : pas de ré-enqueue
+
+
+@pytest.mark.asyncio
 async def test_get_justification_inexistante_renvoie_404(
     client: AsyncClient, auth_headers_rh: dict[str, str]
 ):

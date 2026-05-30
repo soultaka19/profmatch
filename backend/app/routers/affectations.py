@@ -29,6 +29,7 @@ from app.schemas.affectation import (
 from app.services.affectation_service import (
     ajouter_feedback,
     creer_affectation_manuelle,
+    declencher_enrichissement_si_besoin,
     lister_professeurs_disponibles,
     valider_affectation,
 )
@@ -287,7 +288,12 @@ async def get_justification(
 
     Renvoie les compétences requises (avec couverture par le prof), les
     compétences maîtrisées, années d'expérience, historique RH et similarité
-    sémantique — tout ce qu'il faut pour décider rapidement."""
+    sémantique — tout ce qu'il faut pour décider rapidement.
+
+    Enrichissement XAI LAZY : la consultation déclenche (au premier passage)
+    l'enrichissement LLM de CETTE justification — le front poll ensuite tant
+    que le statut est EN_COURS pour voir la narration remplacer la statique."""
+    await declencher_enrichissement_si_besoin(affectation_id, db)
     try:
         return await get_justification_detail(affectation_id, db)
     except ValueError as exc:

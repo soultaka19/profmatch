@@ -63,13 +63,22 @@ export function AffectationCompactTable({
   // Fetch détail (wireframe B) à la demande. SWR garde le cache entre
   // les ouvertures d'un même id — pas de re-fetch si on rouvre la même
   // affectation. Aucune requête tant que detailId est null.
+  //
+  // Enrichissement XAI lazy : la 1ʳᵉ consultation déclenche côté API
+  // l'enrichissement LLM de cette justification (statut → `en_cours`). On
+  // poll alors toutes les 2 s jusqu'à ce que la narration remplace la
+  // statique (`enrichie`) ou échoue (`echec`). Sinon, pas de polling.
   const { data: detail, isLoading: detailLoading } =
     useSWR<JustificationDetailOut>(
       detailId !== null ? `justification:${detailId}` : null,
       detailId !== null
         ? () => affectationsApi.getJustificationDetail(detailId)
         : null,
-      { revalidateOnFocus: false },
+      {
+        revalidateOnFocus: false,
+        refreshInterval: (data) =>
+          data?.justification_statut === "en_cours" ? 2000 : 0,
+      },
     );
 
   // Regroupement par cours, à l'intérieur tri par score décroissant.

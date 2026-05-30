@@ -197,6 +197,104 @@ async def _charger_bonus_historique(
     return bonus_map
 
 
+async def _construire_ctx_dict(aff: Affectation, db: AsyncSession) -> dict:
+    """Reconstitue le `ContexteJustification` (sérialisé) d'une affectation déjà
+    persistée, pour alimenter la tâche d'enrichissement LLM déclenchée à la
+    consultation. `aff` doit avoir `cours`, `professeur.user` et
+    `professeur.competences` chargés. Les sous-scores W1–W4 sont relus depuis
+    l'affectation (déjà calculés à la génération) — on ne re-score pas."""
+    from app.services.justification_detail import _annees_experience, _historique_paire
+
+    competences_cours = (await _charger_competences_cours([aff.cours_id], db)).get(
+        aff.cours_id, []
+    )
+    competences_prof = {c.nom for c in aff.professeur.competences}
+    prof_lower = {c.lower() for c in competences_prof}
+    nb_couvertes = sum(1 for cc in competences_cours if cc.nom.lower() in prof_lower)
+
+    annees = await _annees_experience(db, aff.professeur_id)
+    nb_sessions, note_moy = await _historique_paire(
+        db, aff.professeur_id, aff.cours_id, aff.session_id
+    )
+
+    cours = aff.cours
+    sim = 0.0
+    if aff.professeur.embedding and cours is not None and cours.embedding:
+        sim = cosine_similarity(aff.professeur.embedding, cours.embedding)
+
+    pond = (await db.execute(
+        select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
+    )).scalar_one()
+    ctx = ContexteJustification(
+        nom_professeur=(
+            aff.professeur.user.nom_complet
+            if aff.professeur.user is not None
+            else f"Prof {aff.professeur_id}"
+        ),
+        code_cours=cours.code if cours is not None else "",
+        titre_cours=cours.nom if cours is not None else "",
+        nb_comp_couvertes=nb_couvertes,
+        nb_comp_requises=len(competences_cours),
+        competences_maitrisees=sorted(competences_prof)[:5],
+        annees_experience=annees,
+        nb_sessions_precedentes=nb_sessions,
+        note_rh_moyenne=note_moy,
+        similarite_semantique=sim,
+        score_global_pct=float(aff.score_total) * 100,
+        poids=PoidsScoring(w1=pond.w1, w2=pond.w2, w3=pond.w3, w4=pond.w4),
+        composants=ScoresComposants(
+            score_comp=aff.score_comp,
+            score_exp=aff.score_exp,
+            score_hist=aff.score_hist,
+            score_sem=aff.score_sem,
+        ),
+    )
+    return _ctx_to_dict(ctx)
+
+
+async def declencher_enrichissement_si_besoin(
+    affectation_id: int, db: AsyncSession
+) -> dict:
+    """Enrichissement XAI LAZY : déclenche l'appel LLM d'UNE justification au
+    moment où le RH la consulte, au lieu d'un enqueue de masse à la génération.
+
+    Idempotent et borné :
+    - n'enqueue qu'au tout premier passage (statut STATIQUE) ;
+    - no-op si la session a `xai_actif=False` (la statique est définitive) ;
+    - no-op si déjà EN_COURS / ENRICHIE / ECHEC (évite la boucle de polling et
+      les retries infinis sur un LLM qui échoue).
+
+    Bascule le statut en EN_COURS puis délègue à la tâche Celery. Un échec
+    d'enqueue (broker down) ne casse pas la consultation : la statique reste
+    affichée. Retourne un petit dict de traçabilité."""
+    aff = (await db.execute(
+        select(Affectation).where(Affectation.id == affectation_id).options(
+            selectinload(Affectation.cours),
+            selectinload(Affectation.professeur).selectinload(Professeur.user),
+            selectinload(Affectation.professeur).selectinload(Professeur.competences),
+        )
+    )).scalar_one_or_none()
+    if aff is None:
+        return {"skip": "introuvable"}
+    if aff.justification_statut != JustificationStatut.STATIQUE:
+        return {"skip": aff.justification_statut.value}
+
+    pond = (await db.execute(
+        select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
+    )).scalar_one_or_none()
+    if pond is None or not pond.xai_actif:
+        return {"skip": "xai_inactif"}
+
+    ctx_dict = await _construire_ctx_dict(aff, db)
+    aff.justification_statut = JustificationStatut.EN_COURS
+    await db.commit()
+    try:
+        _enqueue_enrichissement(aff.id, ctx_dict)
+    except Exception:  # broker Redis down ou autre — non bloquant
+        pass
+    return {"statut": "en_cours"}
+
+
 def _score_comp_pondere(
     competences_prof: set[str],
     competences_cours: list[CoursCompetence],
@@ -297,7 +395,7 @@ async def generer_affectations(
     (session, prof, cours).
     Retourne (affectations, programmes_exclus_ids).
     """
-    poids, xai_actif = await _charger_ponderations(session_id, db)
+    poids, _xai_actif = await _charger_ponderations(session_id, db)
 
     sess_result = await db.execute(select(Session).where(Session.id == session_id))
     session = sess_result.scalar_one_or_none()
@@ -397,34 +495,24 @@ async def generer_affectations(
 
     # Phase 2 — COMMIT IMMÉDIAT avec justification STATIQUE. Le RH voit son
     # tableau en quelques secondes. Aucun appel LLM en synchrone : c'est le
-    # point pivot du Niveau 2 (découplage décision/narration). La narration
-    # LLM, instable et lente, est déléguée à des tâches Celery asynchrones
-    # via la phase 3.
+    # point pivot du Niveau 2 (découplage décision/narration).
     nouvelles_affectations: list[Affectation] = []
-    contextes: list[ContexteJustification] = []
     for aff, ctx in top_par_cours:
         aff.justification = generer_justification_statique(ctx)
         aff.justification_statut = JustificationStatut.STATIQUE
         db.add(aff)
         nouvelles_affectations.append(aff)
-        contextes.append(ctx)
 
     await db.commit()
     for aff in nouvelles_affectations:
         await db.refresh(aff)
 
-    # Phase 3 — Enqueue l'enrichissement LLM (best-effort, idempotent côté
-    # worker). Si `xai_actif=False`, la statique est la version définitive,
-    # rien à enrichir. Une exception au moment du delay (broker indispo) ne
-    # doit pas remettre en cause les affectations déjà commitées : on log et
-    # on continue, le RH a son tableau et c'est l'essentiel.
-    if xai_actif:
-        for aff, ctx in zip(nouvelles_affectations, contextes):
-            try:
-                _enqueue_enrichissement(aff.id, _ctx_to_dict(ctx))
-            except Exception:  # broker Redis down ou autre — non bloquant
-                pass
-
+    # Niveau 2bis — l'enrichissement LLM n'est PLUS déclenché en masse ici.
+    # Enqueue eager = N tâches LLM lentes par génération → la file Celery
+    # (worker solo) sature et toute génération suivante attend derrière ce
+    # backlog. L'enrichissement est désormais LAZY : déclenché à la
+    # consultation d'une justification (declencher_enrichissement_si_besoin),
+    # donc on ne paie le LLM que pour ce que le RH regarde réellement.
     return nouvelles_affectations, exclus_ids
 
 

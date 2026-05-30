@@ -150,6 +150,20 @@ def mock_embedding_model(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def no_real_enqueue_enrichissement(monkeypatch):
+    """Neutralise par défaut l'enqueue Celery de l'enrichissement XAI lazy.
+
+    Évite tout appel réel au broker Redis pendant les tests (ex. le GET
+    justification déclenche l'enrichissement). Les tests qui veulent observer
+    l'enqueue le re-patchent localement pour capturer les appels."""
+    monkeypatch.setattr(
+        "app.services.affectation_service._enqueue_enrichissement",
+        lambda *a, **k: None,
+        raising=False,
+    )
+
+
+@pytest.fixture(autouse=True)
 def mock_llm_client(monkeypatch):
     """Mock global du client LLM — JAMAIS d'appel API réel en CI.
 
