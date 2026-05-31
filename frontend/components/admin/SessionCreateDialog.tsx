@@ -19,7 +19,9 @@ import type { Semestre, SessionStatut } from "@/lib/types/api";
 import { SEMESTRE_LABEL_LONG, STATUT_LABEL } from "@/lib/types/sessions";
 import { toastSuccess, toastError } from "@/lib/toast";
 
-const SEMESTRES: Semestre[] = ["printemps", "automne", "hiver", "ete"];
+// L'été n'est pas un semestre d'admission académique (cf. calendrier : STANDARD
+// = Automne, CONTINU = Automne/Hiver/Printemps) — non proposé à la création.
+const SEMESTRES: Semestre[] = ["automne", "hiver", "printemps"];
 const STATUTS: SessionStatut[] = ["planifiee", "ouverte", "fermee"];
 
 interface Props {
