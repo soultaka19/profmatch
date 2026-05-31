@@ -73,9 +73,9 @@ docker compose exec backend python scripts/seed_demo.py
 
 | Rôle | Courriel | Mot de passe |
 |---|---|---|
-| Professeur | prof@lacite.ca | demo1234 |
-| Responsable RH | rh@lacite.ca | demo1234 |
-| Administrateur | admin@lacite.ca | demo1234 |
+| Professeur | prof@defi-lacite.ca | Prof@LaCite2026! |
+| Responsable RH | rh@defi-lacite.ca | Rh@LaCite2026! |
+| Administrateur | admin@defi-lacite.ca | Admin@LaCite2026! |
 
 > **Parcours de démonstration suggéré :** le **professeur** téléverse un CV → l'**administrateur** crée une session et configure les pondérations → le **RH** génère les affectations, consulte les justifications et valide.
 
