@@ -64,7 +64,7 @@ export function ProfilForm({ open, initialResume, onOpenChange, onMutate }: Prop
             onChange={(e) => { setValue(e.target.value); setError(null); }}
             rows={6}
             placeholder="Ex. : Enseignant en informatique avec 12 ans d'expérience, spécialisé en pédagogie active et développement web fullstack…"
-            className="resize-none font-display text-base italic leading-relaxed"
+            className="resize-none text-sm leading-relaxed"
             autoFocus
           />
           <div className="flex items-center justify-between text-xs">
