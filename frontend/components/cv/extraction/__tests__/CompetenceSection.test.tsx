@@ -18,11 +18,11 @@ const items = [
 beforeEach(() => { vi.clearAllMocks(); });
 
 describe("CompetenceSection", () => {
-  it("affiche eyebrow '01' et count", () => {
+  it("affiche le titre et le compteur (sans numéro d'index)", () => {
     render(<CompetenceSection items={items} onMutate={vi.fn()} />);
-    expect(screen.getByText("01")).toBeInTheDocument();
     expect(screen.getByText("Compétences")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
   });
 
   it("liste les compétences avec niveau", () => {

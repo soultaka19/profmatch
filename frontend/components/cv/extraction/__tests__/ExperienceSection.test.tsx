@@ -21,9 +21,9 @@ const items = [
 beforeEach(() => vi.clearAllMocks());
 
 describe("ExperienceSection", () => {
-  it("affiche eyebrow 02 + items + période formatée", () => {
+  it("affiche les items + période formatée (sans numéro d'index)", () => {
     render(<ExperienceSection items={items} onMutate={vi.fn()} />);
-    expect(screen.getByText("02")).toBeInTheDocument();
+    expect(screen.queryByText("02")).not.toBeInTheDocument();
     expect(screen.getByText("Lead Dev")).toBeInTheDocument();
     expect(screen.getByText("2020 → actuel")).toBeInTheDocument();
     expect(screen.getByText("2018 → 2019")).toBeInTheDocument();

@@ -17,10 +17,10 @@ describe("ProfilSection", () => {
     expect(screen.getByText("Dev senior 8 ans")).toBeInTheDocument();
   });
 
-  it("affiche eyebrow numéroté '00' et titre PROFIL", () => {
+  it("affiche le titre Profil (sans numéro d'index)", () => {
     render(<ProfilSection profil={{ resume: null, source: "llm" }} onMutate={onMutate} />);
-    expect(screen.getByText("00")).toBeInTheDocument();
     expect(screen.getByText("Profil")).toBeInTheDocument();
+    expect(screen.queryByText("00")).not.toBeInTheDocument();
   });
 
   it("ouvre le form au click sur le placeholder", () => {

@@ -45,12 +45,13 @@ describe("CVExtractionPanel", () => {
     expect(screen.getByTestId("cv-text-preview")).toBeInTheDocument();
   });
 
-  it("rend les 4 eyebrows numérotés 00-04", () => {
+  it("rend les titres de section (sans numéros d'index)", () => {
     render(<CVExtractionPanel />);
-    expect(screen.getByText("00")).toBeInTheDocument();
-    expect(screen.getByText("01")).toBeInTheDocument();
-    expect(screen.getByText("02")).toBeInTheDocument();
-    expect(screen.getByText("03")).toBeInTheDocument();
-    expect(screen.getByText("04")).toBeInTheDocument();
+    expect(screen.getByText("Profil")).toBeInTheDocument();
+    expect(screen.getByText("Compétences")).toBeInTheDocument();
+    expect(screen.getByText("Expériences")).toBeInTheDocument();
+    expect(screen.getByText("Formations")).toBeInTheDocument();
+    expect(screen.getByText("Langues")).toBeInTheDocument();
+    expect(screen.queryByText("00")).not.toBeInTheDocument();
   });
 });

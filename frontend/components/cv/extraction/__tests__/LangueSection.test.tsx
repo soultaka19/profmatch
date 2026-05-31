@@ -15,9 +15,9 @@ const items = [
 beforeEach(() => vi.clearAllMocks());
 
 describe("LangueSection", () => {
-  it("affiche eyebrow 04 + langues + niveaux CECRL", () => {
+  it("affiche langues + niveaux CECRL (sans numéro d'index)", () => {
     render(<LangueSection items={items} onMutate={vi.fn()} />);
-    expect(screen.getByText("04")).toBeInTheDocument();
+    expect(screen.queryByText("04")).not.toBeInTheDocument();
     expect(screen.getByText("Français")).toBeInTheDocument();
     expect(screen.getByText("natif")).toBeInTheDocument();
     expect(screen.getByText("Anglais")).toBeInTheDocument();

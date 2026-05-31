@@ -39,8 +39,7 @@ export function ProfilSection({ profil, onMutate }: Props) {
     <section className="group/section mt-8 rounded-md border border-border bg-canvas-pure shadow-soft transition-shadow hover:shadow-card">
       <header className="flex items-center justify-between border-b border-border-soft px-7 py-4">
         <div className="flex items-baseline gap-3">
-          <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">00</span>
-          <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">Profil</h3>
+          <h3 className="text-title-sm font-semibold tracking-tight text-primary">Profil</h3>
         </div>
         <Button
           variant="ghost"
