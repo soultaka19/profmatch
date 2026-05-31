@@ -296,12 +296,9 @@ profmatch/
 │   ├── app/           # Pages (App Router)
 │   ├── components/    # Composants React
 │   └── lib/           # API client, hooks, types
-├── docs/features/     # Documentation FOR/OF (gitignored)
-├── .claude/commands/  # Skills Claude Code (/feature-dev, /review, /pr, /db-migration)
 ├── .github/workflows/ # CI GitHub Actions
 ├── docker-compose.yml
-├── .env.example       # Modèle de configuration
-└── CLAUDE.md          # Conventions d'équipe
+└── .env.example       # Modèle de configuration
 ```
 
 ---
@@ -381,6 +378,5 @@ pydantic_core.ValidationError: ... Field required
 
 ## Documentation
 
-- [`CLAUDE.md`](./CLAUDE.md) — Conventions d'équipe, règles strictes, architecture
 - [`PRD-ProfMatch.md`](../PRD-ProfMatch.md) — Document des exigences produit complet
 - [Swagger UI](http://localhost:8000/docs) — Documentation interactive de l'API (application en cours)
