@@ -21,8 +21,8 @@ export default function Page() {
           Vue d&apos;ensemble du système : comptes, catalogue, sessions et affectations.
         </p>
       </div>
-      <AdminStatsCards stats={data} isLoading={isLoading} error={Boolean(error)} />
       <SeedDemoCard />
+      <AdminStatsCards stats={data} isLoading={isLoading} error={Boolean(error)} />
     </div>
   );
 }

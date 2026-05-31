@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Database, Loader2 } from "lucide-react";
+import { Database, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -48,10 +48,14 @@ export function SeedDemoCard() {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-canvas-pure p-5 shadow-soft">
+    <section className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-5 shadow-soft ring-1 ring-primary/10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-title-sm font-semibold text-fg">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-eyebrow font-semibold uppercase tracking-eyebrow text-primary">
+            <Sparkles className="h-3 w-3" aria-hidden />
+            À préparer en premier
+          </span>
+          <h2 className="mt-2 flex items-center gap-2 text-title-sm font-semibold text-fg">
             <Database className="h-5 w-5 text-primary" aria-hidden />
             Jeu de démonstration
           </h2>
