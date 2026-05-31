@@ -22,52 +22,23 @@ Ce guide explique comment **installer et lancer ProfMatch** sur un poste d'éval
 
 ## Installation
 
-### 1. Cloner le dépôt
+### 1. Récupérer le projet
+
+Décompresser l'archive **ProfMatch** reçue, puis ouvrir un terminal dans le dossier `profmatch/`.
+
+### 2. Vérifier le fichier `.env`
+
+Le fichier `.env` est **déjà fourni et pré-rempli** (clé JWT et accès à l'API LLM de la compétition). **Aucune valeur n'est à renseigner.** Vérifier simplement sa présence à la racine du dossier :
 
 ```bash
-git clone <url-du-depot>
-cd profmatch
+# Windows (PowerShell)
+Test-Path .env       # doit afficher : True
+
+# Mac / Linux
+ls -la .env
 ```
 
-### 2. Créer le fichier `.env`
-
-```bash
-cp .env.example .env
-```
-
-Ouvrir `.env` et le compléter. **La base de données et Redis sont gérés automatiquement par Docker** — il suffit de renseigner une clé JWT et les accès à l'API LLM de la compétition :
-
-```env
-# Base de données (valeurs par défaut — gérées par Docker)
-POSTGRES_USER=profmatch
-POSTGRES_PASSWORD=profmatch
-POSTGRES_DB=profmatch
-DATABASE_URL=postgresql+asyncpg://profmatch:profmatch@db:5432/profmatch
-TEST_DATABASE_URL=postgresql+asyncpg://profmatch:profmatch@db:5432/profmatch_test
-
-# Redis (géré par Docker)
-REDIS_URL=redis://redis:6379/0
-
-# JWT — générer une clé : python -c "import secrets; print(secrets.token_hex(32))"
-SECRET_KEY=<coller une clé aléatoire de 64 caractères>
-JWT_ALGORITHM=HS256
-JWT_TTL_HOURS=24
-
-# API LLM — valeurs fournies par le coordinateur de la compétition
-LLM_API_URL=<url fournie>
-LLM_API_COOKIE=<token fourni>
-LLM_API_KEY=<clé fournie si requise>
-LLM_MODEL=gpt-oss-ctx24k:120b
-LLM_MAX_RETRIES=2
-
-# Upload des CV
-UPLOAD_DIR=/uploads
-UPLOADS_DIR=/uploads
-MAX_UPLOAD_SIZE_MB=10
-CELERY_ALWAYS_EAGER=false
-```
-
-> Si vous ne disposez pas d'une clé `SECRET_KEY`, générez-la avec une installation Python locale, un site de génération de jetons, ou copiez 64 caractères hexadécimaux aléatoires.
+> 🔒 Ce fichier contient des secrets : ne pas le partager publiquement ni le republier.
 
 ### 3. Lancer l'application
 
@@ -158,7 +129,7 @@ lsof -i :3000 && kill -9 <pid>
 pydantic_core.ValidationError: ... Field required
 ```
 
-**Solution :** vérifier que toutes les variables de `.env.example` sont renseignées dans `.env` (en particulier `SECRET_KEY` et les accès `LLM_*`).
+**Solution :** vérifier que le fichier `.env` fourni est bien présent **à la racine du dossier `profmatch/`** (et non dans un sous-dossier). C'est la cause la plus fréquente.
 
 ---
 
