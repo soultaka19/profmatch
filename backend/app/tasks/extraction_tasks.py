@@ -23,7 +23,7 @@ def _sync_session_factory():
     return sessionmaker(engine, expire_on_commit=False)
 
 
-@celery_app.task(bind=True, max_retries=2, default_retry_delay=10, time_limit=120)
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=10, time_limit=300)
 def extract_cv_data_llm(self, cv_id: int) -> None:
     """Extrait via LLM les données structurées d'un CV déjà texte-extracté.
 

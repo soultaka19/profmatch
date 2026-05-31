@@ -137,6 +137,7 @@ def generer_justification_llm(ctx: ContexteJustification, max_retries: int = 2) 
                 model=settings.LLM_MODEL,
                 messages=[{"role": "user", "content": prompt + correction}],
                 temperature=0.3,
+                timeout=settings.LLM_XAI_TIMEOUT_S,
             )
             raw = response.choices[0].message.content or ""
             # Extraire le JSON (robuste aux balises markdown)

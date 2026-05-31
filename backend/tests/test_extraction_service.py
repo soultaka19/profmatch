@@ -51,6 +51,16 @@ def test_extract_success_first_try():
     assert client.chat.completions.create.call_count == 1
 
 
+def test_extract_uses_dedicated_extraction_timeout():
+    """L'appel d'extraction force un timeout généreux (≠ 15 s du client XAI),
+    sinon le modèle 120B provoque des ReadTimeout systématiques."""
+    client = _mock_client_with_response((FIXTURES / "ok_complete.json").read_text(encoding="utf-8"))
+    extract_structured_data("CV text", client)
+    kwargs = client.chat.completions.create.call_args.kwargs
+    assert kwargs["timeout"] == settings.LLM_EXTRACTION_TIMEOUT_S
+    assert settings.LLM_EXTRACTION_TIMEOUT_S >= 60
+
+
 def test_extract_retries_on_validation_error_then_succeeds():
     bad = (FIXTURES / "invalid_enum.json").read_text(encoding="utf-8")
     good = (FIXTURES / "ok_complete.json").read_text(encoding="utf-8")

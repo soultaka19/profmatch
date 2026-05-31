@@ -62,6 +62,10 @@ def test_justification_llm_ok(mock_client_factory):
     assert "React" in result
     assert "Fortement recommandé" in result
     assert "W1" not in result  # format narratif, pas technique
+    # Timeout XAI dédié transmis (≠ 15 s du client, calibré post-découplage)
+    from app.core.config import settings
+    kwargs = mock_client.chat.completions.create.call_args.kwargs
+    assert kwargs["timeout"] == settings.LLM_XAI_TIMEOUT_S
 
 
 @patch("app.services.llm_client.get_llm_client")

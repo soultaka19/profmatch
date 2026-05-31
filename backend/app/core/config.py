@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_MODEL: str = "gpt-oss-ctx24k:120b"
     LLM_MAX_RETRIES: int = 2
+    # Timeout dédié à l'extraction CV : appel bien plus lourd que la narration
+    # XAI (modèle 120B, max_tokens=2000, tout le texte du CV) et exécuté en
+    # tâche Celery de fond, donc on peut accorder largement plus que les 15 s du
+    # client par défaut.
+    LLM_EXTRACTION_TIMEOUT_S: float = 90.0
+    # Timeout de la narration XAI. Génération légère (~500 tokens) mais sur un
+    # modèle 120B souvent lent : 15 s faisait trop souvent retomber sur la
+    # justification statique. Depuis le découplage Niveau 2 (enrichissement lazy
+    # en arrière-plan, statique déjà affichée), on peut accorder ~45 s sans
+    # bloquer l'utilisateur. Baisser à 30 s pour une démo plus réactive.
+    LLM_XAI_TIMEOUT_S: float = 45.0
 
     # Upload CV
     UPLOAD_DIR: str = "/app/uploads"
