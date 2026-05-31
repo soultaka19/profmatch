@@ -33,7 +33,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-canvas-pure group-[.toaster]:text-fg group-[.toaster]:border-border group-[.toaster]:shadow-card",
-          description: "group-[.toast]:text-fg-muted",
+          // Toasts de confirmation (succès) en couleur primaire de la marque.
+          // `!` pour battre le fond neutre de base quel que soit l'ordre CSS.
+          success:
+            "!bg-primary !text-primary-foreground !border-primary",
+          description:
+            "group-[.toast]:text-fg-muted group-[[data-type=success]]:!text-primary-foreground/85",
+          icon: "group-[[data-type=success]]:text-primary-foreground",
+          closeButton:
+            "group-[[data-type=success]]:!bg-primary group-[[data-type=success]]:!text-primary-foreground group-[[data-type=success]]:!border-primary-foreground/30",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:
