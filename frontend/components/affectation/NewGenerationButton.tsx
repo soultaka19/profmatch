@@ -41,9 +41,9 @@ export function NewGenerationButton({
             cours.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="sm:flex-wrap">
           <AlertDialogCancel>Continuer la révision</AlertDialogCancel>
-          <AlertDialogAction onClick={onReset}>Démarrer une nouvelle génération</AlertDialogAction>
+          <AlertDialogAction onClick={onReset}>Démarrer</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
