@@ -20,7 +20,7 @@ describe("NewGenerationButton", () => {
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(onReset).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Démarrer une nouvelle génération" }));
+    fireEvent.click(screen.getByRole("button", { name: "Démarrer" }));
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 });
