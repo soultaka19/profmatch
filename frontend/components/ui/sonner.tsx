@@ -33,15 +33,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-canvas-pure group-[.toaster]:text-fg group-[.toaster]:border-border group-[.toaster]:shadow-card",
-          // Toasts de confirmation (succès) en couleur primaire de la marque.
+          // Toasts de confirmation (succès) : même traitement que l'item actif
+          // de la sidebar — fond `primary-soft` + texte/icône `primary`.
           // `!` pour battre le fond neutre de base quel que soit l'ordre CSS.
           success:
-            "!bg-primary !text-primary-foreground !border-primary",
+            "!bg-primary-soft !text-primary !border-primary/30",
           description:
-            "group-[.toast]:text-fg-muted group-[[data-type=success]]:!text-primary-foreground/85",
-          icon: "group-[[data-type=success]]:text-primary-foreground",
+            "group-[.toast]:text-fg-muted group-[[data-type=success]]:!text-primary/80",
+          icon: "group-[[data-type=success]]:text-primary",
           closeButton:
-            "group-[[data-type=success]]:!bg-primary group-[[data-type=success]]:!text-primary-foreground group-[[data-type=success]]:!border-primary-foreground/30",
+            "group-[[data-type=success]]:!bg-primary-soft group-[[data-type=success]]:!text-primary group-[[data-type=success]]:!border-primary/30",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:
