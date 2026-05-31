@@ -43,7 +43,7 @@ export function ExperienceSection({ items, onMutate }: Props) {
       <header className="flex items-center justify-between border-b border-border-soft px-7 py-4">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">02</span>
-          <h3 className="text-eyebrow font-bold tracking-eyebrow text-fg">Expériences</h3>
+          <h3 className="text-title-sm font-semibold tracking-tight text-fg">Expériences</h3>
           <span className="text-xs text-fg-subtle tabular-nums">{items.length}</span>
         </div>
         <Button variant="outline" size="sm" onClick={openAdd}>
