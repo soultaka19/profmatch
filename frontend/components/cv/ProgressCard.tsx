@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Brain, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type StepKey = "upload" | "extraction" | "indexation";
@@ -50,8 +50,15 @@ export function ProgressCard({ fileName, fileMeta, activeStep }: Props) {
       />
 
       <div className="relative flex items-center gap-4">
-        <span className="inline-flex items-center gap-2 rounded-full bg-warning/10 px-3.5 py-1.5 text-xs font-semibold text-warning">
-          <span className="h-1.5 w-1.5 animate-dot-pulse rounded-full bg-warning" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-3.5 py-1.5 text-xs font-semibold text-warning">
+          {/* Motif IA partagé avec le pipeline de génération — « l'IA travaille » */}
+          <span className="relative inline-flex">
+            <Brain className="h-3.5 w-3.5" aria-hidden />
+            <Sparkles
+              className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-dot-pulse"
+              aria-hidden
+            />
+          </span>
           Extraction en cours
         </span>
         <div className="min-w-0 flex-1">
