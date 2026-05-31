@@ -14,9 +14,9 @@ const items = [
 beforeEach(() => vi.clearAllMocks());
 
 describe("FormationSection", () => {
-  it("affiche eyebrow 03 + diplôme + établissement + année", () => {
+  it("affiche diplôme + établissement + année (sans numéro d'index)", () => {
     render(<FormationSection items={items} onMutate={vi.fn()} />);
-    expect(screen.getByText("03")).toBeInTheDocument();
+    expect(screen.queryByText("03")).not.toBeInTheDocument();
     expect(screen.getByText("Maîtrise")).toBeInTheDocument();
     expect(screen.getByText("U. Laval")).toBeInTheDocument();
     expect(screen.getByText("2018")).toBeInTheDocument();

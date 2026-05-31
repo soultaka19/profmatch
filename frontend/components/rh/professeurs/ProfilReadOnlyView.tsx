@@ -11,11 +11,10 @@ const NIVEAU_LANG: Record<string, string> = {
   A1: "A1", A2: "A2", B1: "B1", B2: "B2", C1: "C1", C2: "C2", natif: "Natif",
 };
 
-function SectionTitle({ index, label, count }: { index: string; label: string; count?: number }) {
+function SectionTitle({ label, count }: { label: string; count?: number }) {
   return (
     <header className="flex items-baseline gap-3 border-b border-border-soft px-1 pb-2">
-      <span className="font-mono text-[11px] tracking-[0.18em] text-fg-subtle">{index}</span>
-      <h3 className="text-title-sm font-semibold tracking-tight text-fg">{label}</h3>
+      <h3 className="text-title-sm font-semibold tracking-tight text-primary">{label}</h3>
       {count !== undefined && (
         <span className="text-xs text-fg-subtle tabular-nums">{count}</span>
       )}
@@ -31,7 +30,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
   return (
     <div className="flex flex-col gap-8">
       <section>
-        <SectionTitle index="00" label="Résumé" />
+        <SectionTitle label="Résumé" />
         {detail.profil.resume ? (
           <p className="px-1 py-3 text-sm leading-relaxed text-fg-muted">{detail.profil.resume}</p>
         ) : (
@@ -40,7 +39,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
       </section>
 
       <section>
-        <SectionTitle index="01" label="Compétences" count={detail.competences.length} />
+        <SectionTitle label="Compétences" count={detail.competences.length} />
         {detail.competences.length === 0 ? (
           <Empty>Aucune compétence.</Empty>
         ) : (
@@ -60,7 +59,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
       </section>
 
       <section>
-        <SectionTitle index="02" label="Expériences" count={detail.experiences.length} />
+        <SectionTitle label="Expériences" count={detail.experiences.length} />
         {detail.experiences.length === 0 ? (
           <Empty>Aucune expérience.</Empty>
         ) : (
@@ -83,7 +82,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
       </section>
 
       <section>
-        <SectionTitle index="03" label="Formations" count={detail.formations.length} />
+        <SectionTitle label="Formations" count={detail.formations.length} />
         {detail.formations.length === 0 ? (
           <Empty>Aucune formation.</Empty>
         ) : (
@@ -101,7 +100,7 @@ export function ProfilReadOnlyView({ detail }: { detail: ProfesseurDetail }) {
       </section>
 
       <section>
-        <SectionTitle index="04" label="Langues" count={detail.langues.length} />
+        <SectionTitle label="Langues" count={detail.langues.length} />
         {detail.langues.length === 0 ? (
           <Empty>Aucune langue.</Empty>
         ) : (
