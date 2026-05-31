@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import AffectationsPage from "../page";
+
+// Délai minimal d'affichage du pipeline avant la bascule en revue (cf. page.tsx).
+const DWELL_MS = 6500;
 
 const PROPOSEE = {
   id: 1, session_id: 7, professeur_id: 1, cours_id: 100, score_total: 0.8,
@@ -68,8 +71,13 @@ vi.mock("@/components/affectation/GenerationForm", () => ({
 }));
 
 beforeEach(() => {
+  vi.useFakeTimers();
   mockCurrentData = [PROPOSEE];
   mockProgrammeData = [PROPOSEE, HIST];
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("AffectationsPage — séparation des résultats", () => {
@@ -77,12 +85,15 @@ describe("AffectationsPage — séparation des résultats", () => {
     render(<AffectationsPage />);
     fireEvent.click(screen.getByText("go"));
 
-    const section = await screen.findByText(/Historique du programme hors sélection actuelle/i);
+    // Le pipeline reste affiché le délai minimal avant la bascule en revue.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(DWELL_MS);
+    });
+
+    const section = screen.getByText(/Historique du programme hors sélection actuelle/i);
     expect(section.textContent).toMatch(/\(1\)/);
 
-    await waitFor(() =>
-      expect(screen.getAllByText(/Programmation avancée/).length).toBeGreaterThan(0)
-    );
+    expect(screen.getAllByText(/Programmation avancée/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Introduction à la programmation/).length).toBeGreaterThan(0);
   });
 
@@ -95,7 +106,11 @@ describe("AffectationsPage — séparation des résultats", () => {
     render(<AffectationsPage />);
     fireEvent.click(screen.getByText("go"));
 
-    const summary = await screen.findByText(/Historique du programme hors sélection actuelle/i);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(DWELL_MS);
+    });
+
+    const summary = screen.getByText(/Historique du programme hors sélection actuelle/i);
     // Seule l'affectation hors périmètre (HIST) est dans l'historique.
     expect(summary.textContent).toMatch(/\(1\)/);
 
@@ -107,8 +122,6 @@ describe("AffectationsPage — séparation des résultats", () => {
     // Validée mais DANS le périmètre courant → absente de l'historique…
     expect(history.queryAllByText(/Structures de données/)).toHaveLength(0);
     // …et bien présente dans la vue courante.
-    await waitFor(() =>
-      expect(screen.getAllByText(/Structures de données/).length).toBeGreaterThan(0)
-    );
+    expect(screen.getAllByText(/Structures de données/).length).toBeGreaterThan(0);
   });
 });

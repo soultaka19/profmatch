@@ -13,7 +13,7 @@ describe("GenerationProgress", () => {
     expect(screen.getByText(/Analyse des profils/i)).toBeInTheDocument();
     expect(screen.getByText(/Chargement des cours/i)).toBeInTheDocument();
     expect(screen.getByText(/Calcul des scores W1/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rédaction des justifications/i)).toBeInTheDocument();
+    expect(screen.getByText(/Composition des propositions d'affectation/i)).toBeInTheDocument();
   });
 
   it("expose une annonce accessible vivante pour les lecteurs d'écran", () => {

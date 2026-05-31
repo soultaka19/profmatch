@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { AffectationTable } from "@/components/affectation/AffectationTable";
 import { EnrichmentCounter } from "@/components/affectation/EnrichmentCounter";
@@ -21,6 +21,12 @@ import {
 
 type Phase = "configure" | "generating" | "review" | "error";
 
+// Durée minimale d'affichage du pipeline de génération. La décision (commit
+// statique W1–W4) est quasi instantanée (~2 s) ; on maintient volontairement
+// l'animation « l'IA travaille » au moins ce délai pour que le RH perçoive le
+// traitement avant de basculer sur les propositions, plutôt qu'un flash brutal.
+const GENERATION_MIN_DWELL_MS = 6000;
+
 export default function AffectationsPage() {
   const [phase, setPhase] = useState<Phase>("configure");
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -31,6 +37,8 @@ export default function AffectationsPage() {
   const [scope, setScope] = useState<GenerationScope | null>(null);
   const [actionFeedback, setActionFeedback] = useState<Record<number, ActionFeedback>>({});
   const [focusCandidateId, setFocusCandidateId] = useState<number | null>(null);
+  // Horodatage du lancement, pour garantir la durée minimale d'affichage du pipeline.
+  const generatingStartedAt = useRef<number | null>(null);
 
   // Polling génération
   const { data: genStatus } = useGenerationPoller(
@@ -41,7 +49,16 @@ export default function AffectationsPage() {
   useEffect(() => {
     if (phase !== "generating" || !genStatus) return;
     if (genStatus.status === "done") {
-      setPhase("review");
+      // On respecte la durée minimale d'affichage : si la génération est
+      // revenue plus vite, on diffère la bascule du temps restant.
+      const started = generatingStartedAt.current ?? Date.now();
+      const remaining = Math.max(0, GENERATION_MIN_DWELL_MS - (Date.now() - started));
+      if (remaining === 0) {
+        setPhase("review");
+        return;
+      }
+      const timer = window.setTimeout(() => setPhase("review"), remaining);
+      return () => window.clearTimeout(timer);
     } else if (genStatus.status === "error") {
       setErrorMsg(genStatus.detail ?? "Erreur de génération");
       setPhase("error");
@@ -150,6 +167,7 @@ export default function AffectationsPage() {
     setTaskId(tid);
     setSessionId(sid);
     setScope(nextScope);
+    generatingStartedAt.current = Date.now();
     setPhase("generating");
   }, []);
 
@@ -284,7 +302,11 @@ export default function AffectationsPage() {
       {phase === "generating" && (
         <div className="space-y-5">
           {scope && <GenerationScopeSummary scope={scope} />}
-          <GenerationProgress status={genStatus?.status} />
+          {/* Pendant le délai minimal, on force l'état « processing » même si le
+              backend a déjà renvoyé done, pour garder l'animation de travail. */}
+          <GenerationProgress
+            status={genStatus?.status === "done" ? "processing" : genStatus?.status}
+          />
         </div>
       )}
 
