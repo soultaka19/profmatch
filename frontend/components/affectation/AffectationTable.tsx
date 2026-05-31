@@ -1,22 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, LayoutGrid, Rows3, Sparkles } from "lucide-react";
+import useSWR from "swr";
+import { ChevronRight, LayoutGrid, Rows3 } from "lucide-react";
 import { AffectationCard } from "./AffectationCard";
 import { AffectationCompactTable } from "./AffectationCompactTable";
-import { ScoreBreakdown } from "./ScoreBreakdown";
+import { JustificationDetailSheet } from "./JustificationDetailSheet";
 import { ManualAssignDialog } from "./ManualAssignDialog";
 import { getRecommendationFilter, type RecommendationFilter } from "./recommendation";
 import type { ActionFeedback } from "./types";
-import type { AffectationOut } from "@/lib/types/api";
+import { affectationsApi } from "@/lib/api/affectations";
+import type { AffectationOut, JustificationDetailOut } from "@/lib/types/api";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 interface Poids {
   w1: number;
@@ -48,12 +43,12 @@ type ViewMode = "cards" | "compact";
 const VIEW_STORAGE_KEY = "profmatch.affectations.view";
 
 function readInitialView(): ViewMode {
-  if (typeof window === "undefined") return "cards";
+  if (typeof window === "undefined") return "compact";
   try {
     const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
-    return v === "compact" ? "compact" : "cards";
+    return v === "cards" ? "cards" : "compact";
   } catch {
-    return "cards";
+    return "compact";
   }
 }
 
@@ -75,11 +70,12 @@ export function AffectationTable({
   const [recommendationFilter, setRecommendationFilter] =
     useState<RecommendationFilter>("all");
   const [selectedCoursId, setSelectedCoursId] = useState<string>("all");
-  const [justification, setJustification] = useState<AffectationOut | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("compact");
 
   // Hydratation côté client : on lit la préférence persistée après le 1er rendu
-  // pour ne pas casser le rendu SSR de Next 16. Le défaut "cards" reste neutre.
+  // pour ne pas casser le rendu SSR de Next 16. Le défaut "compact" (tableau)
+  // est le mode de revue privilégié ; une préférence "cards" prend le relais.
   useEffect(() => {
     setViewMode(readInitialView());
   }, []);
@@ -92,6 +88,22 @@ export function AffectationTable({
       // localStorage désactivé (private browsing) — silence, défaut OK
     }
   }, [viewMode]);
+
+  // Détail de justification (wireframe B) — identique à la vue compacte : fetch
+  // à la demande quand on ouvre une carte, cache SWR entre réouvertures.
+  // L'ouverture déclenche côté API l'enrichissement XAI lazy (statut → `en_cours`) ;
+  // on poll alors toutes les 2 s jusqu'à `enrichie`/`echec`, sinon pas de polling.
+  const { data: detail, isLoading: detailLoading } = useSWR<JustificationDetailOut>(
+    detailId !== null ? `justification:${detailId}` : null,
+    detailId !== null
+      ? () => affectationsApi.getJustificationDetail(detailId)
+      : null,
+    {
+      revalidateOnFocus: false,
+      refreshInterval: (data) =>
+        data?.justification_statut === "en_cours" ? 2000 : 0,
+    },
+  );
 
   const coursIds = useMemo(
     () => Array.from(new Set(affectations.map((aff) => aff.cours_id))).sort((a, b) => a - b),
@@ -266,7 +278,7 @@ export function AffectationTable({
                       onReject={onReject}
                       pendingAction={pendingActionId === aff.id ? pendingAction : null}
                       actionFeedback={actionFeedback[aff.id] ?? null}
-                      onViewJustification={setJustification}
+                      onViewJustification={(target) => setDetailId(target.id)}
                       focusPrimaryAction={focusCandidateId === aff.id}
                     />
                   ))}
@@ -277,62 +289,20 @@ export function AffectationTable({
         </div>
       )}
 
-      <JustificationDrawer
-        affectation={justification}
-        coursName={justification ? coursNames[justification.cours_id] : undefined}
-        professorName={justification ? professorNames[justification.professeur_id] : undefined}
-        poids={poids}
-        onClose={() => setJustification(null)}
+      <JustificationDetailSheet
+        open={detailId !== null}
+        loading={detailLoading}
+        detail={detail ?? null}
+        onClose={() => setDetailId(null)}
+        onValidate={(id) => {
+          onValidate(id);
+          setDetailId(null);
+        }}
+        onReject={(id) => {
+          onReject(id);
+          setDetailId(null);
+        }}
       />
     </div>
-  );
-}
-
-function JustificationDrawer({
-  affectation,
-  coursName,
-  professorName,
-  poids,
-  onClose,
-}: {
-  affectation: AffectationOut | null;
-  coursName?: string;
-  professorName?: string;
-  poids: Poids;
-  onClose: () => void;
-}) {
-  return (
-    <Sheet open={Boolean(affectation)} onOpenChange={(open) => !open && onClose()}>
-      {affectation && (
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle className="text-title-sm font-semibold">Justification IA</SheetTitle>
-            <SheetDescription>
-              {coursName ?? `Cours #${affectation.cours_id}`} ·{" "}
-              {professorName ?? `Prof #${affectation.professeur_id}`}
-            </SheetDescription>
-          </SheetHeader>
-          <ScoreBreakdown
-            scores={{
-              comp: affectation.score_comp,
-              exp: affectation.score_exp,
-              hist: affectation.score_hist,
-              sem: affectation.score_sem,
-            }}
-            poids={poids}
-            total={affectation.score_total}
-          />
-          <div className="rounded-md bg-canvas px-4 py-3">
-            <p className="mb-2 flex items-center gap-2 text-sm font-medium text-fg">
-              <Sparkles className="h-4 w-4" />
-              Analyse détaillée
-            </p>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-fg-muted">
-              {affectation.justification}
-            </p>
-          </div>
-        </SheetContent>
-      )}
-    </Sheet>
   );
 }

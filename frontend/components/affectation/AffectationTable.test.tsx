@@ -1,7 +1,55 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { AffectationTable } from "./AffectationTable";
-import type { AffectationOut } from "@/lib/types/api";
+import { affectationsApi } from "@/lib/api/affectations";
+import type { AffectationOut, JustificationDetailOut } from "@/lib/types/api";
+
+// On garde le vrai module et on n'override que le détail de justification :
+// les autres méthodes (list, validate, manuel…) restent réelles mais ne sont
+// jamais déclenchées dans ces tests (aucune ouverture réseau).
+vi.mock("@/lib/api/affectations", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/affectations")>();
+  return {
+    ...actual,
+    affectationsApi: {
+      ...actual.affectationsApi,
+      getJustificationDetail: vi.fn(),
+    },
+  };
+});
+
+const VIEW_STORAGE_KEY = "profmatch.affectations.view";
+const setView = (v: "cards" | "compact") =>
+  window.localStorage.setItem(VIEW_STORAGE_KEY, v);
+
+const makeDetail = (id: number): JustificationDetailOut => ({
+  affectation_id: id,
+  score_total: 0.84,
+  score_comp: 0.8,
+  score_exp: 0.7,
+  score_hist: 0.9,
+  score_sem: 0.85,
+  similarite_semantique: 0.85,
+  annees_experience: 6,
+  nb_sessions_precedentes: 0,
+  note_rh_moyenne: 0,
+  competences_requises: [],
+  competences_maitrisees: [],
+  justification: `Analyse IA détaillée ${id}`,
+  justification_statut: "enrichie",
+  nom_professeur: "Ahmed Diallo",
+  code_cours: "PI-301",
+  titre_cours: "Algorithmes",
+});
+
+beforeEach(() => {
+  window.localStorage.clear();
+  vi.mocked(affectationsApi.getJustificationDetail).mockReset();
+});
+
+afterEach(() => {
+  window.localStorage.clear();
+});
 
 const makeAff = (id: number, cours_id: number, score: number): AffectationOut => ({
   id,
@@ -43,6 +91,7 @@ const poids = { w1: 0.4, w2: 0.3, w3: 0.2, w4: 0.1 };
 
 describe("AffectationTable", () => {
   it("groupe les affectations par cours", () => {
+    setView("cards");
     render(
       <AffectationTable
         affectations={affectations}
@@ -60,6 +109,7 @@ describe("AffectationTable", () => {
   });
 
   it("affiche le bon nombre de candidats par cours", () => {
+    setView("cards");
     render(
       <AffectationTable
         affectations={affectations}
@@ -93,6 +143,7 @@ describe("AffectationTable", () => {
   });
 
   it("filtre les propositions par niveau de recommandation", () => {
+    setView("cards");
     render(
       <AffectationTable
         affectations={affectations}
@@ -112,7 +163,9 @@ describe("AffectationTable", () => {
     expect(screen.queryByText("Fatou Ba")).not.toBeInTheDocument();
   });
 
-  it("ouvre une justification dans un dialogue sans modifier la grille", () => {
+  it("ouvre la justification dans le panneau détaillé unifié (vue cartes)", async () => {
+    setView("cards");
+    vi.mocked(affectationsApi.getJustificationDetail).mockResolvedValue(makeDetail(1));
     render(
       <AffectationTable
         affectations={affectations}
@@ -126,8 +179,12 @@ describe("AffectationTable", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Voir la justification" })[0]);
 
+    // Même panneau riche (wireframe B) que la vue tableau, alimenté par
+    // getJustificationDetail — plus le drawer texte brut d'antan.
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Justification 1")).toBeInTheDocument();
+    expect(await screen.findByText("Match compétences")).toBeInTheDocument();
+    expect(await screen.findByText("Analyse IA détaillée 1")).toBeInTheDocument();
+    expect(affectationsApi.getJustificationDetail).toHaveBeenCalledWith(1);
   });
 
   it("permet de parcourir les cours un par un", () => {
@@ -187,7 +244,7 @@ describe("AffectationTable", () => {
     expect(screen.getByRole("button", { name: /Vue tableau compact/i })).toBeInTheDocument();
   });
 
-  it("affiche un tableau quand on bascule en vue compacte", () => {
+  it("affiche la vue tableau compacte par défaut, basculable en cartes", () => {
     render(
       <AffectationTable
         affectations={affectations}
@@ -201,15 +258,14 @@ describe("AffectationTable", () => {
       />
     );
 
-    // En cartes par défaut : pas de tableau, headings groupés par cours
+    // Défaut = tableau compact (mode de revue privilégié), vue paginée par cours
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByText(/Cours 1 \/ 2/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Vue cartes/i }));
+
+    // Maintenant les cartes : plus de tableau, sections groupées par cours
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { name: "PI-301 Algorithmes" })).toHaveLength(1);
-
-    fireEvent.click(screen.getByRole("button", { name: /Vue tableau compact/i }));
-
-    // Maintenant un tableau (vue paginée par cours)
-    expect(screen.getByRole("table")).toBeInTheDocument();
-    // Le bandeau de pagination affiche le cours courant
-    expect(screen.getByText(/Cours 1 \/ 2/i)).toBeInTheDocument();
   });
 });
