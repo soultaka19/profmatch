@@ -7,8 +7,6 @@ const features = [
   "Justifications narratives par l'IA pour chaque affectation proposée.",
 ];
 
-const showDemoCreds = process.env.NEXT_PUBLIC_SHOW_DEMO_CREDS !== "false";
-
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col md:flex-row">
@@ -69,28 +67,11 @@ export default function LoginPage() {
 
         {/* Subtitle — text-body (16px, lh 1.5) */}
         <p className="mt-3 text-body text-fg-muted">
-          Connectez-vous pour accéder à votre espace.
+          Connectez-vous pour accéder à votre espace — professeur, ressources
+          humaines ou administration.
         </p>
 
         <LoginForm />
-
-        {/* Demo credentials — text-caption (12px) */}
-        {showDemoCreds && (
-          <div className="mt-6 max-w-[360px] text-caption leading-loose text-fg-subtle">
-            Comptes de démonstration :<br />
-            <code className="mt-1 inline-block rounded bg-surface px-1.5 py-0.5 font-mono text-caption text-fg-muted">
-              prof@defi-lacite.ca
-            </code>{" "}
-            ·{" "}
-            <code className="inline-block rounded bg-surface px-1.5 py-0.5 font-mono text-caption text-fg-muted">
-              rh@defi-lacite.ca
-            </code>{" "}
-            ·{" "}
-            <code className="inline-block rounded bg-surface px-1.5 py-0.5 font-mono text-caption text-fg-muted">
-              admin@defi-lacite.ca
-            </code>
-          </div>
-        )}
       </section>
 
     </main>
