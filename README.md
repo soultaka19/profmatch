@@ -102,6 +102,38 @@ docker compose down -v
 
 ---
 
+## Architecture du projet
+
+| Couche | Technologies |
+|---|---|
+| Frontend | Next.js 16 (App Router) · React 19 · Tailwind · shadcn/ui |
+| Backend | FastAPI · SQLAlchemy 2.0 (async) · Pydantic v2 · Alembic |
+| Base de données | PostgreSQL 16 |
+| File de tâches | Celery · Redis 7 |
+| IA | Extraction CV (pdfplumber / python-docx) · embeddings sémantiques · API LLM de la compétition |
+
+```
+profmatch/
+├── backend/           # FastAPI + Celery
+│   ├── app/
+│   │   ├── core/          # Config, sécurité, dépendances
+│   │   ├── models/        # Modèles SQLAlchemy
+│   │   ├── schemas/       # Schémas Pydantic
+│   │   ├── services/      # Logique métier (scoring, calendrier, pipeline)
+│   │   ├── routers/       # Endpoints HTTP
+│   │   └── tasks/         # Tâches Celery asynchrones
+│   ├── alembic/           # Migrations de base de données
+│   └── tests/             # Tests pytest
+├── frontend/          # Next.js 16 + React 19
+│   ├── app/           # Pages (App Router)
+│   ├── components/    # Composants React
+│   └── lib/           # Client API, hooks, types
+├── docker-compose.yml # Orchestration des services
+└── .env.example       # Modèle de configuration
+```
+
+---
+
 ## Dépannage
 
 ### Docker n'est pas démarré
@@ -136,42 +168,3 @@ pydantic_core.ValidationError: ... Field required
 ```
 
 **Solution :** vérifier que le fichier `.env` fourni est bien présent **à la racine du dossier `profmatch/`** (et non dans un sous-dossier). C'est la cause la plus fréquente.
-
----
-
-## Architecture du projet
-
-| Couche | Technologies |
-|---|---|
-| Frontend | Next.js 16 (App Router) · React 19 · Tailwind · shadcn/ui |
-| Backend | FastAPI · SQLAlchemy 2.0 (async) · Pydantic v2 · Alembic |
-| Base de données | PostgreSQL 16 |
-| File de tâches | Celery · Redis 7 |
-| IA | Extraction CV (pdfplumber / python-docx) · embeddings sémantiques · API LLM de la compétition |
-
-```
-profmatch/
-├── backend/           # FastAPI + Celery
-│   ├── app/
-│   │   ├── core/          # Config, sécurité, dépendances
-│   │   ├── models/        # Modèles SQLAlchemy
-│   │   ├── schemas/       # Schémas Pydantic
-│   │   ├── services/      # Logique métier (scoring, calendrier, pipeline)
-│   │   ├── routers/       # Endpoints HTTP
-│   │   └── tasks/         # Tâches Celery asynchrones
-│   ├── alembic/           # Migrations de base de données
-│   └── tests/             # Tests pytest
-├── frontend/          # Next.js 16 + React 19
-│   ├── app/           # Pages (App Router)
-│   ├── components/    # Composants React
-│   └── lib/           # Client API, hooks, types
-├── docker-compose.yml # Orchestration des services
-└── .env.example       # Modèle de configuration
-```
-
----
-
-## Documentation
-
-- **`PRD-ProfMatch.md`** — document des exigences produit complet (joint à la livraison).
-- **Swagger UI** — documentation interactive de l'API, accessible sur http://localhost:8000/docs une fois l'application lancée.
