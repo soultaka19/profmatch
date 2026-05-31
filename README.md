@@ -65,11 +65,7 @@ docker compose up --build
 
 ## Comptes de démonstration
 
-Une fois l'application lancée, créer les comptes et les données de démonstration (dans un **second terminal**, le premier exécutant `docker compose up`) :
-
-```bash
-docker compose exec backend python scripts/seed_demo.py
-```
+Les trois comptes sont **créés automatiquement au démarrage** — aucune action requise :
 
 | Rôle | Courriel | Mot de passe |
 |---|---|---|
@@ -77,7 +73,16 @@ docker compose exec backend python scripts/seed_demo.py
 | Responsable RH | rh@defi-lacite.ca | Rh@LaCite2026! |
 | Administrateur | admin@defi-lacite.ca | Admin@LaCite2026! |
 
-> **Parcours de démonstration suggéré :** le **professeur** téléverse un CV → l'**administrateur** crée une session et configure les pondérations → le **RH** génère les affectations, consulte les justifications et valide.
+### Charger le jeu de données complet (optionnel)
+
+Pour que la génération d'affectations propose immédiatement des candidats, charger le jeu de données riche (programmes, cours et ~11 professeurs avec CV traité) :
+
+1. Se connecter en **administrateur**.
+2. Dans l'espace admin, cliquer sur **« Charger le jeu de démo »**.
+
+Opération idempotente (rejouable sans doublon). Sinon, le **professeur** peut téléverser un CV en direct pendant la démonstration.
+
+> **Parcours de démonstration suggéré :** charger le jeu de démo (admin) → le **professeur** téléverse un CV → l'**administrateur** crée/configure une session et ses pondérations → le **RH** génère les affectations, consulte les justifications et valide.
 
 ---
 
