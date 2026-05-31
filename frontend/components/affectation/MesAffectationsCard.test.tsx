@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { MesAffectationsCard } from "./MesAffectationsCard";
 import type { AffectationProfOut } from "@/lib/types/api";
@@ -44,13 +44,14 @@ describe("MesAffectationsCard", () => {
     expect(screen.queryByLabelText(/Score total/)).not.toBeInTheDocument();
   });
 
-  it("ouvre la justification IA dans un dialogue", () => {
+  it("n'expose aucune justification IA (vue prof)", () => {
     render(<MesAffectationsCard affectation={affectation} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /voir la justification/i }));
-
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Competences fortes")).toBeInTheDocument();
-    expect(screen.getByText("Experience pertinente")).toBeInTheDocument();
+    // La justification n'est plus proposée côté professeur.
+    expect(
+      screen.queryByRole("button", { name: /voir la justification/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Competences fortes")).not.toBeInTheDocument();
+    expect(screen.queryByText("Experience pertinente")).not.toBeInTheDocument();
   });
 });
