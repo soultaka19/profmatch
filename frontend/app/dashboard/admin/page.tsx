@@ -5,6 +5,7 @@ import { Scale } from "lucide-react";
 import { adminStatsApi } from "@/lib/api/adminStats";
 import type { AdminStatsOut } from "@/lib/types/api";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
+import { SeedDemoCard } from "@/components/admin/SeedDemoCard";
 
 export default function Page() {
   const { data, isLoading, error } = useSWR<AdminStatsOut>("admin:stats", adminStatsApi.get);
@@ -21,6 +22,7 @@ export default function Page() {
         </p>
       </div>
       <AdminStatsCards stats={data} isLoading={isLoading} error={Boolean(error)} />
+      <SeedDemoCard />
     </div>
   );
 }
