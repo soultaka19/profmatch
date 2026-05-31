@@ -11,12 +11,13 @@ Ce guide explique comment **installer et lancer ProfMatch** sur un poste d'éval
 
 ## Prérequis
 
+Un seul outil à installer : **Docker Desktop**.
+
 | Outil | Vérification | Remarque |
 |---|---|---|
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `docker --version` | Doit être **ouvert et démarré** (icône verte) avant toute commande `docker`. |
-| [Git](https://git-scm.com/) | `git --version` | Pour cloner le dépôt. |
 
-> **Windows :** activer **WSL2** lors de l'installation de Docker Desktop.
+> **Windows :** activer **WSL2** lors de l'installation de Docker Desktop (proposé par l'installateur).
 
 ---
 
@@ -167,5 +168,5 @@ profmatch/
 
 ## Documentation
 
-- [`PRD-ProfMatch.md`](../PRD-ProfMatch.md) — document des exigences produit complet
-- [Swagger UI](http://localhost:8000/docs) — documentation interactive de l'API (application lancée)
+- **`PRD-ProfMatch.md`** — document des exigences produit complet (joint à la livraison).
+- **Swagger UI** — documentation interactive de l'API, accessible sur http://localhost:8000/docs une fois l'application lancée.
