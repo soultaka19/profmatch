@@ -13,7 +13,10 @@ if [ "$1" = "uvicorn" ]; then
   # Non bloquant : un échec de seed ne doit pas empêcher le démarrage.
   if [ "$SEED_DEMO_ACCOUNTS_ON_START" = "true" ]; then
     echo "Seeding demo accounts..."
-    python scripts/seed_demo.py || echo "Demo accounts seed skipped/failed (non-fatal)."
+    # PYTHONPATH=/app : le script importe le package `app`. Lancé en fichier,
+    # Python met /app/scripts (et non /app) sur le path — d'où un
+    # ModuleNotFoundError 'app'. On force /app sur le path.
+    PYTHONPATH=/app python scripts/seed_demo.py || echo "Demo accounts seed skipped/failed (non-fatal)."
   fi
 fi
 
