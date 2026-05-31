@@ -1,2 +1,0 @@
-- [Snapshot architecture backend](architecture_snapshot.md) — LOC par couche + God Objects connus au 2026-05-28
-- [Anti-patterns récurrents](anti_patterns_recurrents.md) — A1-A7 actifs + R1-R4 risques fonctionnels, à ne pas re-signaler sans nouveauté

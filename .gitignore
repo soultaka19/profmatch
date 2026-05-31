@@ -17,6 +17,16 @@ docs/features/
 .superpowers/
 
 # ──────────────────────────────
+# Outillage Claude Code (local uniquement, non livré)
+# ──────────────────────────────
+.claude/
+
+# ──────────────────────────────
+# Artefacts de packaging / livraison
+# ──────────────────────────────
+*.zip
+
+# ──────────────────────────────
 # Images d'inspiration design (locales uniquement)
 # ──────────────────────────────
 inspiration-*.png
