@@ -3,6 +3,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useExtraction } from "@/lib/hooks/useExtraction";
 import { CVTextPreview } from "@/components/cv/CVTextPreview";
+import { Reveal } from "@/components/motion/Reveal";
 import { ProfilHeaderCard } from "./ProfilHeaderCard";
 import { ProfilCompletion } from "./ProfilCompletion";
 import { ProfilSection } from "./ProfilSection";
@@ -44,18 +45,32 @@ export function CVExtractionPanel() {
   return (
     <div className="mt-6">
       {user && (
-        <ProfilHeaderCard nomComplet={user.nom_complet ?? ""} email={user.email} />
+        <Reveal>
+          <ProfilHeaderCard nomComplet={user.nom_complet ?? ""} email={user.email} />
+        </Reveal>
       )}
-      <ProfilCompletion data={data} />
-      <ProfilSection profil={data.profil} onMutate={mutate} />
-      <CompetenceSection items={data.competences} onMutate={mutate} />
-      <ExperienceSection items={data.experiences} onMutate={mutate} />
-      <FormationSection items={data.formations} onMutate={mutate} />
-      <LangueSection items={data.langues} onMutate={mutate} />
+      <Reveal delayMs={60}>
+        <ProfilCompletion data={data} />
+      </Reveal>
+      <Reveal delayMs={120}>
+        <ProfilSection profil={data.profil} onMutate={mutate} />
+      </Reveal>
+      <Reveal delayMs={180}>
+        <CompetenceSection items={data.competences} onMutate={mutate} />
+      </Reveal>
+      <Reveal delayMs={240}>
+        <ExperienceSection items={data.experiences} onMutate={mutate} />
+      </Reveal>
+      <Reveal delayMs={300}>
+        <FormationSection items={data.formations} onMutate={mutate} />
+      </Reveal>
+      <Reveal delayMs={360}>
+        <LangueSection items={data.langues} onMutate={mutate} />
+      </Reveal>
 
-      <div className="mt-6">
+      <Reveal delayMs={420} className="mt-6">
         <CVTextPreview />
-      </div>
+      </Reveal>
     </div>
   );
 }
