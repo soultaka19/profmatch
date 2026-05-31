@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
     CELERY_ALWAYS_EAGER: bool = False
 
+    # Démo : crée les 3 comptes (prof/rh/admin) au démarrage du backend si true
+    # (idempotent, lu par entrypoint.sh). Le jeu de données riche reste optionnel
+    # via le bouton admin « Charger le jeu de démo ».
+    SEED_DEMO_ACCOUNTS_ON_START: bool = False
+
     # JWT
     SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
