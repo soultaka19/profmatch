@@ -78,6 +78,7 @@ def _appeler_llm_strict(ctx: ContexteJustification) -> str:
         model=settings.LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
+        timeout=settings.LLM_XAI_TIMEOUT_S,
     )
     raw = (response.choices[0].message.content or "").strip()
     if raw.startswith("```"):

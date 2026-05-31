@@ -40,6 +40,10 @@ def extract_structured_data(texte_brut: str, client: OpenAI) -> ExtractionLLM:
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=2000,
+            # Override per-requête : l'extraction génère beaucoup plus de tokens
+            # que la narration XAI ; le timeout de 15 s du client est trop court
+            # pour le modèle 120B et provoquait des ReadTimeout systématiques.
+            timeout=settings.LLM_EXTRACTION_TIMEOUT_S,
         )
         raw = response.choices[0].message.content or ""
 
