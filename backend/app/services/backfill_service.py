@@ -5,8 +5,14 @@ colonne `embedding` à NULL. Sans backfill, le score W4 reste à 0 pour ces
 entités, même quand le pipeline normal (extraction CV / création de cours)
 calcule désormais l'embedding au moment de l'insertion.
 
-Le calcul d'embedding (sentence-transformers) est CPU-bloquant : on déporte
-chaque encodage via `asyncio.to_thread` pour ne pas bloquer l'event loop.
+`force=True` recalcule aussi les embeddings **déjà présents**. C'est ce qu'exige
+tout changement de modèle d'embedding : deux modèles produisent des espaces
+vectoriels distincts, et comparer un vecteur de l'ancien à un vecteur du nouveau
+ne donne pas une similarité fausse mais une similarité *dénuée de sens*. Sans
+recalcul complet, W4 dégraderait silencieusement les affectations.
+
+Chaque encodage est un appel réseau bloquant (client HTTP synchrone) : on le
+déporte via `asyncio.to_thread` pour ne pas bloquer l'event loop.
 """
 
 from __future__ import annotations
@@ -27,17 +33,22 @@ from app.services.embeddings import (
 )
 
 
-async def backfill_embeddings_professeurs(db: AsyncSession) -> int:
+async def backfill_embeddings_professeurs(db: AsyncSession, force: bool = False) -> int:
     """Calcule l'embedding manquant pour chaque prof avec CV traité.
 
-    Retourne le nombre de profs effectivement backfillés.
+    `force=True` recalcule également ceux qui en ont déjà un (changement de
+    modèle d'embedding). Retourne le nombre de profs effectivement traités.
     """
+    filtres = [CV.statut == CVStatut.TRAITE]
+    if not force:
+        filtres.append(Professeur.embedding.is_(None))
+
     profs = (
         (
             await db.execute(
                 select(Professeur)
                 .join(CV, CV.professeur_id == Professeur.id)
-                .where(CV.statut == CVStatut.TRAITE, Professeur.embedding.is_(None))
+                .where(*filtres)
                 .options(
                     selectinload(Professeur.competences),
                     selectinload(Professeur.experiences),
@@ -65,12 +76,16 @@ async def backfill_embeddings_professeurs(db: AsyncSession) -> int:
     return n
 
 
-async def backfill_embeddings_cours(db: AsyncSession) -> int:
+async def backfill_embeddings_cours(db: AsyncSession, force: bool = False) -> int:
     """Calcule l'embedding manquant pour chaque cours sans embedding.
 
-    Retourne le nombre de cours effectivement backfillés.
+    `force=True` recalcule également ceux qui en ont déjà un (changement de
+    modèle d'embedding). Retourne le nombre de cours effectivement traités.
     """
-    cours_list = (await db.execute(select(Cours).where(Cours.embedding.is_(None)))).scalars().all()
+    requete = select(Cours)
+    if not force:
+        requete = requete.where(Cours.embedding.is_(None))
+    cours_list = (await db.execute(requete)).scalars().all()
 
     n = 0
     for cours in cours_list:

@@ -53,11 +53,6 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/pyproject.toml
 
-      # Roue CPU de PyTorch d'abord (même astuce que backend/Dockerfile) : évite
-      # que sentence-transformers tire la pile CUDA (~2,8 Go) sur le runner.
-      - name: Install PyTorch (CPU wheel)
-        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
-
       - name: Install dependencies
         working-directory: backend
         run: pip install -e ".[dev]"

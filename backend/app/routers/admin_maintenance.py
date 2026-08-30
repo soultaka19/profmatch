@@ -39,13 +39,20 @@ class SeedDemoOut(BaseModel):
 
 @router.post("/backfill-embeddings", response_model=BackfillEmbeddingsOut)
 async def backfill_embeddings(
+    force: bool = False,
     _: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> BackfillEmbeddingsOut:
     """Recalcule l'embedding W4 pour tout prof CV traité + tout cours qui en
-    manque (utile après migration ou bootstrap de données legacy)."""
-    n_profs = await backfill_embeddings_professeurs(db)
-    n_cours = await backfill_embeddings_cours(db)
+    manque (utile après migration ou bootstrap de données legacy).
+
+    `?force=true` recalcule aussi les embeddings existants — obligatoire après
+    un changement de `EMBEDDING_MODEL` ou de `EMBEDDING_DIMENSIONS` : deux
+    modèles produisent des espaces vectoriels différents, et les mélanger rend
+    le score W4 dénué de sens sans qu'aucune erreur ne se manifeste.
+    """
+    n_profs = await backfill_embeddings_professeurs(db, force=force)
+    n_cours = await backfill_embeddings_cours(db, force=force)
     return BackfillEmbeddingsOut(professeurs=n_profs, cours=n_cours)
 
 

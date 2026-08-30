@@ -130,24 +130,27 @@ def default_llm_api_key(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def mock_embedding_model(monkeypatch):
-    """Neutralise le chargement de sentence-transformers/PyTorch en CI.
+    """Neutralise l'appel réseau à l'API d'embeddings — JAMAIS d'appel réel en CI.
 
-    `compute_embedding` reste réel mais s'appuie sur un encodeur déterministe
-    léger (hash → vecteur normalisé), sans modèle ML ni téléchargement réseau.
-    Les tests qui patchent `_get_model` ou `compute_embedding` localement priment.
+    Seul `_embed_distant` est substitué, par un encodeur déterministe (hash →
+    vecteur). `compute_embedding` reste donc exercé pour de vrai, normalisation
+    comprise : c'est précisément l'étape qui compte, puisque l'API renvoie des
+    vecteurs non normalisés dès qu'on tronque la dimension.
+
+    Le faux vecteur est volontairement NON normalisé (norme ≈ 1000 sur 32
+    octets) : un test qui vérifie la normalisation ne prouverait rien si la
+    doublure renvoyait déjà des vecteurs de norme 1.
+
+    Les tests qui patchent `_embed_distant` ou `compute_embedding` localement
+    priment.
     """
     import hashlib
 
-    import numpy as np
+    def _faux_embed(text: str) -> list[float]:
+        digest = hashlib.sha256(text.encode("utf-8")).digest()
+        return [float(octet) for octet in digest]
 
-    class _FakeModel:
-        def encode(self, text, normalize_embeddings=True):
-            digest = hashlib.sha256(text.encode("utf-8")).digest()
-            vec = np.frombuffer(digest, dtype=np.uint8).astype("float32")
-            norm = float(np.linalg.norm(vec)) or 1.0
-            return vec / norm
-
-    monkeypatch.setattr("app.services.embeddings._get_model", lambda: _FakeModel())
+    monkeypatch.setattr("app.services.embeddings._embed_distant", _faux_embed)
 
 
 @pytest.fixture(autouse=True)

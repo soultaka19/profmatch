@@ -55,6 +55,15 @@ class Settings(BaseSettings):
     # échec. 4000 laisse la marge nécessaire ; à baisser pour un modèle sans
     # raisonnement, où la valeur d'origine suffit.
     LLM_EXTRACTION_MAX_TOKENS: int = 4000
+
+    # Embeddings du score sémantique W4 (services/embeddings.py). Calculés par
+    # l'API du fournisseur, sur le même endpoint et la même clé que le LLM.
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
+    # 384 : dimension native de l'ancien modèle local (all-MiniLM-L6-v2), donc
+    # aucun changement de schéma ni d'empreinte de stockage. Les colonnes sont
+    # des `double precision[]` sans dimension fixe : monter à 768 ou 3072 ne
+    # demande qu'un backfill --force, pas de migration.
+    EMBEDDING_DIMENSIONS: int = 384
     # Timeout de la narration XAI. Génération légère (~500 tokens) mais sur un
     # modèle 120B souvent lent : 15 s faisait trop souvent retomber sur la
     # justification statique. Depuis le découplage Niveau 2 (enrichissement lazy

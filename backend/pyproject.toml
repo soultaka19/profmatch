@@ -42,9 +42,10 @@ dependencies = [
     # Importé directement par app/services/llm_client.py (client HTTP porteur du
     # cookie). openai >= 3 dépend de httpx2, plus de httpx : à déclarer ici.
     "httpx==0.28.1",
-    # Embeddings (all-MiniLM-L6-v2). Dépend de torch : installer la roue CPU
-    # avant (voir Dockerfile) pour éviter la pile CUDA.
-    "sentence-transformers==6.0.0",
+    # Les embeddings du score sémantique W4 sont calculés par l'API du
+    # fournisseur (app/services/embeddings.py), via le client OpenAI déjà
+    # présent. sentence-transformers et PyTorch ont donc été retirés : ils
+    # pesaient ~1 Go d'image et 530 Mo de mémoire dans le worker.
 ]
 
 [project.optional-dependencies]
