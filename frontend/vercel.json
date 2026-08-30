@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:chemin*",
+      "destination": "https://profmatch-api.soultaka.com/api/:chemin*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:chemin*",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
+      ]
+    }
+  ]
+}

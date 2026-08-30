@@ -1,4 +1,10 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Vide en production : le front appelle /api sur sa propre origine et Vercel
+// reecrit vers l'API du VPS (meme origine cote navigateur, donc ni CORS ni
+// preflight). L'image Docker, elle, fournit NEXT_PUBLIC_API_URL au build et
+// garde donc son comportement d'origine.
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 function getAuthHeaders(): HeadersInit {
   const token =

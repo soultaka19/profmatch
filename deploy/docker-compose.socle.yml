@@ -1,0 +1,74 @@
+# ProfMatch sur le socle partage.
+#
+# Ne contient QUE l'API et le worker Celery : le front Next.js est servi par
+# Vercel depuis l'edge de Montreal, PostgreSQL, Redis et Caddy sont mutualises
+# entre les sept projets.
+#
+# Les services s'appellent `profmatch-api` et `profmatch-worker`, jamais `api`
+# ni `worker` : le reseau `socle` est partage et Docker y publie un alias par
+# nom de service. Deux projets nommant leur worker `worker` se marcheraient
+# dessus — ProfMatch est le premier projet a poser un worker, la convention
+# compte donc des maintenant.
+
+name: profmatch
+
+services:
+  profmatch-api:
+    build:
+      context: ../backend
+    image: profmatch-api:socle
+    restart: unless-stopped
+    env_file:
+      - ./profmatch.env
+    environment:
+      UPLOADS_DIR: /uploads
+      CELERY_ALWAYS_EAGER: "false"
+      # Cree les 3 comptes de demonstration au demarrage (idempotent).
+      # Assume : ce deploiement est une vitrine de portfolio, pas un service
+      # de production avec de vrais utilisateurs.
+      SEED_DEMO_ACCOUNTS_ON_START: "true"
+    volumes:
+      - uploads:/uploads
+    networks: [socle]
+    # Aucun port publie : Caddy joint le conteneur par le reseau interne.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  profmatch-worker:
+    build:
+      context: ../backend
+    image: profmatch-api:socle
+    command: celery -A app.worker worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+    env_file:
+      - ./profmatch.env
+    environment:
+      UPLOADS_DIR: /uploads
+      CELERY_ALWAYS_EAGER: "false"
+    volumes:
+      # Meme volume que l'API : le worker lit les CV televerses par l'API.
+      - uploads:/uploads
+    networks: [socle]
+    depends_on:
+      # Les migrations Alembic sont appliquees par l'entrypoint de l'API
+      # (uniquement quand la commande est `uvicorn`). Le worker attend donc que
+      # l'API soit saine pour ne pas travailler sur un schema incomplet.
+      profmatch-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker inspect ping -d celery@$$HOSTNAME | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  uploads:
+
+networks:
+  socle:
+    external: true
