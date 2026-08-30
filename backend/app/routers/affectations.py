@@ -148,7 +148,7 @@ async def get_generation_status(
     return GenerationStatusOut(status="done", result=res, totaux=totaux)
 
 
-@router.get("/", response_model=list[AffectationOut])
+@router.get("", response_model=list[AffectationOut])
 async def list_affectations(
     session_id: int | None = None,
     cours_id: int | None = None,

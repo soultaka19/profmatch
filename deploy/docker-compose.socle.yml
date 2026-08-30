@@ -18,6 +18,15 @@ services:
       context: ../backend
     image: profmatch-api:socle
     restart: unless-stopped
+    # Uvicorn est derriere Caddy, qui lui parle en HTTP clair sur le reseau
+    # interne. Sans --proxy-headers, toute redirection generee par FastAPI est
+    # bâtie en http:// : un client suivant cette redirection quitterait TLS.
+    # --forwarded-allow-ips accepte l'en-tete de n'importe quelle source du
+    # reseau `socle` — acceptable ici : aucun port n'est publie, seul Caddy et
+    # les autres piles projet joignent le conteneur.
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      --proxy-headers --forwarded-allow-ips=*
     env_file:
       - ./profmatch.env
     environment:

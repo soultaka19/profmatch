@@ -12,7 +12,7 @@ async def test_create_utilisateur_admin(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     r = await client.post(
-        "/api/admin/utilisateurs/",
+        "/api/admin/utilisateurs",
         json={
             "email": "newprof@test.ca",
             "role": "prof",
@@ -40,7 +40,7 @@ async def test_create_utilisateur_email_doublon(
     client: AsyncClient, auth_headers_admin: dict, test_user_prof: User
 ):
     r = await client.post(
-        "/api/admin/utilisateurs/",
+        "/api/admin/utilisateurs",
         json={
             "email": "testprof@test.ca",
             "role": "prof",
@@ -54,7 +54,7 @@ async def test_create_utilisateur_email_doublon(
 @pytest.mark.asyncio
 async def test_create_utilisateur_refuse_rh(client: AsyncClient, auth_headers_rh: dict):
     r = await client.post(
-        "/api/admin/utilisateurs/",
+        "/api/admin/utilisateurs",
         json={
             "email": "x@test.ca",
             "role": "prof",
@@ -69,7 +69,7 @@ async def test_create_utilisateur_refuse_rh(client: AsyncClient, auth_headers_rh
 async def test_create_utilisateur_refuse_role_admin(client: AsyncClient, auth_headers_admin: dict):
     """La création directe d'un compte admin est interdite (Literal['prof', 'rh'])."""
     r = await client.post(
-        "/api/admin/utilisateurs/",
+        "/api/admin/utilisateurs",
         json={
             "email": "newadmin@test.ca",
             "role": "admin",
@@ -88,7 +88,7 @@ async def test_list_utilisateurs(
     test_user_prof: User,
     test_user_rh: User,
 ):
-    r = await client.get("/api/admin/utilisateurs/", headers=auth_headers_admin)
+    r = await client.get("/api/admin/utilisateurs", headers=auth_headers_admin)
     assert r.status_code == 200
     data = r.json()
     emails = {u["email"] for u in data}

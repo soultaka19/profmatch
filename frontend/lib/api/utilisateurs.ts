@@ -16,7 +16,7 @@ export const usersApi = {
     apiClient.get<UserAdmin>(`/api/admin/utilisateurs/${id}`),
 
   create: (input: UserCreateInput): Promise<UserCreateResponse> =>
-    apiClient.post<UserCreateResponse>("/api/admin/utilisateurs/", input),
+    apiClient.post<UserCreateResponse>("/api/admin/utilisateurs", input),
 
   update: (id: number, input: UserUpdateInput): Promise<UserAdmin> =>
     apiClient.put<UserAdmin>(`/api/admin/utilisateurs/${id}`, input),

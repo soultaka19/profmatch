@@ -35,7 +35,7 @@ def _activation_url(token: str) -> str:
     return f"{settings.FRONTEND_URL.rstrip('/')}/activate?token={token}"
 
 
-@router.post("/", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_utilisateur(
     payload: UserCreate,
     _: User = Depends(require_role("admin")),
@@ -66,7 +66,7 @@ async def create_utilisateur(
     )
 
 
-@router.get("/", response_model=list[UserAdminOut])
+@router.get("", response_model=list[UserAdminOut])
 async def list_utilisateurs(
     actif: bool | None = None,
     _: User = Depends(require_role("admin")),

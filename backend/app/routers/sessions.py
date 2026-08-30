@@ -25,7 +25,7 @@ from app.services.affectation_service import lister_etapes_avec_statut, update_p
 router = APIRouter()
 
 
-@router.get("/", response_model=list[SessionOut])
+@router.get("", response_model=list[SessionOut])
 async def list_sessions(
     current_user: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
@@ -34,7 +34,7 @@ async def list_sessions(
     return list(result.scalars().all())
 
 
-@router.post("/", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
 async def create_session(
     payload: SessionCreate,
     current_user: User = Depends(require_role("admin")),

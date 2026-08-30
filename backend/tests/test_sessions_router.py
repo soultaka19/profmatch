@@ -14,7 +14,7 @@ from app.models.user import User
 async def test_list_sessions_empty(
     client: AsyncClient, test_user_admin: User, auth_headers_admin: dict
 ):
-    r = await client.get("/api/sessions/", headers=auth_headers_admin)
+    r = await client.get("/api/sessions", headers=auth_headers_admin)
     assert r.status_code == 200
     assert r.json() == []
 
@@ -22,7 +22,7 @@ async def test_list_sessions_empty(
 @pytest.mark.asyncio
 async def test_create_session_admin(client: AsyncClient, auth_headers_admin: dict):
     r = await client.post(
-        "/api/sessions/",
+        "/api/sessions",
         json={"annee": 2026, "semestre": "automne"},
         headers=auth_headers_admin,
     )
@@ -37,15 +37,15 @@ async def test_create_session_admin(client: AsyncClient, auth_headers_admin: dic
 @pytest.mark.asyncio
 async def test_create_session_doublon(client: AsyncClient, auth_headers_admin: dict):
     payload = {"annee": 2026, "semestre": "automne"}
-    await client.post("/api/sessions/", json=payload, headers=auth_headers_admin)
-    r = await client.post("/api/sessions/", json=payload, headers=auth_headers_admin)
+    await client.post("/api/sessions", json=payload, headers=auth_headers_admin)
+    r = await client.post("/api/sessions", json=payload, headers=auth_headers_admin)
     assert r.status_code == 409
 
 
 @pytest.mark.asyncio
 async def test_create_session_refuse_rh(client: AsyncClient, auth_headers_rh: dict):
     r = await client.post(
-        "/api/sessions/",
+        "/api/sessions",
         json={"annee": 2026, "semestre": "hiver"},
         headers=auth_headers_rh,
     )
@@ -122,14 +122,14 @@ async def test_update_ponderations_invalides(
 
 @pytest.mark.asyncio
 async def test_list_programmes(client: AsyncClient, auth_headers_admin: dict):
-    r = await client.get("/api/programmes/", headers=auth_headers_admin)
+    r = await client.get("/api/programmes", headers=auth_headers_admin)
     assert r.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_create_programme(client: AsyncClient, auth_headers_admin: dict):
     r = await client.post(
-        "/api/programmes/",
+        "/api/programmes",
         json={"code": "51046", "nom": "Programmation informatique", "departement": "Informatique"},
         headers=auth_headers_admin,
     )

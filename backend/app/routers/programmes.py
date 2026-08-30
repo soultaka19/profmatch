@@ -20,7 +20,7 @@ from app.services.academic_calendar import (
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ProgrammeOut])
+@router.get("", response_model=list[ProgrammeOut])
 async def list_programmes(
     current_user: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
@@ -29,7 +29,7 @@ async def list_programmes(
     return list(result.scalars().all())
 
 
-@router.post("/", response_model=ProgrammeOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProgrammeOut, status_code=status.HTTP_201_CREATED)
 async def create_programme(
     payload: ProgrammeCreate,
     current_user: User = Depends(require_role("admin")),

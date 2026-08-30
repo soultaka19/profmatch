@@ -7,11 +7,11 @@ import type {
 } from "@/lib/types/sessions";
 
 export const sessionsApi = {
-  list: (): Promise<Session[]> => apiClient.get<Session[]>("/api/sessions/"),
+  list: (): Promise<Session[]> => apiClient.get<Session[]>("/api/sessions"),
   get: (id: number): Promise<Session> =>
     apiClient.get<Session>(`/api/sessions/${id}`),
   create: (input: SessionCreateInput): Promise<Session> =>
-    apiClient.post<Session>("/api/sessions/", input),
+    apiClient.post<Session>("/api/sessions", input),
   update: (id: number, input: SessionUpdateInput): Promise<Session> =>
     apiClient.put<Session>(`/api/sessions/${id}`, input),
   remove: (id: number): Promise<void> =>

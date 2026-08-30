@@ -16,7 +16,7 @@ import type {
 
 export const sessionsApi = {
   list: (): Promise<Session[]> =>
-    apiClient.get<Session[]>("/api/sessions/"),
+    apiClient.get<Session[]>("/api/sessions"),
 
   getPonderations: (sessionId: number): Promise<PonderationsOut> =>
     apiClient.get<PonderationsOut>(`/api/sessions/${sessionId}/ponderations`),
@@ -37,7 +37,7 @@ export const sessionsApi = {
 
 export const programmesApi = {
   list: (): Promise<Programme[]> =>
-    apiClient.get<Programme[]>("/api/programmes/"),
+    apiClient.get<Programme[]>("/api/programmes"),
 };
 
 export const etapesApi = {

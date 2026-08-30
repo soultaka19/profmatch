@@ -107,7 +107,7 @@ async def test_activate_definit_password_et_retourne_token(client, db_session, a
     """Workflow complet : admin crée → token → utilisateur active → login OK."""
     # Étape 1 : admin crée un compte
     r = await client.post(
-        "/api/admin/utilisateurs/",
+        "/api/admin/utilisateurs",
         json={"email": "nouveau@test.ca", "role": "prof", "nom_complet": "Nouveau"},
         headers=auth_headers_admin,
     )

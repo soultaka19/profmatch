@@ -104,7 +104,7 @@ async def test_delete_programme_refuse_rh(
 @pytest.mark.asyncio
 async def test_create_programme_avec_semestres(client: AsyncClient, auth_headers_admin: dict):
     r = await client.post(
-        "/api/programmes/",
+        "/api/programmes",
         json={
             "code": "51046",
             "nom": "Programmation",
@@ -123,7 +123,7 @@ async def test_create_programme_semestres_par_defaut_automne(
     client: AsyncClient, auth_headers_admin: dict
 ):
     r = await client.post(
-        "/api/programmes/",
+        "/api/programmes",
         json={"code": "51046", "nom": "Programmation", "departement": None},
         headers=auth_headers_admin,
     )
@@ -158,7 +158,7 @@ async def test_create_programme_semestre_invalide_refuse(
     client: AsyncClient, auth_headers_admin: dict
 ):
     r = await client.post(
-        "/api/programmes/",
+        "/api/programmes",
         json={
             "code": "51046",
             "nom": "P",
