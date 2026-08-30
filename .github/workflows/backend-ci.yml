@@ -9,6 +9,10 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-ci.yml"
+  # Relance manuelle : indispensable quand un run echoue pour une raison
+  # exterieure au code (quota GitHub Actions, panne d'un service), sans avoir
+  # a fabriquer un commit vide pour reveiller le workflow.
+  workflow_dispatch:
 
 jobs:
   test:
