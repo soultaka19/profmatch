@@ -9,7 +9,7 @@ import type {
 export const usersApi = {
   list: (actif?: boolean): Promise<UserAdmin[]> => {
     const query = actif === undefined ? "" : `?actif=${actif}`;
-    return apiClient.get<UserAdmin[]>(`/api/admin/utilisateurs/${query}`);
+    return apiClient.get<UserAdmin[]>(`/api/admin/utilisateurs${query}`);
   },
 
   get: (id: number): Promise<UserAdmin> =>

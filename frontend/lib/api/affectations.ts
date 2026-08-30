@@ -76,7 +76,7 @@ export const affectationsApi = {
     if (statut) params.set("statut", statut);
     for (const pid of opts?.programmeIds ?? []) params.append("programme_ids", String(pid));
     for (const eid of opts?.etapeIds ?? []) params.append("etape_ids", String(eid));
-    return apiClient.get<AffectationOut[]>(`/api/affectations/?${params}`);
+    return apiClient.get<AffectationOut[]>(`/api/affectations?${params}`);
   },
 
   validate: (

@@ -113,7 +113,7 @@ async def test_list_utilisateurs_filtre_actif(
     db_session.add(u)
     await db_session.commit()
 
-    r = await client.get("/api/admin/utilisateurs/?actif=false", headers=auth_headers_admin)
+    r = await client.get("/api/admin/utilisateurs?actif=false", headers=auth_headers_admin)
     assert r.status_code == 200
     emails = {u["email"] for u in r.json()}
     assert emails == {"inactif@test.ca"}

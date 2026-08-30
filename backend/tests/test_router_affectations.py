@@ -108,7 +108,7 @@ async def test_list_affectations_enrichit_noms(
     await db_session.commit()
 
     resp = await client.get(
-        f"/api/affectations/?session_id={sess.id}",
+        f"/api/affectations?session_id={sess.id}",
         headers=auth_headers_rh,
     )
     assert resp.status_code == 200
@@ -474,7 +474,7 @@ async def test_list_affectations_filtre_par_etape(
 
     # programme entier → 2 affectations
     resp = await client.get(
-        f"/api/affectations/?session_id={sess.id}&programme_ids={prog.id}",
+        f"/api/affectations?session_id={sess.id}&programme_ids={prog.id}",
         headers=auth_headers_rh,
     )
     assert resp.status_code == 200
@@ -482,7 +482,7 @@ async def test_list_affectations_filtre_par_etape(
 
     # étape 1 seule → 1 affectation (cours E1)
     resp2 = await client.get(
-        f"/api/affectations/?session_id={sess.id}&programme_ids={prog.id}&etape_ids={e1.id}",
+        f"/api/affectations?session_id={sess.id}&programme_ids={prog.id}&etape_ids={e1.id}",
         headers=auth_headers_rh,
     )
     assert resp2.status_code == 200
