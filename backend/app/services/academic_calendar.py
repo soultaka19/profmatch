@@ -25,9 +25,7 @@ class Rythme(str, Enum):
     CONTINU = "continu"
 
 
-_CONTINU_TRIGGERS: frozenset[Semestre] = frozenset(
-    {Semestre.HIVER, Semestre.PRINTEMPS}
-)
+_CONTINU_TRIGGERS: frozenset[Semestre] = frozenset({Semestre.HIVER, Semestre.PRINTEMPS})
 
 
 def rythme_for(programme: Programme) -> Rythme:

@@ -24,7 +24,6 @@ from app.services.scoring import (
     score_semantique,
 )
 
-
 # --- W1 : compétences -------------------------------------------------
 
 
@@ -344,9 +343,7 @@ def test_justification_contient_nom_prof_et_code_cours(contexte_demo):
 
 def test_justification_recommandation_forte_au_dessus_de_80(contexte_demo):
     """Score >= 80 % → 'Fortement recommandé'."""
-    fort = ContexteJustification(
-        **{**contexte_demo.__dict__, "score_global_pct": 85.0}
-    )
+    fort = ContexteJustification(**{**contexte_demo.__dict__, "score_global_pct": 85.0})
     assert "Fortement recommandé" in generer_justification_statique(fort)
 
 
@@ -357,9 +354,7 @@ def test_justification_recommandation_avec_reserves_entre_60_et_80(contexte_demo
 
 def test_justification_a_examiner_en_dessous_de_60(contexte_demo):
     """Score < 60 % → 'À examiner'."""
-    faible = ContexteJustification(
-        **{**contexte_demo.__dict__, "score_global_pct": 45.0}
-    )
+    faible = ContexteJustification(**{**contexte_demo.__dict__, "score_global_pct": 45.0})
     assert "À examiner" in generer_justification_statique(faible)
 
 

@@ -21,7 +21,6 @@ from app.models.cours import Cours
 from app.models.session import Semestre, Session
 from app.services.affectation_enrichissement import enrichir_justification_xai
 
-
 CTX_MINIMAL = {
     "nom_professeur": "Alice Test",
     "code_cours": "T-001",
@@ -36,8 +35,10 @@ CTX_MINIMAL = {
     "score_global_pct": 75.0,
     "poids": {"w1": 0.4, "w2": 0.3, "w3": 0.2, "w4": 0.1},
     "composants": {
-        "score_comp": 0.75, "score_exp": 0.5,
-        "score_hist": 0.8, "score_sem": 0.6,
+        "score_comp": 0.75,
+        "score_exp": 0.5,
+        "score_hist": 0.8,
+        "score_sem": 0.6,
     },
 }
 
@@ -52,9 +53,13 @@ async def _make_aff(db, prof_id, statut_just=JustificationStatut.STATIQUE) -> Af
     await db.commit()
     await db.refresh(cours)
     aff = Affectation(
-        session_id=sess.id, professeur_id=prof_id, cours_id=cours.id,
-        score_total=Decimal("0.75"), score_comp=Decimal("0.75"),
-        score_exp=Decimal("0.50"), score_hist=Decimal("0.80"),
+        session_id=sess.id,
+        professeur_id=prof_id,
+        cours_id=cours.id,
+        score_total=Decimal("0.75"),
+        score_comp=Decimal("0.75"),
+        score_exp=Decimal("0.50"),
+        score_hist=Decimal("0.80"),
         score_sem=Decimal("0.60"),
         statut=AffectationStatut.PROPOSEE,
         justification="JUSTIFICATION STATIQUE INITIALE.",
@@ -119,9 +124,7 @@ async def test_enrichir_idempotent_si_deja_enrichie(db_session: AsyncSession, pr
     aff.justification = "NARRATION DÉJÀ EN PLACE"
     await db_session.commit()
 
-    with patch(
-        "app.services.affectation_enrichissement._appeler_llm_strict"
-    ) as mock_llm:
+    with patch("app.services.affectation_enrichissement._appeler_llm_strict") as mock_llm:
         result = await enrichir_justification_xai(aff.id, CTX_MINIMAL, db_session)
 
     await db_session.refresh(aff)

@@ -1,10 +1,11 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 from sqlalchemy import select
 
-from app.models.cv import CV, CVStatut
 from app.models.competence import Competence
+from app.models.cv import CV, CVStatut
 from app.models.professeur import Professeur
 
 FIXTURES = Path(__file__).parent / "fixtures" / "llm_responses"
@@ -20,9 +21,7 @@ def _mock_client_with_fixture(fixture_name: str) -> MagicMock:
 
 
 @pytest.mark.asyncio
-async def test_extract_cv_data_llm_success(
-    db_session, professeur_prof: Professeur, celery_eager
-):
+async def test_extract_cv_data_llm_success(db_session, professeur_prof: Professeur, celery_eager):
     cv = CV(
         professeur_id=professeur_prof.id,
         nom_original="test.pdf",
@@ -36,8 +35,12 @@ async def test_extract_cv_data_llm_success(
     await db_session.commit()
     await db_session.refresh(cv)
 
-    with patch("app.tasks.extraction_tasks.get_llm_client", return_value=_mock_client_with_fixture("ok_complete.json")):
+    with patch(
+        "app.tasks.extraction_tasks.get_llm_client",
+        return_value=_mock_client_with_fixture("ok_complete.json"),
+    ):
         from app.tasks.extraction_tasks import extract_cv_data_llm
+
         extract_cv_data_llm(cv.id)
 
     await db_session.refresh(cv)
@@ -69,13 +72,15 @@ async def test_extract_cv_data_llm_persists_professeur_embedding(
     await db_session.refresh(cv)
 
     fake_vec = [0.11, 0.22, 0.33]
-    with patch(
-        "app.tasks.extraction_tasks.get_llm_client",
-        return_value=_mock_client_with_fixture("ok_complete.json"),
-    ), patch(
-        "app.services.embeddings.compute_embedding", return_value=fake_vec
-    ) as mock_embed:
+    with (
+        patch(
+            "app.tasks.extraction_tasks.get_llm_client",
+            return_value=_mock_client_with_fixture("ok_complete.json"),
+        ),
+        patch("app.services.embeddings.compute_embedding", return_value=fake_vec) as mock_embed,
+    ):
         from app.tasks.extraction_tasks import extract_cv_data_llm
+
         extract_cv_data_llm(cv.id)
 
     await db_session.refresh(professeur_prof)
@@ -107,6 +112,7 @@ async def test_extract_cv_data_llm_marks_erreur_on_extraction_error(
 
     with patch("app.tasks.extraction_tasks.get_llm_client", return_value=bad_client):
         from app.tasks.extraction_tasks import extract_cv_data_llm
+
         extract_cv_data_llm(cv.id)
 
     await db_session.refresh(cv)
@@ -136,8 +142,10 @@ async def test_extract_cv_data_llm_marks_erreur_when_retries_exhausted(
     await db_session.commit()
     await db_session.refresh(cv)
 
-    from app.tasks.extraction_tasks import extract_cv_data_llm
     from openai import OpenAIError
+
+    from app.tasks.extraction_tasks import extract_cv_data_llm
+
     failing_client = MagicMock()
     failing_client.chat.completions.create.side_effect = OpenAIError("API down")
 
@@ -174,6 +182,7 @@ async def test_extract_cv_data_llm_noop_if_no_text(
 
     with patch("app.tasks.extraction_tasks.get_llm_client") as mock_client_factory:
         from app.tasks.extraction_tasks import extract_cv_data_llm
+
         extract_cv_data_llm(cv.id)
 
     mock_client_factory.assert_not_called()

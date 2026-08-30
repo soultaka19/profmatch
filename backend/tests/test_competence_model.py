@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.competence import Competence, CompetenceNiveau, SourceOrigine
 from app.models.professeur import Professeur
 

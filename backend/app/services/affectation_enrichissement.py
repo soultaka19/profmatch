@@ -69,7 +69,7 @@ def _appeler_llm_strict(ctx: ContexteJustification) -> str:
     marquer ECHEC).
     """
     from app.core.config import settings
-    from app.services.affectation_xai import _build_prompt, XAIJustification
+    from app.services.affectation_xai import XAIJustification, _build_prompt
     from app.services.llm_client import get_llm_client
 
     client = get_llm_client()
@@ -102,9 +102,9 @@ async def enrichir_justification_xai(
       - {"statut": "enrichie"}                           si succès LLM
       - {"statut": "echec"}                              si LLM injoignable
     """
-    aff = (await db.execute(
-        select(Affectation).where(Affectation.id == affectation_id)
-    )).scalar_one_or_none()
+    aff = (
+        await db.execute(select(Affectation).where(Affectation.id == affectation_id))
+    ).scalar_one_or_none()
 
     if aff is None:
         logger.info("Enrichissement skip: affectation %s introuvable", affectation_id)

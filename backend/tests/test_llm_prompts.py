@@ -8,7 +8,15 @@ def test_prompt_includes_text():
 
 def test_prompt_includes_all_aspect_sections():
     prompt = build_extraction_prompt("foo")
-    for section in ["ACTION:", "STEPS:", "PERSONA:", "EXAMPLES:", "CONTEXT:", "CONSTRAINTS:", "TEMPLATE:"]:
+    for section in [
+        "ACTION:",
+        "STEPS:",
+        "PERSONA:",
+        "EXAMPLES:",
+        "CONTEXT:",
+        "CONSTRAINTS:",
+        "TEMPLATE:",
+    ]:
         assert section in prompt
 
 

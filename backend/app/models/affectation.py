@@ -6,12 +6,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Numeric,
     Text,
     UniqueConstraint,
     func,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,8 +34,8 @@ class AffectationStatut(str, Enum):
 
 
 class AffectationOrigine(str, Enum):
-    ALGO = "algo"       # proposée par l'algorithme de scoring
-    MANUEL = "manuel"   # affectée manuellement par le RH
+    ALGO = "algo"  # proposée par l'algorithme de scoring
+    MANUEL = "manuel"  # affectée manuellement par le RH
 
 
 class JustificationStatut(str, Enum):
@@ -134,9 +136,7 @@ class Affectation(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    valide_le: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    valide_le: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

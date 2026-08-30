@@ -1,9 +1,9 @@
 """Tests pour le router affectations — POST /api/affectations/generer."""
 
 from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 import pytest
-from unittest.mock import MagicMock, patch
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -127,9 +127,10 @@ async def test_mes_affectations_prof_retourne_uniquement_ses_affectations(
     professeur_prof: Professeur,
 ):
     """GET /api/affectations/mes-affectations isole les donnees du prof connecte."""
+    from sqlalchemy import select as _sel
+
     from app.core.security import hash_password
     from app.models.user import User, UserRole
-    from sqlalchemy import select as _sel
 
     session = Session(annee=2031, semestre=Semestre.AUTOMNE)
     cours_prof = Cours(code="PROF-101", nom="Cours du prof", credits=3)
@@ -283,24 +284,39 @@ async def test_patch_valider_enrichit_noms(
 
 
 async def _setup_manuel(db_session):
+    from sqlalchemy import select as _sel
+
     from app.core.security import hash_password
-    from app.models.user import User, UserRole
-    from app.models.professeur import Professeur
-    from app.models.cv import CV, CVStatut
     from app.models.competence import Competence, CompetenceNiveau
     from app.models.cours import Cours
     from app.models.cours_competence import CoursCompetence
-    from app.models.session import Session, Semestre
-    from sqlalchemy import select as _sel
+    from app.models.cv import CV, CVStatut
+    from app.models.professeur import Professeur
+    from app.models.session import Semestre, Session
+    from app.models.user import User, UserRole
 
-    user = User(email="rprof@test.ca", password_hash=hash_password("Test@1234"),
-                role=UserRole.PROF, nom_complet="Router Prof")
+    user = User(
+        email="rprof@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Router Prof",
+    )
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    prof = (await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))).scalar_one()
-    db_session.add(CV(professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
-                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.TRAITE))
+    prof = (
+        await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))
+    ).scalar_one()
+    db_session.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="cv.pdf",
+            chemin_fichier="x",
+            taille_octets=1,
+            mime_type="application/pdf",
+            statut=CVStatut.TRAITE,
+        )
+    )
     db_session.add(Competence(professeur_id=prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE))
     cours = Cours(code="R-001", nom="RouterCours")
     sess = Session(annee=2040, semestre=Semestre.AUTOMNE)
@@ -316,9 +332,15 @@ async def _setup_manuel(db_session):
 @pytest.mark.asyncio
 async def test_post_manuelle_201(client, db_session, auth_headers_rh):
     prof, cours, sess = await _setup_manuel(db_session)
-    resp = await client.post("/api/affectations/manuelle", headers=auth_headers_rh, json={
-        "session_id": sess.id, "professeur_id": prof.id, "cours_id": cours.id,
-    })
+    resp = await client.post(
+        "/api/affectations/manuelle",
+        headers=auth_headers_rh,
+        json={
+            "session_id": sess.id,
+            "professeur_id": prof.id,
+            "cours_id": cours.id,
+        },
+    )
     assert resp.status_code == 201
     body = resp.json()
     assert body["origine"] == "manuel"
@@ -329,39 +351,66 @@ async def test_post_manuelle_201(client, db_session, auth_headers_rh):
 @pytest.mark.asyncio
 async def test_post_manuelle_404_prof_inconnu(client, db_session, auth_headers_rh):
     _, cours, sess = await _setup_manuel(db_session)
-    resp = await client.post("/api/affectations/manuelle", headers=auth_headers_rh, json={
-        "session_id": sess.id, "professeur_id": 99999, "cours_id": cours.id,
-    })
+    resp = await client.post(
+        "/api/affectations/manuelle",
+        headers=auth_headers_rh,
+        json={
+            "session_id": sess.id,
+            "professeur_id": 99999,
+            "cours_id": cours.id,
+        },
+    )
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_post_manuelle_409_cv_non_traite(client, db_session, auth_headers_rh):
-    from app.core.security import hash_password
-    from app.models.user import User, UserRole
-    from app.models.professeur import Professeur
-    from app.models.cv import CV, CVStatut
-    from app.models.cours import Cours
-    from app.models.session import Session, Semestre
     from sqlalchemy import select as _sel
 
-    user = User(email="naf@test.ca", password_hash=hash_password("Test@1234"),
-                role=UserRole.PROF, nom_complet="Non Traite")
+    from app.core.security import hash_password
+    from app.models.cours import Cours
+    from app.models.cv import CV, CVStatut
+    from app.models.professeur import Professeur
+    from app.models.session import Semestre, Session
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="naf@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Non Traite",
+    )
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    prof = (await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))).scalar_one()
-    db_session.add(CV(professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
-                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.EN_ATTENTE))
+    prof = (
+        await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))
+    ).scalar_one()
+    db_session.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="cv.pdf",
+            chemin_fichier="x",
+            taille_octets=1,
+            mime_type="application/pdf",
+            statut=CVStatut.EN_ATTENTE,
+        )
+    )
     cours = Cours(code="R-002", nom="C2")
     sess = Session(annee=2041, semestre=Semestre.AUTOMNE)
     db_session.add_all([cours, sess])
     await db_session.commit()
     await db_session.refresh(cours)
     await db_session.refresh(sess)
-    resp = await client.post("/api/affectations/manuelle", headers=auth_headers_rh, json={
-        "session_id": sess.id, "professeur_id": prof.id, "cours_id": cours.id,
-    })
+    resp = await client.post(
+        "/api/affectations/manuelle",
+        headers=auth_headers_rh,
+        json={
+            "session_id": sess.id,
+            "professeur_id": prof.id,
+            "cours_id": cours.id,
+        },
+    )
     assert resp.status_code == 409
 
 
@@ -378,10 +427,12 @@ async def test_get_professeurs_disponibles(client, db_session, auth_headers_rh):
 
 
 @pytest.mark.asyncio
-async def test_list_affectations_filtre_par_etape(client, db_session, auth_headers_rh, professeur_prof):
-    from app.models.programme import Programme
+async def test_list_affectations_filtre_par_etape(
+    client, db_session, auth_headers_rh, professeur_prof
+):
+    from app.models.cours_etape_programme import CategorieCours, CoursEtapeProgramme
     from app.models.etape_programme import EtapeProgramme
-    from app.models.cours_etape_programme import CoursEtapeProgramme, CategorieCours
+    from app.models.programme import Programme
 
     sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
     prog = Programme(code="FP-01", nom="P", semestres_admission=[Semestre.AUTOMNE])
@@ -398,14 +449,27 @@ async def test_list_affectations_filtre_par_etape(client, db_session, auth_heade
     for e, c in ((e1, c1), (e2, c2)):
         await db_session.refresh(e)
         await db_session.refresh(c)
-        db_session.add(CoursEtapeProgramme(programme_id=prog.id, etape_id=e.id,
-                                           cours_id=c.id, categorie=CategorieCours.OBLIGATOIRE))
+        db_session.add(
+            CoursEtapeProgramme(
+                programme_id=prog.id,
+                etape_id=e.id,
+                cours_id=c.id,
+                categorie=CategorieCours.OBLIGATOIRE,
+            )
+        )
     for c in (c1, c2):
-        db_session.add(Affectation(
-            session_id=sess.id, professeur_id=professeur_prof.id, cours_id=c.id,
-            score_total=Decimal("0.5"), score_comp=Decimal("0.5"), score_exp=Decimal("0.5"),
-            score_hist=Decimal("0.5"), score_sem=Decimal("0.5"),
-        ))
+        db_session.add(
+            Affectation(
+                session_id=sess.id,
+                professeur_id=professeur_prof.id,
+                cours_id=c.id,
+                score_total=Decimal("0.5"),
+                score_comp=Decimal("0.5"),
+                score_exp=Decimal("0.5"),
+                score_hist=Decimal("0.5"),
+                score_sem=Decimal("0.5"),
+            )
+        )
     await db_session.commit()
 
     # programme entier → 2 affectations
@@ -439,12 +503,8 @@ async def test_generation_status_pending_pas_de_totaux(
     déterminée côté Celery, et le front affiche l'overlay pipeline."""
     fake = MagicMock()
     fake.state = "PENDING"
-    with patch(
-        "app.routers.affectations.AsyncResult", return_value=fake
-    ):
-        resp = await client.get(
-            "/api/affectations/generation/tid-pending", headers=auth_headers_rh
-        )
+    with patch("app.routers.affectations.AsyncResult", return_value=fake):
+        resp = await client.get("/api/affectations/generation/tid-pending", headers=auth_headers_rh)
 
     assert resp.status_code == 200
     body = resp.json()
@@ -485,34 +545,42 @@ async def test_generation_status_done_avec_compteurs_enrichissement(
         JustificationStatut.ECHEC,
     ]
     for c, js in zip(cours_list, statuts):
-        db_session.add(Affectation(
-            session_id=sess.id, professeur_id=professeur_prof.id, cours_id=c.id,
-            score_total=Decimal("0.7"), score_comp=Decimal("0.7"),
-            score_exp=Decimal("0.7"), score_hist=Decimal("0.7"),
-            score_sem=Decimal("0.7"),
-            statut=AffectationStatut.PROPOSEE,
-            justification_statut=js,
-            justification="j",
-        ))
+        db_session.add(
+            Affectation(
+                session_id=sess.id,
+                professeur_id=professeur_prof.id,
+                cours_id=c.id,
+                score_total=Decimal("0.7"),
+                score_comp=Decimal("0.7"),
+                score_exp=Decimal("0.7"),
+                score_hist=Decimal("0.7"),
+                score_sem=Decimal("0.7"),
+                statut=AffectationStatut.PROPOSEE,
+                justification_statut=js,
+                justification="j",
+            )
+        )
     await db_session.commit()
 
     fake = MagicMock()
     fake.state = "SUCCESS"
     fake.get.return_value = {
-        "session_id": sess.id, "nb_affectations": 5, "programmes_exclus": [],
+        "session_id": sess.id,
+        "nb_affectations": 5,
+        "programmes_exclus": [],
     }
-    with patch(
-        "app.routers.affectations.AsyncResult", return_value=fake
-    ):
-        resp = await client.get(
-            f"/api/affectations/generation/tid-done", headers=auth_headers_rh
-        )
+    with patch("app.routers.affectations.AsyncResult", return_value=fake):
+        resp = await client.get("/api/affectations/generation/tid-done", headers=auth_headers_rh)
 
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "done"
     assert body["totaux"] == {
-        "total": 5, "statique": 2, "en_cours": 1, "enrichie": 1, "echec": 1,
+        "total": 5,
+        "statique": 2,
+        "en_cours": 1,
+        "enrichie": 1,
+        "echec": 1,
     }
 
 
@@ -527,8 +595,8 @@ async def test_get_justification_renvoie_detail_complet(
     professeur_prof: Professeur,
 ):
     """Le RH récupère compétences requises + couverture + métadonnées au clic."""
-    from app.models.cours_competence import CoursCompetence
     from app.models.competence import Competence, CompetenceNiveau
+    from app.models.cours_competence import CoursCompetence
 
     sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
     db_session.add(sess)
@@ -537,17 +605,23 @@ async def test_get_justification_renvoie_detail_complet(
     await db_session.commit()
     await db_session.refresh(sess)
     await db_session.refresh(cours)
-    db_session.add_all([
-        CoursCompetence(cours_id=cours.id, nom="Python", importance=5),
-        CoursCompetence(cours_id=cours.id, nom="Docker", importance=3),
-    ])
+    db_session.add_all(
+        [
+            CoursCompetence(cours_id=cours.id, nom="Python", importance=5),
+            CoursCompetence(cours_id=cours.id, nom="Docker", importance=3),
+        ]
+    )
     db_session.add(
         Competence(professeur_id=professeur_prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE)
     )
     aff = Affectation(
-        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
-        score_total=Decimal("0.72"), score_comp=Decimal("0.625"),
-        score_exp=Decimal("0.5"), score_hist=Decimal("0"),
+        session_id=sess.id,
+        professeur_id=professeur_prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.72"),
+        score_comp=Decimal("0.625"),
+        score_exp=Decimal("0.5"),
+        score_hist=Decimal("0"),
         score_sem=Decimal("0.6"),
         statut=AffectationStatut.PROPOSEE,
         justification="ma narration",
@@ -556,9 +630,7 @@ async def test_get_justification_renvoie_detail_complet(
     await db_session.commit()
     await db_session.refresh(aff)
 
-    resp = await client.get(
-        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
-    )
+    resp = await client.get(f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh)
     assert resp.status_code == 200
     body = resp.json()
     assert body["affectation_id"] == aff.id
@@ -590,9 +662,14 @@ async def test_get_justification_declenche_enrichissement_lazy(
     await db_session.refresh(sess)
     await db_session.refresh(cours)
     aff = Affectation(
-        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
-        score_total=Decimal("0.7"), score_comp=Decimal("0.7"),
-        score_exp=Decimal("0.7"), score_hist=Decimal("0.7"), score_sem=Decimal("0.7"),
+        session_id=sess.id,
+        professeur_id=professeur_prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.7"),
+        score_comp=Decimal("0.7"),
+        score_exp=Decimal("0.7"),
+        score_hist=Decimal("0.7"),
+        score_sem=Decimal("0.7"),
         statut=AffectationStatut.PROPOSEE,
         justification="statique",
         justification_statut=JustificationStatut.STATIQUE,
@@ -607,16 +684,12 @@ async def test_get_justification_declenche_enrichissement_lazy(
         lambda aff_id, ctx_dict: delays.append((aff_id, ctx_dict)),
     )
 
-    r1 = await client.get(
-        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
-    )
+    r1 = await client.get(f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh)
     assert r1.status_code == 200
     assert r1.json()["justification_statut"] == "en_cours"
     assert len(delays) == 1
 
-    r2 = await client.get(
-        f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh
-    )
+    r2 = await client.get(f"/api/affectations/{aff.id}/justification", headers=auth_headers_rh)
     assert r2.status_code == 200
     assert len(delays) == 1  # polling : pas de ré-enqueue
 
@@ -625,9 +698,7 @@ async def test_get_justification_declenche_enrichissement_lazy(
 async def test_get_justification_inexistante_renvoie_404(
     client: AsyncClient, auth_headers_rh: dict[str, str]
 ):
-    resp = await client.get(
-        "/api/affectations/999999/justification", headers=auth_headers_rh
-    )
+    resp = await client.get("/api/affectations/999999/justification", headers=auth_headers_rh)
     assert resp.status_code == 404
 
 
@@ -636,7 +707,5 @@ async def test_get_justification_refuse_prof(
     client: AsyncClient, auth_headers_prof: dict[str, str]
 ):
     """Endpoint réservé RH/Admin : un prof ne peut pas y accéder."""
-    resp = await client.get(
-        "/api/affectations/1/justification", headers=auth_headers_prof
-    )
+    resp = await client.get("/api/affectations/1/justification", headers=auth_headers_prof)
     assert resp.status_code == 403

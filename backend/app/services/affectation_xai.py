@@ -20,7 +20,6 @@ import logging
 
 from pydantic import BaseModel, ValidationError
 
-from app.models.affectation import Affectation
 from app.services.scoring import ContexteJustification, generer_justification_statique
 
 logger = logging.getLogger(__name__)
@@ -123,8 +122,8 @@ def generer_justification_llm(ctx: ContexteJustification, max_retries: int = 2) 
     Retry automatique max `max_retries` fois si la réponse LLM n'est pas
     valide JSON ou ne correspond pas au schéma Pydantic.
     """
-    from app.services.llm_client import get_llm_client
     from app.core.config import settings
+    from app.services.llm_client import get_llm_client
 
     client = get_llm_client()
     prompt = _build_prompt(ctx)
@@ -132,7 +131,11 @@ def generer_justification_llm(ctx: ContexteJustification, max_retries: int = 2) 
 
     for attempt in range(max_retries + 1):
         try:
-            correction = f"\n\nTon JSON précédent était invalide : {last_error}\nCorrige et retourne uniquement le JSON valide." if last_error else ""
+            correction = (
+                f"\n\nTon JSON précédent était invalide : {last_error}\nCorrige et retourne uniquement le JSON valide."
+                if last_error
+                else ""
+            )
             response = client.chat.completions.create(
                 model=settings.LLM_MODEL,
                 messages=[{"role": "user", "content": prompt + correction}],
@@ -158,5 +161,7 @@ def generer_justification_llm(ctx: ContexteJustification, max_retries: int = 2) 
             break
 
     # Fallback vers la justification statique
-    logger.info("XAI falling back to static justification for %s / %s", ctx.nom_professeur, ctx.code_cours)
+    logger.info(
+        "XAI falling back to static justification for %s / %s", ctx.nom_professeur, ctx.code_cours
+    )
     return generer_justification_statique(ctx)

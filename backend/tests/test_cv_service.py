@@ -22,6 +22,7 @@ def _make_upload(filename: str, content: bytes, content_type: str) -> UploadFile
 
 class _DummyTask:
     """Stand-in for the Celery task during unit tests of cv_service."""
+
     @staticmethod
     def delay(cv_id: int) -> None:
         return None
@@ -84,9 +85,7 @@ async def test_upload_replaces_existing_cv(
     assert second.nom_original == "second.docx"
     assert not first_path.exists()  # old file deleted
 
-    result = await db_session.execute(
-        select(CV).where(CV.professeur_id == professeur_prof.id)
-    )
+    result = await db_session.execute(select(CV).where(CV.professeur_id == professeur_prof.id))
     rows = result.scalars().all()
     assert len(rows) == 1
 

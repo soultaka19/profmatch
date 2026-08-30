@@ -8,7 +8,9 @@ from app.models.user import User, UserRole
 
 
 @pytest.mark.asyncio
-async def test_create_utilisateur_admin(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_create_utilisateur_admin(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     r = await client.post(
         "/api/admin/utilisateurs/",
         json={
@@ -34,7 +36,9 @@ async def test_create_utilisateur_admin(client: AsyncClient, auth_headers_admin:
 
 
 @pytest.mark.asyncio
-async def test_create_utilisateur_email_doublon(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
+async def test_create_utilisateur_email_doublon(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User
+):
     r = await client.post(
         "/api/admin/utilisateurs/",
         json={
@@ -77,7 +81,13 @@ async def test_create_utilisateur_refuse_role_admin(client: AsyncClient, auth_he
 
 
 @pytest.mark.asyncio
-async def test_list_utilisateurs(client: AsyncClient, auth_headers_admin: dict, test_user_admin: User, test_user_prof: User, test_user_rh: User):
+async def test_list_utilisateurs(
+    client: AsyncClient,
+    auth_headers_admin: dict,
+    test_user_admin: User,
+    test_user_prof: User,
+    test_user_rh: User,
+):
     r = await client.get("/api/admin/utilisateurs/", headers=auth_headers_admin)
     assert r.status_code == 200
     data = r.json()
@@ -88,10 +98,18 @@ async def test_list_utilisateurs(client: AsyncClient, auth_headers_admin: dict, 
 
 
 @pytest.mark.asyncio
-async def test_list_utilisateurs_filtre_actif(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession, test_user_admin: User):
+async def test_list_utilisateurs_filtre_actif(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession, test_user_admin: User
+):
     from app.core.security import hash_password
-    u = User(email="inactif@test.ca", password_hash=hash_password("Test@1234"),
-            role=UserRole.PROF, nom_complet="Inactif", actif=False)
+
+    u = User(
+        email="inactif@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Inactif",
+        actif=False,
+    )
     db_session.add(u)
     await db_session.commit()
 
@@ -102,7 +120,9 @@ async def test_list_utilisateurs_filtre_actif(client: AsyncClient, auth_headers_
 
 
 @pytest.mark.asyncio
-async def test_get_utilisateur_par_id(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
+async def test_get_utilisateur_par_id(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User
+):
     r = await client.get(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
     assert r.status_code == 200
     data = r.json()
@@ -117,7 +137,9 @@ async def test_get_utilisateur_404(client: AsyncClient, auth_headers_admin: dict
 
 
 @pytest.mark.asyncio
-async def test_update_utilisateur_nom_et_role(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
+async def test_update_utilisateur_nom_et_role(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User
+):
     r = await client.put(
         f"/api/admin/utilisateurs/{test_user_prof.id}",
         json={"nom_complet": "Renommé", "role": "rh"},
@@ -140,22 +162,32 @@ async def test_update_utilisateur_404(client: AsyncClient, auth_headers_admin: d
 
 
 @pytest.mark.asyncio
-async def test_delete_utilisateur_soft(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User):
-    r = await client.delete(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
+async def test_delete_utilisateur_soft(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User
+):
+    r = await client.delete(
+        f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin
+    )
     assert r.status_code == 200
     assert r.json()["actif"] is False
 
-    r2 = await client.get(f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin)
+    r2 = await client.get(
+        f"/api/admin/utilisateurs/{test_user_prof.id}", headers=auth_headers_admin
+    )
     assert r2.status_code == 200
     assert r2.json()["actif"] is False
 
 
 @pytest.mark.asyncio
-async def test_restaurer_utilisateur(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
+async def test_restaurer_utilisateur(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession
+):
     test_user_prof.actif = False
     await db_session.commit()
 
-    r = await client.post(f"/api/admin/utilisateurs/{test_user_prof.id}/restaurer", headers=auth_headers_admin)
+    r = await client.post(
+        f"/api/admin/utilisateurs/{test_user_prof.id}/restaurer", headers=auth_headers_admin
+    )
     assert r.status_code == 200
     assert r.json()["actif"] is True
 
@@ -167,15 +199,21 @@ async def test_delete_utilisateur_404(client: AsyncClient, auth_headers_admin: d
 
 
 @pytest.mark.asyncio
-async def test_admin_ne_peut_pas_se_desactiver(client: AsyncClient, auth_headers_admin: dict, test_user_admin: User):
-    r = await client.delete(f"/api/admin/utilisateurs/{test_user_admin.id}", headers=auth_headers_admin)
+async def test_admin_ne_peut_pas_se_desactiver(
+    client: AsyncClient, auth_headers_admin: dict, test_user_admin: User
+):
+    r = await client.delete(
+        f"/api/admin/utilisateurs/{test_user_admin.id}", headers=auth_headers_admin
+    )
     assert r.status_code == 403
     detail = r.json()["detail"].lower()
     assert "lui-même" in detail or "soi-même" in detail
 
 
 @pytest.mark.asyncio
-async def test_reinit_password_genere_nouveau_token(client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession):
+async def test_reinit_password_genere_nouveau_token(
+    client: AsyncClient, auth_headers_admin: dict, test_user_prof: User, db_session: AsyncSession
+):
     """Reinit password : efface le hash et émet un nouveau token d'activation."""
     r = await client.post(
         f"/api/admin/utilisateurs/{test_user_prof.id}/reinit-password",

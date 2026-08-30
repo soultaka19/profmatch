@@ -1,4 +1,5 @@
 """Service RH : accès en lecture aux profils professeurs."""
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,16 +21,24 @@ from app.schemas.rh_professeur import ProfesseurDetailResponse, ProfesseurListIt
 
 
 async def list_professeurs(
-    db: AsyncSession, page: int, page_size: int, q: str | None,
+    db: AsyncSession,
+    page: int,
+    page_size: int,
+    q: str | None,
 ) -> tuple[list[ProfesseurListItem], int]:
     """Liste paginée des professeurs (tous), avec méta CV (LEFT JOIN)."""
-    base = select(Professeur, User, CV).join(
-        User, Professeur.user_id == User.id
-    ).outerjoin(CV, CV.professeur_id == Professeur.id).where(User.role == UserRole.PROF)
+    base = (
+        select(Professeur, User, CV)
+        .join(User, Professeur.user_id == User.id)
+        .outerjoin(CV, CV.professeur_id == Professeur.id)
+        .where(User.role == UserRole.PROF)
+    )
 
-    count_stmt = select(func.count(Professeur.id)).join(
-        User, Professeur.user_id == User.id
-    ).where(User.role == UserRole.PROF)
+    count_stmt = (
+        select(func.count(Professeur.id))
+        .join(User, Professeur.user_id == User.id)
+        .where(User.role == UserRole.PROF)
+    )
 
     if q:
         like = f"%{q}%"
@@ -57,32 +66,63 @@ async def list_professeurs(
 
 
 async def get_professeur_detail(
-    db: AsyncSession, professeur_id: int,
+    db: AsyncSession,
+    professeur_id: int,
 ) -> ProfesseurDetailResponse | None:
-    row = (await db.execute(
-        select(Professeur, User, CV)
-        .join(User, Professeur.user_id == User.id)
-        .outerjoin(CV, CV.professeur_id == Professeur.id)
-        .where(Professeur.id == professeur_id, User.role == UserRole.PROF)
-    )).first()
+    row = (
+        await db.execute(
+            select(Professeur, User, CV)
+            .join(User, Professeur.user_id == User.id)
+            .outerjoin(CV, CV.professeur_id == Professeur.id)
+            .where(Professeur.id == professeur_id, User.role == UserRole.PROF)
+        )
+    ).first()
     if row is None:
         return None
     prof, user, cv = row
 
-    comps = (await db.execute(
-        select(Competence).where(Competence.professeur_id == prof.id).order_by(Competence.cree_le)
-    )).scalars().all()
-    exps = (await db.execute(
-        select(Experience).where(Experience.professeur_id == prof.id)
-        .order_by(Experience.ordre, Experience.cree_le)
-    )).scalars().all()
-    forms = (await db.execute(
-        select(Formation).where(Formation.professeur_id == prof.id)
-        .order_by(Formation.ordre, Formation.cree_le)
-    )).scalars().all()
-    langs = (await db.execute(
-        select(Langue).where(Langue.professeur_id == prof.id).order_by(Langue.cree_le)
-    )).scalars().all()
+    comps = (
+        (
+            await db.execute(
+                select(Competence)
+                .where(Competence.professeur_id == prof.id)
+                .order_by(Competence.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    exps = (
+        (
+            await db.execute(
+                select(Experience)
+                .where(Experience.professeur_id == prof.id)
+                .order_by(Experience.ordre, Experience.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    forms = (
+        (
+            await db.execute(
+                select(Formation)
+                .where(Formation.professeur_id == prof.id)
+                .order_by(Formation.ordre, Formation.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    langs = (
+        (
+            await db.execute(
+                select(Langue).where(Langue.professeur_id == prof.id).order_by(Langue.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     return ProfesseurDetailResponse(
         professeur_id=prof.id,
@@ -95,5 +135,5 @@ async def get_professeur_detail(
         competences=[CompetenceResponse.model_validate(c) for c in comps],
         experiences=[ExperienceResponse.model_validate(e) for e in exps],
         formations=[FormationResponse.model_validate(f) for f in forms],
-        langues=[LangueResponse.model_validate(l) for l in langs],
+        langues=[LangueResponse.model_validate(lang) for lang in langs],
     )

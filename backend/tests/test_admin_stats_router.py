@@ -1,4 +1,5 @@
 """Tests endpoint /api/admin/stats."""
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,10 +23,12 @@ async def test_stats_refuse_prof(client: AsyncClient, auth_headers_prof: dict):
 async def test_stats_compte_les_entites(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
-    db_session.add_all([
-        Cours(code="INF1001", nom="Intro", credits=3, heures=45),
-        Cours(code="INF2001", nom="Algo", credits=3, heures=45),
-    ])
+    db_session.add_all(
+        [
+            Cours(code="INF1001", nom="Intro", credits=3, heures=45),
+            Cours(code="INF2001", nom="Algo", credits=3, heures=45),
+        ]
+    )
     await db_session.commit()
 
     r = await client.get("/api/admin/stats", headers=auth_headers_admin)
@@ -34,7 +37,13 @@ async def test_stats_compte_les_entites(
     assert data["cours_total"] == 2
     assert data["utilisateurs_total"] >= 1
     for key in (
-        "professeurs_total", "cv_traites", "cv_en_attente", "programmes_total",
-        "sessions_total", "sessions_ouvertes", "affectations_total", "affectations_validees",
+        "professeurs_total",
+        "cv_traites",
+        "cv_en_attente",
+        "programmes_total",
+        "sessions_total",
+        "sessions_ouvertes",
+        "affectations_total",
+        "affectations_validees",
     ):
         assert key in data and isinstance(data[key], int)

@@ -11,8 +11,9 @@ from app.models.user import User, UserRole
 
 
 async def _make_prof(db: AsyncSession, email: str, nom: str) -> Professeur:
-    user = User(email=email, password_hash=hash_password("Test@1234"),
-                role=UserRole.PROF, nom_complet=nom)
+    user = User(
+        email=email, password_hash=hash_password("Test@1234"), role=UserRole.PROF, nom_complet=nom
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -21,6 +22,7 @@ async def _make_prof(db: AsyncSession, email: str, nom: str) -> Professeur:
 
 
 # ── Liste ───────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_list_requires_auth(client: AsyncClient):
@@ -36,13 +38,21 @@ async def test_list_forbidden_for_prof(client: AsyncClient, auth_headers_prof):
 
 @pytest.mark.asyncio
 async def test_list_returns_profs_with_cv_statut(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     prof = await _make_prof(db_session, "alice@test.ca", "Alice Martin")
-    db_session.add(CV(
-        professeur_id=prof.id, nom_original="alice.pdf", chemin_fichier="/x/alice.pdf",
-        taille_octets=100, mime_type="application/pdf", statut=CVStatut.TRAITE,
-    ))
+    db_session.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="alice.pdf",
+            chemin_fichier="/x/alice.pdf",
+            taille_octets=100,
+            mime_type="application/pdf",
+            statut=CVStatut.TRAITE,
+        )
+    )
     await db_session.commit()
 
     r = await client.get("/api/rh/professeurs", headers=auth_headers_rh)
@@ -61,7 +71,9 @@ async def test_list_returns_profs_with_cv_statut(
 
 @pytest.mark.asyncio
 async def test_list_prof_without_cv_has_null_statut(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     await _make_prof(db_session, "bob@test.ca", "Bob Tremblay")
     r = await client.get("/api/rh/professeurs", headers=auth_headers_rh)
@@ -73,7 +85,10 @@ async def test_list_prof_without_cv_has_null_statut(
 
 @pytest.mark.asyncio
 async def test_list_excludes_non_prof_users(
-    client: AsyncClient, auth_headers_rh, test_user_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    test_user_rh,
+    db_session: AsyncSession,
 ):
     await _make_prof(db_session, "carol@test.ca", "Carol Roy")
     r = await client.get("/api/rh/professeurs", headers=auth_headers_rh)
@@ -84,7 +99,9 @@ async def test_list_excludes_non_prof_users(
 
 @pytest.mark.asyncio
 async def test_list_search_filters_by_name_or_email(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     await _make_prof(db_session, "alice@test.ca", "Alice Martin")
     await _make_prof(db_session, "bob@test.ca", "Bob Tremblay")
@@ -96,7 +113,9 @@ async def test_list_search_filters_by_name_or_email(
 
 @pytest.mark.asyncio
 async def test_list_pagination(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     for i in range(3):
         await _make_prof(db_session, f"p{i}@test.ca", f"Prof {i}")
@@ -110,6 +129,7 @@ async def test_list_pagination(
 
 
 # ── Détail ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_detail_forbidden_for_prof(client: AsyncClient, auth_headers_prof, db_session):
@@ -126,7 +146,9 @@ async def test_detail_404_for_unknown(client: AsyncClient, auth_headers_rh):
 
 @pytest.mark.asyncio
 async def test_detail_returns_profile_for_prof_without_cv(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     # Prof fraîchement créé : pas de CV, pas de données extraites.
     prof = await _make_prof(db_session, "neo@test.ca", "Neo Sansfichier")
@@ -148,19 +170,31 @@ async def test_detail_returns_profile_for_prof_without_cv(
 
 @pytest.mark.asyncio
 async def test_detail_returns_full_profile(
-    client: AsyncClient, auth_headers_rh, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_rh,
+    db_session: AsyncSession,
 ):
     prof = await _make_prof(db_session, "alice@test.ca", "Alice Martin")
     prof.resume_profil = "Dev senior"
     prof.resume_profil_source = SourceOrigine.LLM
-    db_session.add(CV(
-        professeur_id=prof.id, nom_original="alice.pdf", chemin_fichier="/x/alice.pdf",
-        taille_octets=100, mime_type="application/pdf", statut=CVStatut.TRAITE,
-    ))
-    db_session.add(Competence(
-        professeur_id=prof.id, nom="Python",
-        niveau=CompetenceNiveau.EXPERT, source=SourceOrigine.LLM,
-    ))
+    db_session.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="alice.pdf",
+            chemin_fichier="/x/alice.pdf",
+            taille_octets=100,
+            mime_type="application/pdf",
+            statut=CVStatut.TRAITE,
+        )
+    )
+    db_session.add(
+        Competence(
+            professeur_id=prof.id,
+            nom="Python",
+            niveau=CompetenceNiveau.EXPERT,
+            source=SourceOrigine.LLM,
+        )
+    )
     await db_session.commit()
 
     r = await client.get(f"/api/rh/professeurs/{prof.id}", headers=auth_headers_rh)

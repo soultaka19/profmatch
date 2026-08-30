@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.professeur import Professeur
+
 from app.models.competence import SourceOrigine
+from app.models.professeur import Professeur
 
 
 @pytest.mark.asyncio

@@ -11,10 +11,10 @@ from app.models.langue import Langue, LangueNiveau
 from app.models.professeur import Professeur
 from app.models.user import User, UserRole
 
-
 # ════════════════════════════════════════════════════════════════
 # GET /cv/me/extraction
 # ════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_get_extraction_returns_empty_for_new_prof(
@@ -33,21 +33,43 @@ async def test_get_extraction_returns_empty_for_new_prof(
 
 @pytest.mark.asyncio
 async def test_get_extraction_returns_persisted_data(
-    client: AsyncClient, auth_headers_prof,
-    professeur_prof: Professeur, db_session: AsyncSession,
+    client: AsyncClient,
+    auth_headers_prof,
+    professeur_prof: Professeur,
+    db_session: AsyncSession,
 ):
     professeur_prof.resume_profil = "Dev senior"
     professeur_prof.resume_profil_source = SourceOrigine.MANUAL
-    db_session.add_all([
-        Competence(professeur_id=professeur_prof.id, nom="Python",
-                   niveau=CompetenceNiveau.EXPERT, source=SourceOrigine.LLM),
-        Experience(professeur_id=professeur_prof.id, poste="Dev",
-                   employeur="Acme", annee_debut=2020, source=SourceOrigine.LLM),
-        Formation(professeur_id=professeur_prof.id, diplome="Bach",
-                  etablissement="UL", annee=2017, source=SourceOrigine.LLM),
-        Langue(professeur_id=professeur_prof.id, langue="Français",
-               niveau=LangueNiveau.NATIF, source=SourceOrigine.MANUAL),
-    ])
+    db_session.add_all(
+        [
+            Competence(
+                professeur_id=professeur_prof.id,
+                nom="Python",
+                niveau=CompetenceNiveau.EXPERT,
+                source=SourceOrigine.LLM,
+            ),
+            Experience(
+                professeur_id=professeur_prof.id,
+                poste="Dev",
+                employeur="Acme",
+                annee_debut=2020,
+                source=SourceOrigine.LLM,
+            ),
+            Formation(
+                professeur_id=professeur_prof.id,
+                diplome="Bach",
+                etablissement="UL",
+                annee=2017,
+                source=SourceOrigine.LLM,
+            ),
+            Langue(
+                professeur_id=professeur_prof.id,
+                langue="Français",
+                niveau=LangueNiveau.NATIF,
+                source=SourceOrigine.MANUAL,
+            ),
+        ]
+    )
     await db_session.commit()
 
     r = await client.get("/api/cv/me/extraction", headers=auth_headers_prof)
@@ -76,9 +98,13 @@ async def test_get_extraction_forbidden_for_rh(client: AsyncClient, auth_headers
 # PATCH /cv/me/profil
 # ════════════════════════════════════════════════════════════════
 
+
 @pytest.mark.asyncio
 async def test_patch_profil_sets_resume_and_marks_manual(
-    client, auth_headers_prof, professeur_prof: Professeur, db_session: AsyncSession,
+    client,
+    auth_headers_prof,
+    professeur_prof: Professeur,
+    db_session: AsyncSession,
 ):
     r = await client.patch(
         "/api/cv/me/profil",
@@ -118,6 +144,7 @@ async def test_patch_profil_max_length(client, auth_headers_prof):
 # CRUD competences
 # ════════════════════════════════════════════════════════════════
 
+
 @pytest.mark.asyncio
 async def test_post_competence_creates_manual_entry(client, auth_headers_prof, professeur_prof):
     r = await client.post(
@@ -136,8 +163,12 @@ async def test_post_competence_creates_manual_entry(client, auth_headers_prof, p
 async def test_patch_competence_updates_and_forces_manual(
     client, auth_headers_prof, professeur_prof, db_session
 ):
-    c = Competence(professeur_id=professeur_prof.id, nom="Python",
-                   niveau=CompetenceNiveau.AVANCE, source=SourceOrigine.LLM)
+    c = Competence(
+        professeur_id=professeur_prof.id,
+        nom="Python",
+        niveau=CompetenceNiveau.AVANCE,
+        source=SourceOrigine.LLM,
+    )
     db_session.add(c)
     await db_session.commit()
     await db_session.refresh(c)
@@ -155,8 +186,12 @@ async def test_patch_competence_updates_and_forces_manual(
 
 @pytest.mark.asyncio
 async def test_delete_competence(client, auth_headers_prof, professeur_prof, db_session):
-    c = Competence(professeur_id=professeur_prof.id, nom="Java",
-                   niveau=CompetenceNiveau.DEBUTANT, source=SourceOrigine.LLM)
+    c = Competence(
+        professeur_id=professeur_prof.id,
+        nom="Java",
+        niveau=CompetenceNiveau.DEBUTANT,
+        source=SourceOrigine.LLM,
+    )
     db_session.add(c)
     await db_session.commit()
     await db_session.refresh(c)
@@ -168,17 +203,23 @@ async def test_delete_competence(client, auth_headers_prof, professeur_prof, db_
 @pytest.mark.asyncio
 async def test_patch_competence_404_if_not_owned(client, auth_headers_prof, db_session):
     # Compétence d'un autre prof
-    other_user = User(email="other@x.ca", password_hash=hash_password("X"),
-                      role=UserRole.PROF, nom_complet="Other")
+    other_user = User(
+        email="other@x.ca",
+        password_hash=hash_password("X"),
+        role=UserRole.PROF,
+        nom_complet="Other",
+    )
     db_session.add(other_user)
     await db_session.commit()
     await db_session.refresh(other_user)
-    result = await db_session.execute(
-        select(Professeur).where(Professeur.user_id == other_user.id)
-    )
+    result = await db_session.execute(select(Professeur).where(Professeur.user_id == other_user.id))
     other_prof = result.scalar_one()
-    c = Competence(professeur_id=other_prof.id, nom="X",
-                   niveau=CompetenceNiveau.AVANCE, source=SourceOrigine.LLM)
+    c = Competence(
+        professeur_id=other_prof.id,
+        nom="X",
+        niveau=CompetenceNiveau.AVANCE,
+        source=SourceOrigine.LLM,
+    )
     db_session.add(c)
     await db_session.commit()
     await db_session.refresh(c)
@@ -195,12 +236,18 @@ async def test_patch_competence_404_if_not_owned(client, auth_headers_prof, db_s
 # CRUD experiences (pattern symétrique)
 # ════════════════════════════════════════════════════════════════
 
+
 @pytest.mark.asyncio
 async def test_post_experience(client, auth_headers_prof, professeur_prof):
     r = await client.post(
         "/api/cv/me/experiences",
-        json={"poste": "Dev", "employeur": "X", "annee_debut": 2020,
-              "annee_fin": None, "description_courte": "test"},
+        json={
+            "poste": "Dev",
+            "employeur": "X",
+            "annee_debut": 2020,
+            "annee_fin": None,
+            "description_courte": "test",
+        },
         headers=auth_headers_prof,
     )
     assert r.status_code == 201
@@ -212,17 +259,30 @@ async def test_post_experience(client, auth_headers_prof, professeur_prof):
 
 
 @pytest.mark.asyncio
-async def test_post_experience_auto_increments_ordre(client, auth_headers_prof, professeur_prof, db_session):
-    db_session.add(Experience(
-        professeur_id=professeur_prof.id, poste="Old", employeur="Y",
-        annee_debut=2018, source=SourceOrigine.LLM, ordre=0,
-    ))
+async def test_post_experience_auto_increments_ordre(
+    client, auth_headers_prof, professeur_prof, db_session
+):
+    db_session.add(
+        Experience(
+            professeur_id=professeur_prof.id,
+            poste="Old",
+            employeur="Y",
+            annee_debut=2018,
+            source=SourceOrigine.LLM,
+            ordre=0,
+        )
+    )
     await db_session.commit()
 
     r = await client.post(
         "/api/cv/me/experiences",
-        json={"poste": "New", "employeur": "X", "annee_debut": 2021,
-              "annee_fin": None, "description_courte": None},
+        json={
+            "poste": "New",
+            "employeur": "X",
+            "annee_debut": 2021,
+            "annee_fin": None,
+            "description_courte": None,
+        },
         headers=auth_headers_prof,
     )
     assert r.status_code == 201
@@ -232,8 +292,11 @@ async def test_post_experience_auto_increments_ordre(client, auth_headers_prof, 
 @pytest.mark.asyncio
 async def test_patch_experience(client, auth_headers_prof, professeur_prof, db_session):
     exp = Experience(
-        professeur_id=professeur_prof.id, poste="Dev", employeur="X",
-        annee_debut=2020, source=SourceOrigine.LLM,
+        professeur_id=professeur_prof.id,
+        poste="Dev",
+        employeur="X",
+        annee_debut=2020,
+        source=SourceOrigine.LLM,
     )
     db_session.add(exp)
     await db_session.commit()
@@ -252,8 +315,11 @@ async def test_patch_experience(client, auth_headers_prof, professeur_prof, db_s
 @pytest.mark.asyncio
 async def test_delete_experience(client, auth_headers_prof, professeur_prof, db_session):
     exp = Experience(
-        professeur_id=professeur_prof.id, poste="Dev", employeur="X",
-        annee_debut=2020, source=SourceOrigine.LLM,
+        professeur_id=professeur_prof.id,
+        poste="Dev",
+        employeur="X",
+        annee_debut=2020,
+        source=SourceOrigine.LLM,
     )
     db_session.add(exp)
     await db_session.commit()
@@ -266,6 +332,7 @@ async def test_delete_experience(client, auth_headers_prof, professeur_prof, db_
 # ════════════════════════════════════════════════════════════════
 # CRUD formations
 # ════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_post_formation(client, auth_headers_prof, professeur_prof):
@@ -281,8 +348,11 @@ async def test_post_formation(client, auth_headers_prof, professeur_prof):
 @pytest.mark.asyncio
 async def test_patch_formation(client, auth_headers_prof, professeur_prof, db_session):
     f = Formation(
-        professeur_id=professeur_prof.id, diplome="Bach", etablissement="UL",
-        annee=2018, source=SourceOrigine.LLM,
+        professeur_id=professeur_prof.id,
+        diplome="Bach",
+        etablissement="UL",
+        annee=2018,
+        source=SourceOrigine.LLM,
     )
     db_session.add(f)
     await db_session.commit()
@@ -300,8 +370,11 @@ async def test_patch_formation(client, auth_headers_prof, professeur_prof, db_se
 @pytest.mark.asyncio
 async def test_delete_formation(client, auth_headers_prof, professeur_prof, db_session):
     f = Formation(
-        professeur_id=professeur_prof.id, diplome="Bach", etablissement="UL",
-        annee=2018, source=SourceOrigine.LLM,
+        professeur_id=professeur_prof.id,
+        diplome="Bach",
+        etablissement="UL",
+        annee=2018,
+        source=SourceOrigine.LLM,
     )
     db_session.add(f)
     await db_session.commit()
@@ -314,6 +387,7 @@ async def test_delete_formation(client, auth_headers_prof, professeur_prof, db_s
 # ════════════════════════════════════════════════════════════════
 # CRUD langues
 # ════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_post_langue(client, auth_headers_prof, professeur_prof):
@@ -328,16 +402,18 @@ async def test_post_langue(client, auth_headers_prof, professeur_prof):
 
 @pytest.mark.asyncio
 async def test_patch_langue(client, auth_headers_prof, professeur_prof, db_session):
-    l = Langue(
-        professeur_id=professeur_prof.id, langue="Espagnol",
-        niveau=LangueNiveau.B1, source=SourceOrigine.LLM,
+    langue = Langue(
+        professeur_id=professeur_prof.id,
+        langue="Espagnol",
+        niveau=LangueNiveau.B1,
+        source=SourceOrigine.LLM,
     )
-    db_session.add(l)
+    db_session.add(langue)
     await db_session.commit()
-    await db_session.refresh(l)
+    await db_session.refresh(langue)
 
     r = await client.patch(
-        f"/api/cv/me/langues/{l.id}",
+        f"/api/cv/me/langues/{langue.id}",
         json={"niveau": "B2"},
         headers=auth_headers_prof,
     )
@@ -347,13 +423,15 @@ async def test_patch_langue(client, auth_headers_prof, professeur_prof, db_sessi
 
 @pytest.mark.asyncio
 async def test_delete_langue(client, auth_headers_prof, professeur_prof, db_session):
-    l = Langue(
-        professeur_id=professeur_prof.id, langue="Espagnol",
-        niveau=LangueNiveau.B1, source=SourceOrigine.LLM,
+    langue = Langue(
+        professeur_id=professeur_prof.id,
+        langue="Espagnol",
+        niveau=LangueNiveau.B1,
+        source=SourceOrigine.LLM,
     )
-    db_session.add(l)
+    db_session.add(langue)
     await db_session.commit()
-    await db_session.refresh(l)
+    await db_session.refresh(langue)
 
-    r = await client.delete(f"/api/cv/me/langues/{l.id}", headers=auth_headers_prof)
+    r = await client.delete(f"/api/cv/me/langues/{langue.id}", headers=auth_headers_prof)
     assert r.status_code == 204

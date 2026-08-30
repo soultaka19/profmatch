@@ -11,21 +11,28 @@ from app.models.langue import Langue, LangueNiveau
 from app.models.professeur import Professeur
 from app.models.user import User
 from app.schemas.extraction import (
-    CompetenceCreate, CompetenceResponse, CompetenceUpdate,
-    ExperienceCreate, ExperienceResponse, ExperienceUpdate,
+    CompetenceCreate,
+    CompetenceResponse,
+    CompetenceUpdate,
+    ExperienceCreate,
+    ExperienceResponse,
+    ExperienceUpdate,
     ExtractionResponse,
-    FormationCreate, FormationResponse, FormationUpdate,
-    LangueCreate, LangueResponse, LangueUpdate,
-    ProfilResponse, ProfilUpdate,
+    FormationCreate,
+    FormationResponse,
+    FormationUpdate,
+    LangueCreate,
+    LangueResponse,
+    LangueUpdate,
+    ProfilResponse,
+    ProfilUpdate,
 )
 
 router = APIRouter()
 
 
 async def _get_professeur(db: AsyncSession, user_id: int) -> Professeur:
-    result = await db.execute(
-        select(Professeur).where(Professeur.user_id == user_id)
-    )
+    result = await db.execute(select(Professeur).where(Professeur.user_id == user_id))
     return result.scalar_one()
 
 
@@ -40,12 +47,14 @@ async def _get_owned_or_404(
     le motif `select(X).where(id, professeur_id) ; 404` répété dans les
     8 endpoints update/delete de cette extension (compétences, expériences,
     formations, langues)."""
-    obj = (await db.execute(
-        select(entity_class).where(
-            entity_class.id == entity_id,
-            entity_class.professeur_id == professeur_id,
+    obj = (
+        await db.execute(
+            select(entity_class).where(
+                entity_class.id == entity_id,
+                entity_class.professeur_id == professeur_id,
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} introuvable")
     return obj
@@ -55,6 +64,7 @@ async def _get_owned_or_404(
 # GET /cv/me/extraction — lecture globale
 # ────────────────────────────────────────────────────────────────
 
+
 @router.get("/me/extraction", response_model=ExtractionResponse)
 async def get_my_extraction(
     current_user: User = Depends(require_role("prof")),
@@ -62,31 +72,62 @@ async def get_my_extraction(
 ) -> ExtractionResponse:
     prof = await _get_professeur(db, current_user.id)
 
-    comps = (await db.execute(
-        select(Competence).where(Competence.professeur_id == prof.id).order_by(Competence.cree_le)
-    )).scalars().all()
-    exps = (await db.execute(
-        select(Experience).where(Experience.professeur_id == prof.id).order_by(Experience.ordre, Experience.cree_le)
-    )).scalars().all()
-    forms = (await db.execute(
-        select(Formation).where(Formation.professeur_id == prof.id).order_by(Formation.ordre, Formation.cree_le)
-    )).scalars().all()
-    langs = (await db.execute(
-        select(Langue).where(Langue.professeur_id == prof.id).order_by(Langue.cree_le)
-    )).scalars().all()
+    comps = (
+        (
+            await db.execute(
+                select(Competence)
+                .where(Competence.professeur_id == prof.id)
+                .order_by(Competence.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    exps = (
+        (
+            await db.execute(
+                select(Experience)
+                .where(Experience.professeur_id == prof.id)
+                .order_by(Experience.ordre, Experience.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    forms = (
+        (
+            await db.execute(
+                select(Formation)
+                .where(Formation.professeur_id == prof.id)
+                .order_by(Formation.ordre, Formation.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    langs = (
+        (
+            await db.execute(
+                select(Langue).where(Langue.professeur_id == prof.id).order_by(Langue.cree_le)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     return ExtractionResponse(
         profil=ProfilResponse(resume=prof.resume_profil, source=prof.resume_profil_source.value),
         competences=[CompetenceResponse.model_validate(c) for c in comps],
         experiences=[ExperienceResponse.model_validate(e) for e in exps],
         formations=[FormationResponse.model_validate(f) for f in forms],
-        langues=[LangueResponse.model_validate(l) for l in langs],
+        langues=[LangueResponse.model_validate(lang) for lang in langs],
     )
 
 
 # ────────────────────────────────────────────────────────────────
 # PATCH /cv/me/profil
 # ────────────────────────────────────────────────────────────────
+
 
 @router.patch("/me/profil", response_model=ProfilResponse)
 async def patch_my_profil(
@@ -106,7 +147,10 @@ async def patch_my_profil(
 # CRUD competences
 # ────────────────────────────────────────────────────────────────
 
-@router.post("/me/competences", response_model=CompetenceResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/me/competences", response_model=CompetenceResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_competence(
     body: CompetenceCreate,
     current_user: User = Depends(require_role("prof")),
@@ -160,6 +204,7 @@ async def delete_competence(
 # CRUD experiences
 # ────────────────────────────────────────────────────────────────
 
+
 async def _next_ordre(db: AsyncSession, Entity, professeur_id: int) -> int:
     result = await db.execute(
         select(Entity.ordre)
@@ -171,7 +216,9 @@ async def _next_ordre(db: AsyncSession, Entity, professeur_id: int) -> int:
     return (last + 1) if last is not None else 0
 
 
-@router.post("/me/experiences", response_model=ExperienceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/me/experiences", response_model=ExperienceResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_experience(
     body: ExperienceCreate,
     current_user: User = Depends(require_role("prof")),
@@ -228,7 +275,10 @@ async def delete_experience(
 # CRUD formations
 # ────────────────────────────────────────────────────────────────
 
-@router.post("/me/formations", response_model=FormationResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/me/formations", response_model=FormationResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_formation(
     body: FormationCreate,
     current_user: User = Depends(require_role("prof")),
@@ -282,6 +332,7 @@ async def delete_formation(
 # ────────────────────────────────────────────────────────────────
 # CRUD langues
 # ────────────────────────────────────────────────────────────────
+
 
 @router.post("/me/langues", response_model=LangueResponse, status_code=status.HTTP_201_CREATED)
 async def create_langue(

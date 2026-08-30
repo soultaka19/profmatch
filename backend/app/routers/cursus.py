@@ -19,9 +19,7 @@ from app.schemas.programme import CursusCreate, CursusOut, CursusUpdate
 router = APIRouter()
 
 
-async def _validate_etape(
-    programme_id: int, etape_id: int, db: AsyncSession
-) -> EtapeProgramme:
+async def _validate_etape(programme_id: int, etape_id: int, db: AsyncSession) -> EtapeProgramme:
     result = await db.execute(
         select(EtapeProgramme).where(
             EtapeProgramme.id == etape_id,
@@ -41,9 +39,7 @@ async def _validate_cours(cours_id: int, db: AsyncSession) -> Cours:
     result = await db.execute(select(Cours).where(Cours.id == cours_id))
     cours = result.scalar_one_or_none()
     if cours is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable")
     return cours
 
 
@@ -115,9 +111,7 @@ async def _get_lien_or_404(
     )
     lien = result.scalar_one_or_none()
     if lien is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Lien cursus introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lien cursus introuvable")
     return lien
 
 

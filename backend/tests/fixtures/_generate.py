@@ -4,6 +4,7 @@ Usage:
     cd backend
     python tests/fixtures/_generate.py
 """
+
 from pathlib import Path
 
 from docx import Document

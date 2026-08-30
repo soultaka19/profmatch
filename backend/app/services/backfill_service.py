@@ -32,15 +32,21 @@ async def backfill_embeddings_professeurs(db: AsyncSession) -> int:
 
     Retourne le nombre de profs effectivement backfillés.
     """
-    profs = (await db.execute(
-        select(Professeur)
-        .join(CV, CV.professeur_id == Professeur.id)
-        .where(CV.statut == CVStatut.TRAITE, Professeur.embedding.is_(None))
-        .options(
-            selectinload(Professeur.competences),
-            selectinload(Professeur.experiences),
+    profs = (
+        (
+            await db.execute(
+                select(Professeur)
+                .join(CV, CV.professeur_id == Professeur.id)
+                .where(CV.statut == CVStatut.TRAITE, Professeur.embedding.is_(None))
+                .options(
+                    selectinload(Professeur.competences),
+                    selectinload(Professeur.experiences),
+                )
+            )
         )
-    )).scalars().all()
+        .scalars()
+        .all()
+    )
 
     n = 0
     for prof in profs:
@@ -64,9 +70,7 @@ async def backfill_embeddings_cours(db: AsyncSession) -> int:
 
     Retourne le nombre de cours effectivement backfillés.
     """
-    cours_list = (await db.execute(
-        select(Cours).where(Cours.embedding.is_(None))
-    )).scalars().all()
+    cours_list = (await db.execute(select(Cours).where(Cours.embedding.is_(None)))).scalars().all()
 
     n = 0
     for cours in cours_list:

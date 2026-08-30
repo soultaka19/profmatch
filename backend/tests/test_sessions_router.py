@@ -11,7 +11,9 @@ from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_list_sessions_empty(client: AsyncClient, test_user_admin: User, auth_headers_admin: dict):
+async def test_list_sessions_empty(
+    client: AsyncClient, test_user_admin: User, auth_headers_admin: dict
+):
     r = await client.get("/api/sessions/", headers=auth_headers_admin)
     assert r.status_code == 200
     assert r.json() == []
@@ -51,7 +53,9 @@ async def test_create_session_refuse_rh(client: AsyncClient, auth_headers_rh: di
 
 
 @pytest.mark.asyncio
-async def test_get_ponderations_par_defaut(client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict):
+async def test_get_ponderations_par_defaut(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
     sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
     db_session.add(sess)
     await db_session.commit()
@@ -65,7 +69,9 @@ async def test_get_ponderations_par_defaut(client: AsyncClient, db_session: Asyn
 
 
 @pytest.mark.asyncio
-async def test_update_ponderations(client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict):
+async def test_update_ponderations(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
     sess = Session(annee=2027, semestre=Semestre.HIVER)
     db_session.add(sess)
     await db_session.commit()
@@ -98,7 +104,9 @@ async def test_update_ponderations_refuse_rh(
 
 
 @pytest.mark.asyncio
-async def test_update_ponderations_invalides(client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict):
+async def test_update_ponderations_invalides(
+    client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
+):
     sess = Session(annee=2028, semestre=Semestre.ETE)
     db_session.add(sess)
     await db_session.commit()
@@ -130,6 +138,7 @@ async def test_create_programme(client: AsyncClient, auth_headers_admin: dict):
 
 
 # ── PUT /sessions/{id} (changement statut) ───────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_update_session_statut_admin(
@@ -195,6 +204,7 @@ async def test_update_session_statut_invalide(
 
 # ── DELETE /sessions/{id} ────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_delete_session_admin(
     client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
@@ -235,6 +245,7 @@ async def test_delete_session_404(client: AsyncClient, auth_headers_admin: dict)
 
 # ── GET /sessions/{id}/programmes-eligibles ──────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_programmes_eligibles_session_automne(
     client: AsyncClient, db_session: AsyncSession, auth_headers_admin: dict
@@ -243,11 +254,15 @@ async def test_programmes_eligibles_session_automne(
     from app.models.programme import Programme
 
     p_std = Programme(
-        code="51046", nom="Standard", departement=None,
+        code="51046",
+        nom="Standard",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE],
     )
     p_cont = Programme(
-        code="51047", nom="Continu", departement=None,
+        code="51047",
+        nom="Continu",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE, Semestre.HIVER, Semestre.PRINTEMPS],
     )
     sess = Session(annee=2026, semestre=Semestre.AUTOMNE)
@@ -271,11 +286,15 @@ async def test_programmes_eligibles_session_printemps_filtre_standards(
     from app.models.programme import Programme
 
     p_std = Programme(
-        code="51046", nom="Standard", departement=None,
+        code="51046",
+        nom="Standard",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE],
     )
     p_cont = Programme(
-        code="51047", nom="Continu", departement=None,
+        code="51047",
+        nom="Continu",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE, Semestre.PRINTEMPS],
     )
     sess = Session(annee=2026, semestre=Semestre.PRINTEMPS)
@@ -292,12 +311,8 @@ async def test_programmes_eligibles_session_printemps_filtre_standards(
 
 
 @pytest.mark.asyncio
-async def test_programmes_eligibles_404(
-    client: AsyncClient, auth_headers_admin: dict
-):
-    r = await client.get(
-        "/api/sessions/999/programmes-eligibles", headers=auth_headers_admin
-    )
+async def test_programmes_eligibles_404(client: AsyncClient, auth_headers_admin: dict):
+    r = await client.get("/api/sessions/999/programmes-eligibles", headers=auth_headers_admin)
     assert r.status_code == 404
 
 
@@ -309,33 +324,46 @@ async def test_programmes_eligibles_rh_autorise(
     db_session.add(sess)
     await db_session.commit()
     await db_session.refresh(sess)
-    r = await client.get(
-        f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_rh
-    )
+    r = await client.get(f"/api/sessions/{sess.id}/programmes-eligibles", headers=auth_headers_rh)
     assert r.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_etapes_statut_marque_etape_complete(client, db_session, auth_headers_rh):
-    from app.core.security import hash_password
-    from app.models.user import User, UserRole
-    from app.models.professeur import Professeur
-    from app.models.cv import CV, CVStatut
-    from app.models.programme import Programme
-    from app.models.etape_programme import EtapeProgramme
-    from app.models.cours import Cours
-    from app.models.cours_etape_programme import CoursEtapeProgramme, CategorieCours
-    from app.models.affectation import Affectation, AffectationStatut
     from sqlalchemy import select as _sel
 
-    user = User(email="zp@test.ca", password_hash=hash_password("Test@1234"),
-                role=UserRole.PROF, nom_complet="Z Prof")
+    from app.core.security import hash_password
+    from app.models.affectation import Affectation, AffectationStatut
+    from app.models.cours import Cours
+    from app.models.cours_etape_programme import CategorieCours, CoursEtapeProgramme
+    from app.models.cv import CV, CVStatut
+    from app.models.etape_programme import EtapeProgramme
+    from app.models.professeur import Professeur
+    from app.models.programme import Programme
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="zp@test.ca",
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet="Z Prof",
+    )
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    prof = (await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))).scalar_one()
-    db_session.add(CV(professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
-                      taille_octets=1, mime_type="application/pdf", statut=CVStatut.TRAITE))
+    prof = (
+        await db_session.execute(_sel(Professeur).where(Professeur.user_id == user.id))
+    ).scalar_one()
+    db_session.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="cv.pdf",
+            chemin_fichier="x",
+            taille_octets=1,
+            mime_type="application/pdf",
+            statut=CVStatut.TRAITE,
+        )
+    )
     prog = Programme(code="ST-01", nom="Prog", semestres_admission=[Semestre.AUTOMNE])
     sess = Session(annee=2050, semestre=Semestre.AUTOMNE)
     db_session.add_all([prog, sess])
@@ -348,13 +376,27 @@ async def test_etapes_statut_marque_etape_complete(client, db_session, auth_head
     await db_session.commit()
     await db_session.refresh(etape)
     await db_session.refresh(cours)
-    db_session.add(CoursEtapeProgramme(programme_id=prog.id, etape_id=etape.id,
-                                       cours_id=cours.id, categorie=CategorieCours.OBLIGATOIRE))
-    db_session.add(Affectation(
-        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
-        score_total=Decimal("0.8"), score_comp=Decimal("0.8"), score_exp=Decimal("0.8"),
-        score_hist=Decimal("0.8"), score_sem=Decimal("0.8"), statut=AffectationStatut.VALIDEE,
-    ))
+    db_session.add(
+        CoursEtapeProgramme(
+            programme_id=prog.id,
+            etape_id=etape.id,
+            cours_id=cours.id,
+            categorie=CategorieCours.OBLIGATOIRE,
+        )
+    )
+    db_session.add(
+        Affectation(
+            session_id=sess.id,
+            professeur_id=prof.id,
+            cours_id=cours.id,
+            score_total=Decimal("0.8"),
+            score_comp=Decimal("0.8"),
+            score_exp=Decimal("0.8"),
+            score_hist=Decimal("0.8"),
+            score_sem=Decimal("0.8"),
+            statut=AffectationStatut.VALIDEE,
+        )
+    )
     await db_session.commit()
 
     resp = await client.get(

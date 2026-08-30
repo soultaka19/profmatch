@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.langue import Langue, LangueNiveau
+
 from app.models.competence import SourceOrigine
+from app.models.langue import Langue, LangueNiveau
 from app.models.professeur import Professeur
 
 
@@ -24,12 +25,21 @@ async def test_create_langue(db_session: AsyncSession, professeur_prof: Professe
 
 @pytest.mark.asyncio
 async def test_langue_all_cefr_levels(db_session: AsyncSession, professeur_prof: Professeur):
-    for niveau in [LangueNiveau.A1, LangueNiveau.A2, LangueNiveau.B1, LangueNiveau.B2,
-                   LangueNiveau.C1, LangueNiveau.C2, LangueNiveau.NATIF]:
-        db_session.add(Langue(
-            professeur_id=professeur_prof.id,
-            langue=f"Test-{niveau.value}",
-            niveau=niveau,
-            source=SourceOrigine.LLM,
-        ))
+    for niveau in [
+        LangueNiveau.A1,
+        LangueNiveau.A2,
+        LangueNiveau.B1,
+        LangueNiveau.B2,
+        LangueNiveau.C1,
+        LangueNiveau.C2,
+        LangueNiveau.NATIF,
+    ]:
+        db_session.add(
+            Langue(
+                professeur_id=professeur_prof.id,
+                langue=f"Test-{niveau.value}",
+                niveau=niveau,
+                source=SourceOrigine.LLM,
+            )
+        )
     await db_session.commit()

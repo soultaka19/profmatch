@@ -45,6 +45,7 @@ async def test_extract_pdf_extracts_text_and_chains_to_llm(
     # Mock le maillon LLM en aval pour éviter un vrai appel API.
     with patch("app.tasks.extraction_tasks.extract_cv_data_llm") as mock_llm_task:
         from app.services.cv_extraction_service import extract_cv_text
+
         extract_cv_text(cv.id)
         mock_llm_task.delay.assert_called_once_with(cv.id)
 
@@ -70,6 +71,7 @@ async def test_extract_docx_extracts_text_and_chains_to_llm(
 
     with patch("app.tasks.extraction_tasks.extract_cv_data_llm") as mock_llm_task:
         from app.services.cv_extraction_service import extract_cv_text
+
         extract_cv_text(cv.id)
         mock_llm_task.delay.assert_called_once_with(cv.id)
 
@@ -93,6 +95,7 @@ async def test_extract_corrupt_pdf_sets_erreur(
     await db_session.refresh(cv)
 
     from app.services.cv_extraction_service import extract_cv_text
+
     extract_cv_text(cv.id)
 
     await db_session.refresh(cv)
@@ -114,6 +117,7 @@ async def test_extract_image_only_pdf_sets_erreur(
     await db_session.refresh(cv)
 
     from app.services.cv_extraction_service import extract_cv_text
+
     extract_cv_text(cv.id)
 
     await db_session.refresh(cv)

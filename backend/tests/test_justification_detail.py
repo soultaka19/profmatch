@@ -8,7 +8,6 @@ maîtrisées par le prof, années d'expérience, sessions précédentes
 
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -25,26 +24,33 @@ from app.services.justification_detail import get_justification_detail
 
 
 async def _make_prof(db, email: str, nom: str):
-    from app.core.security import hash_password
-    from app.models.user import User, UserRole
-    from app.models.cv import CV, CVStatut
-    from app.models.professeur import Professeur
     from sqlalchemy import select
 
+    from app.core.security import hash_password
+    from app.models.cv import CV, CVStatut
+    from app.models.professeur import Professeur
+    from app.models.user import User, UserRole
+
     user = User(
-        email=email, password_hash=hash_password("Test@1234"),
-        role=UserRole.PROF, nom_complet=nom,
+        email=email,
+        password_hash=hash_password("Test@1234"),
+        role=UserRole.PROF,
+        nom_complet=nom,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    prof = (await db.execute(
-        select(Professeur).where(Professeur.user_id == user.id)
-    )).scalar_one()
-    db.add(CV(
-        professeur_id=prof.id, nom_original="cv.pdf", chemin_fichier="x",
-        taille_octets=1, mime_type="application/pdf", statut=CVStatut.TRAITE,
-    ))
+    prof = (await db.execute(select(Professeur).where(Professeur.user_id == user.id))).scalar_one()
+    db.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="cv.pdf",
+            chemin_fichier="x",
+            taille_octets=1,
+            mime_type="application/pdf",
+            statut=CVStatut.TRAITE,
+        )
+    )
     await db.commit()
     return prof
 
@@ -56,10 +62,12 @@ async def test_justification_detail_compose_competences_requises_avec_couverture
     """Pour chaque compétence requise du cours, le service indique si elle est
     couverte par le prof. Insensible à la casse."""
     prof = await _make_prof(db_session, "j1@test.ca", "Jean Un")
-    db_session.add_all([
-        Competence(professeur_id=prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE),
-        Competence(professeur_id=prof.id, nom="SQL", niveau=CompetenceNiveau.INTERMEDIAIRE),
-    ])
+    db_session.add_all(
+        [
+            Competence(professeur_id=prof.id, nom="Python", niveau=CompetenceNiveau.AVANCE),
+            Competence(professeur_id=prof.id, nom="SQL", niveau=CompetenceNiveau.INTERMEDIAIRE),
+        ]
+    )
 
     cours = Cours(code="JD-001", nom="Cours Détail")
     sess = Session(annee=2030, semestre=Semestre.AUTOMNE)
@@ -67,16 +75,23 @@ async def test_justification_detail_compose_competences_requises_avec_couverture
     await db_session.commit()
     await db_session.refresh(cours)
     await db_session.refresh(sess)
-    db_session.add_all([
-        CoursCompetence(cours_id=cours.id, nom="python", importance=5),
-        CoursCompetence(cours_id=cours.id, nom="Docker", importance=3),
-    ])
+    db_session.add_all(
+        [
+            CoursCompetence(cours_id=cours.id, nom="python", importance=5),
+            CoursCompetence(cours_id=cours.id, nom="Docker", importance=3),
+        ]
+    )
 
     aff = Affectation(
-        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
-        score_total=Decimal("0.700"), score_comp=Decimal("0.625"),
-        score_exp=Decimal("0.500"), score_hist=Decimal("0.000"),
-        score_sem=Decimal("0.600"), statut=AffectationStatut.PROPOSEE,
+        session_id=sess.id,
+        professeur_id=prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.700"),
+        score_comp=Decimal("0.625"),
+        score_exp=Decimal("0.500"),
+        score_hist=Decimal("0.000"),
+        score_sem=Decimal("0.600"),
+        statut=AffectationStatut.PROPOSEE,
         justification="texte de la justif",
     )
     db_session.add(aff)
@@ -101,16 +116,24 @@ async def test_justification_detail_calcule_annees_experience(
     """Années d'expérience = somme des durées de chaque expérience, en
     considérant l'année courante si annee_fin est None."""
     prof = await _make_prof(db_session, "j2@test.ca", "Jean Deux")
-    db_session.add_all([
-        Experience(
-            professeur_id=prof.id, poste="Dev", employeur="Acme",
-            annee_debut=2015, annee_fin=2020,
-        ),
-        Experience(
-            professeur_id=prof.id, poste="Lead", employeur="Foo",
-            annee_debut=2020, annee_fin=2024,
-        ),
-    ])
+    db_session.add_all(
+        [
+            Experience(
+                professeur_id=prof.id,
+                poste="Dev",
+                employeur="Acme",
+                annee_debut=2015,
+                annee_fin=2020,
+            ),
+            Experience(
+                professeur_id=prof.id,
+                poste="Lead",
+                employeur="Foo",
+                annee_debut=2020,
+                annee_fin=2024,
+            ),
+        ]
+    )
 
     cours = Cours(code="JD-002", nom="Cours D2")
     sess = Session(annee=2030, semestre=Semestre.AUTOMNE)
@@ -120,10 +143,15 @@ async def test_justification_detail_calcule_annees_experience(
     await db_session.refresh(sess)
 
     aff = Affectation(
-        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
-        score_total=Decimal("0.5"), score_comp=Decimal("0.5"),
-        score_exp=Decimal("0.5"), score_hist=Decimal("0.0"),
-        score_sem=Decimal("0.5"), statut=AffectationStatut.PROPOSEE,
+        session_id=sess.id,
+        professeur_id=prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.5"),
+        score_comp=Decimal("0.5"),
+        score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.0"),
+        score_sem=Decimal("0.5"),
+        statut=AffectationStatut.PROPOSEE,
     )
     db_session.add(aff)
     await db_session.commit()
@@ -155,20 +183,30 @@ async def test_justification_detail_remonte_historique_rh(
     # 2 affectations VALIDEE sur sessions précédentes, notées 4 et 5
     for sess_prev, note in ((sess_prev_a, 4), (sess_prev_b, 5)):
         aff_prev = Affectation(
-            session_id=sess_prev.id, professeur_id=prof.id, cours_id=cours.id,
-            score_total=Decimal("0.8"), score_comp=Decimal("0.8"),
-            score_exp=Decimal("0.8"), score_hist=Decimal("0.8"),
-            score_sem=Decimal("0.8"), statut=AffectationStatut.VALIDEE,
+            session_id=sess_prev.id,
+            professeur_id=prof.id,
+            cours_id=cours.id,
+            score_total=Decimal("0.8"),
+            score_comp=Decimal("0.8"),
+            score_exp=Decimal("0.8"),
+            score_hist=Decimal("0.8"),
+            score_sem=Decimal("0.8"),
+            statut=AffectationStatut.VALIDEE,
         )
         db_session.add(aff_prev)
         await db_session.flush()
         db_session.add(AffectationFeedback(affectation_id=aff_prev.id, note=note))
 
     aff_courante = Affectation(
-        session_id=sess_courante.id, professeur_id=prof.id, cours_id=cours.id,
-        score_total=Decimal("0.85"), score_comp=Decimal("0.85"),
-        score_exp=Decimal("0.85"), score_hist=Decimal("0.85"),
-        score_sem=Decimal("0.85"), statut=AffectationStatut.PROPOSEE,
+        session_id=sess_courante.id,
+        professeur_id=prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.85"),
+        score_comp=Decimal("0.85"),
+        score_exp=Decimal("0.85"),
+        score_hist=Decimal("0.85"),
+        score_sem=Decimal("0.85"),
+        statut=AffectationStatut.PROPOSEE,
     )
     db_session.add(aff_courante)
     await db_session.commit()
@@ -194,10 +232,15 @@ async def test_justification_detail_inclut_scores_et_similarite(
     await db_session.refresh(sess)
 
     aff = Affectation(
-        session_id=sess.id, professeur_id=prof.id, cours_id=cours.id,
-        score_total=Decimal("0.728"), score_comp=Decimal("0.812"),
-        score_exp=Decimal("0.625"), score_hist=Decimal("0.000"),
-        score_sem=Decimal("0.755"), statut=AffectationStatut.PROPOSEE,
+        session_id=sess.id,
+        professeur_id=prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.728"),
+        score_comp=Decimal("0.812"),
+        score_exp=Decimal("0.625"),
+        score_hist=Decimal("0.000"),
+        score_sem=Decimal("0.755"),
+        statut=AffectationStatut.PROPOSEE,
         justification="ma justification narrative",
     )
     db_session.add(aff)

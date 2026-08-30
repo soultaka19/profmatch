@@ -9,7 +9,9 @@ from app.models.ponderations_session import PonderationsSession
 from app.models.session import Semestre, Session
 
 
-async def _make_session(db_session: AsyncSession, annee: int = 2026, semestre: Semestre = Semestre.AUTOMNE) -> Session:
+async def _make_session(
+    db_session: AsyncSession, annee: int = 2026, semestre: Semestre = Semestre.AUTOMNE
+) -> Session:
     sess = Session(annee=annee, semestre=semestre)
     db_session.add(sess)
     await db_session.commit()
@@ -34,11 +36,15 @@ async def test_session_cree_ponderations_par_defaut(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_ponderations_unique_par_session(db_session: AsyncSession):
     sess = await _make_session(db_session)
-    db_session.add(PonderationsSession(
-        session_id=sess.id,
-        w1=Decimal("0.4"), w2=Decimal("0.3"),
-        w3=Decimal("0.2"), w4=Decimal("0.1"),
-    ))
+    db_session.add(
+        PonderationsSession(
+            session_id=sess.id,
+            w1=Decimal("0.4"),
+            w2=Decimal("0.3"),
+            w3=Decimal("0.2"),
+            w4=Decimal("0.1"),
+        )
+    )
     with pytest.raises(IntegrityError):
         await db_session.commit()
 

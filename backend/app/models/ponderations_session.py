@@ -41,18 +41,10 @@ class PonderationsSession(Base):
         unique=True,
         nullable=False,
     )
-    w1: Mapped[Decimal] = mapped_column(
-        Numeric(4, 3), nullable=False, server_default="0.400"
-    )
-    w2: Mapped[Decimal] = mapped_column(
-        Numeric(4, 3), nullable=False, server_default="0.300"
-    )
-    w3: Mapped[Decimal] = mapped_column(
-        Numeric(4, 3), nullable=False, server_default="0.200"
-    )
-    w4: Mapped[Decimal] = mapped_column(
-        Numeric(4, 3), nullable=False, server_default="0.100"
-    )
+    w1: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, server_default="0.400")
+    w2: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, server_default="0.300")
+    w3: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, server_default="0.200")
+    w4: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, server_default="0.100")
     xai_actif: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

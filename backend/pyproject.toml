@@ -9,43 +9,53 @@ packages = ["app"]
 name = "profmatch-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
+# Source de vérité unique des dépendances (pas de requirements.txt).
+# Versions épinglées = celles validées par la suite de tests (439 tests) ;
+# monter une version = changer le pin ici puis relancer pytest.
 dependencies = [
     # Web framework
-    "fastapi",
-    "uvicorn[standard]",
-    "python-multipart",
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.52.4",
+    "python-multipart==0.0.32",
     # Base de données
-    "sqlalchemy[asyncio]",
-    "asyncpg",
-    "psycopg2-binary",
-    "alembic",
+    "sqlalchemy[asyncio]==2.0.52",
+    "asyncpg==0.31.0",
+    "psycopg2-binary==2.9.12",
+    "alembic==1.19.1",
     # Validation et configuration
-    "pydantic[email]",
-    "pydantic-settings",
+    "pydantic[email]==2.13.5",
+    "pydantic-settings==2.15.0",
     # Authentification
-    "python-jose[cryptography]",
-    "passlib[bcrypt]",
-    "bcrypt<4",
+    "python-jose[cryptography]==3.5.0",
+    "passlib[bcrypt]==1.7.4",
+    # Doit rester < 4 : passlib 1.7.4 est incompatible avec bcrypt >= 4
+    # (bcrypt 5 → ValueError « password cannot be longer than 72 bytes »).
+    "bcrypt==3.2.2",
     # File d'attente
-    "celery[redis]",
-    "redis",
+    "celery[redis]==5.6.3",
+    "redis==6.4.0",
     # Parsing CV
-    "pdfplumber",
-    "python-docx",
+    "pdfplumber==0.11.10",
+    "python-docx==1.2.0",
     # LLM
-    "openai>=1.40.0",
-    "sentence-transformers",
+    "openai==3.6.0",
+    # Importé directement par app/services/llm_client.py (client HTTP porteur du
+    # cookie). openai >= 3 dépend de httpx2, plus de httpx : à déclarer ici.
+    "httpx==0.28.1",
+    # Embeddings (all-MiniLM-L6-v2). Dépend de torch : installer la roue CPU
+    # avant (voir Dockerfile) pour éviter la pile CUDA.
+    "sentence-transformers==6.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "httpx",
-    "pytest-mock",
-    "ruff",
-    "reportlab",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0",
+    "httpx==0.28.1",
+    "pytest-mock==3.15.1",
+    "ruff==0.16.5",
+    "reportlab==5.0.1",
 ]
 
 [tool.pytest.ini_options]
@@ -55,3 +65,8 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# pyflakes + erreurs pycodestyle (imports, syntaxe, runtime) + tri des imports.
+# Exécuté en CI sur app/ et tests/ (ruff check + ruff format --check).
+select = ["E4", "E7", "E9", "F", "I"]

@@ -1,7 +1,5 @@
 """Routes Admin et RH pour la gestion des sessions académiques et leurs pondérations."""
 
-from decimal import Decimal
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -131,12 +129,15 @@ async def get_ponderations(
     db: AsyncSession = Depends(get_db),
 ) -> PonderationsOut:
     from app.models.ponderations_session import PonderationsSession
+
     result = await db.execute(
         select(PonderationsSession).where(PonderationsSession.session_id == session_id)
     )
     pond = result.scalar_one_or_none()
     if not pond:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pondérations introuvables")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Pondérations introuvables"
+        )
     return pond
 
 

@@ -1,11 +1,15 @@
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.professeur import Professeur  # noqa: F401
 
 
 class UserRole(str, Enum):
@@ -22,7 +26,9 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(String(60), nullable=True)
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, name="userrole"), nullable=False)
     nom_complet: Mapped[str] = mapped_column(String(255), nullable=False)
-    actif: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    actif: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

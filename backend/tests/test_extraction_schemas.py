@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
+
 from app.schemas.extraction import (
-    CompetenceLLM, ExperienceLLM, FormationLLM, LangueLLM, ExtractionLLM,
+    CompetenceLLM,
+    ExperienceLLM,
+    ExtractionLLM,
+    FormationLLM,
+    LangueLLM,
 )
 
 
@@ -27,8 +32,8 @@ def test_experience_invalid_annee():
 
 
 def test_langue_natif():
-    l = LangueLLM(langue="Français", niveau="natif")
-    assert l.niveau == "natif"
+    langue = LangueLLM(langue="Français", niveau="natif")
+    assert langue.niveau == "natif"
 
 
 def test_extraction_complete():

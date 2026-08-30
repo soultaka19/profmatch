@@ -100,10 +100,9 @@ async def test_delete_programme_refuse_rh(
 
 # ── semestres_admission ──────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
-async def test_create_programme_avec_semestres(
-    client: AsyncClient, auth_headers_admin: dict
-):
+async def test_create_programme_avec_semestres(client: AsyncClient, auth_headers_admin: dict):
     r = await client.post(
         "/api/programmes/",
         json={
@@ -137,7 +136,9 @@ async def test_update_programme_change_semestres(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     p = Programme(
-        code="51046", nom="P", departement=None,
+        code="51046",
+        nom="P",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE],
     )
     db_session.add(p)
@@ -171,23 +172,28 @@ async def test_create_programme_semestre_invalide_refuse(
 
 # ── /calendrier ──────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_calendrier_programme_standard(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     p = Programme(
-        code="51046", nom="P", departement=None,
+        code="51046",
+        nom="P",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE],
     )
     db_session.add(p)
     await db_session.commit()
     await db_session.refresh(p)
-    db_session.add_all([
-        EtapeProgramme(programme_id=p.id, ordre=1),
-        EtapeProgramme(programme_id=p.id, ordre=2),
-        EtapeProgramme(programme_id=p.id, ordre=3),
-        EtapeProgramme(programme_id=p.id, ordre=4),
-    ])
+    db_session.add_all(
+        [
+            EtapeProgramme(programme_id=p.id, ordre=1),
+            EtapeProgramme(programme_id=p.id, ordre=2),
+            EtapeProgramme(programme_id=p.id, ordre=3),
+            EtapeProgramme(programme_id=p.id, ordre=4),
+        ]
+    )
     await db_session.commit()
 
     r = await client.get(f"/api/programmes/{p.id}/calendrier", headers=auth_headers_admin)
@@ -204,7 +210,9 @@ async def test_calendrier_programme_continu(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     p = Programme(
-        code="51047", nom="P2", departement=None,
+        code="51047",
+        nom="P2",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE, Semestre.HIVER, Semestre.PRINTEMPS],
     )
     db_session.add(p)
@@ -230,7 +238,9 @@ async def test_calendrier_rh_autorise(
     client: AsyncClient, auth_headers_rh: dict, db_session: AsyncSession
 ):
     p = Programme(
-        code="51046", nom="P", departement=None,
+        code="51046",
+        nom="P",
+        departement=None,
         semestres_admission=[Semestre.AUTOMNE],
     )
     db_session.add(p)

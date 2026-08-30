@@ -34,27 +34,35 @@ async def seed_historique_session(
     """Idempotent : si la session a déjà ≥ nb_cible affectations VALIDEE notées,
     ne touche à rien. Sinon, prend les meilleures PROPOSEE par score, les
     passe à VALIDEE et leur attache un AffectationFeedback noté `note`/5."""
-    nb_validees_notees = (await db.execute(
-        select(func.count(func.distinct(Affectation.id)))
-        .select_from(Affectation)
-        .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
-        .where(
-            Affectation.session_id == session_id,
-            Affectation.statut == AffectationStatut.VALIDEE,
+    nb_validees_notees = (
+        await db.execute(
+            select(func.count(func.distinct(Affectation.id)))
+            .select_from(Affectation)
+            .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
+            .where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.VALIDEE,
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
     if nb_validees_notees >= nb_cible:
         return SeedHistoriqueResult(nb_validees=0, deja_alimente=True)
 
-    candidates = (await db.execute(
-        select(Affectation)
-        .where(
-            Affectation.session_id == session_id,
-            Affectation.statut == AffectationStatut.PROPOSEE,
+    candidates = (
+        (
+            await db.execute(
+                select(Affectation)
+                .where(
+                    Affectation.session_id == session_id,
+                    Affectation.statut == AffectationStatut.PROPOSEE,
+                )
+                .order_by(Affectation.score_total.desc())
+                .limit(nb_cible)
+            )
         )
-        .order_by(Affectation.score_total.desc())
-        .limit(nb_cible)
-    )).scalars().all()
+        .scalars()
+        .all()
+    )
 
     if not candidates:
         return SeedHistoriqueResult(nb_validees=0, deja_alimente=False)
@@ -64,11 +72,13 @@ async def seed_historique_session(
         aff.statut = AffectationStatut.VALIDEE
         aff.valide_par_user_id = rh_user_id
         aff.valide_le = now
-        db.add(AffectationFeedback(
-            affectation_id=aff.id,
-            note=note,
-            commentaire=commentaire,
-            valide_par_user_id=rh_user_id,
-        ))
+        db.add(
+            AffectationFeedback(
+                affectation_id=aff.id,
+                note=note,
+                commentaire=commentaire,
+                valide_par_user_id=rh_user_id,
+            )
+        )
     await db.commit()
     return SeedHistoriqueResult(nb_validees=len(candidates), deja_alimente=False)

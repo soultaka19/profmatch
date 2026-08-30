@@ -27,9 +27,7 @@ class AffectationFeedback(Base):
     """
 
     __tablename__ = "affectation_feedback"
-    __table_args__ = (
-        CheckConstraint("note BETWEEN 1 AND 5", name="ck_feedback_note_1_5"),
-    )
+    __table_args__ = (CheckConstraint("note BETWEEN 1 AND 5", name="ck_feedback_note_1_5"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     affectation_id: Mapped[int] = mapped_column(
@@ -49,7 +47,5 @@ class AffectationFeedback(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    affectation: Mapped["Affectation"] = relationship(
-        "Affectation", back_populates="feedbacks"
-    )
+    affectation: Mapped["Affectation"] = relationship("Affectation", back_populates="feedbacks")
     valide_par: Mapped["User | None"] = relationship("User")

@@ -7,8 +7,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 # ── Cours ────────────────────────────────────────────────────────────────────
+
 
 class CoursCreate(BaseModel):
     code: str = Field(min_length=1, max_length=40)
@@ -39,6 +39,7 @@ class CoursOut(BaseModel):
 
 
 # ── CoursCompetence (compétence requise par un cours) ────────────────────────
+
 
 class CoursCompetenceCreate(BaseModel):
     nom: str = Field(min_length=1, max_length=120)

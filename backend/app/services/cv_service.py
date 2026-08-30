@@ -11,7 +11,6 @@ from app.models.professeur import Professeur
 from app.models.user import User
 from app.services.cv_extraction_service import extract_cv_text
 
-MAX_SIZE_BYTES = 10 * 1024 * 1024
 ALLOWED_MIME = {
     "application/pdf": ".pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
@@ -23,10 +22,12 @@ async def upload(file: UploadFile, current_user: User, db: AsyncSession) -> CV:
     content = await file.read()
     size = len(content)
 
-    if size > MAX_SIZE_BYTES:
+    # Taille max configurable (MAX_UPLOAD_SIZE_MB, défaut 10 Mo)
+    max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if size > max_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Fichier trop volumineux (max {MAX_SIZE_BYTES // (1024 * 1024)} Mo)",
+            detail=f"Fichier trop volumineux (max {settings.MAX_UPLOAD_SIZE_MB} Mo)",
         )
 
     mime = file.content_type or ""
@@ -45,9 +46,7 @@ async def upload(file: UploadFile, current_user: User, db: AsyncSession) -> CV:
         )
 
     # 2. Locate professeur row (guaranteed by the after_insert listener).
-    result = await db.execute(
-        select(Professeur).where(Professeur.user_id == current_user.id)
-    )
+    result = await db.execute(select(Professeur).where(Professeur.user_id == current_user.id))
     professeur = result.scalar_one()
 
     # 3. Locate existing CV row, if any.
@@ -107,9 +106,7 @@ async def get_my_cv(current_user: User, db: AsyncSession) -> CV | None:
 
 
 async def create_manual(current_user: User, db: AsyncSession) -> CV:
-    result = await db.execute(
-        select(Professeur).where(Professeur.user_id == current_user.id)
-    )
+    result = await db.execute(select(Professeur).where(Professeur.user_id == current_user.id))
     professeur = result.scalar_one()
 
     result = await db.execute(select(CV).where(CV.professeur_id == professeur.id))

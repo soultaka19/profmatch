@@ -63,13 +63,34 @@ async def test_me_rejects_invalid_token(client):
 
 
 @pytest.mark.asyncio
+async def test_me_rejects_compte_desactive(client, db_session, test_user_prof, auth_headers_prof):
+    """Un JWT émis avant la désactivation du compte (soft delete admin) ne doit
+    plus donner accès : get_current_user renvoie 403 tant que actif=False."""
+    # Le jeton fonctionne tant que le compte est actif
+    response = await client.get("/api/auth/me", headers=auth_headers_prof)
+    assert response.status_code == 200
+
+    test_user_prof.actif = False
+    await db_session.commit()
+
+    response = await client.get("/api/auth/me", headers=auth_headers_prof)
+    assert response.status_code == 403
+    assert "désactivé" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
 async def test_login_compte_non_active_renvoie_403(client, db_session):
     """Un compte créé par l'admin (password_hash NULL) ne peut pas se loger
     tant qu'il n'a pas activé son mot de passe."""
     from app.models.user import User, UserRole
 
-    user = User(email="aactiver@test.ca", password_hash=None,
-                role=UserRole.PROF, nom_complet="A Activer", actif=True)
+    user = User(
+        email="aactiver@test.ca",
+        password_hash=None,
+        role=UserRole.PROF,
+        nom_complet="A Activer",
+        actif=True,
+    )
     db_session.add(user)
     await db_session.commit()
 

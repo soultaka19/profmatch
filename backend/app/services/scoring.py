@@ -9,7 +9,7 @@ Contrainte : W1 + W2 + W3 + W4 = 1,0 (validée côté API / frontend).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 # Base de référence pour la normalisation de l'expérience (Cahier des charges §2.8 :
 # texte et exemple chiffré "9 ans, base 12 → 0,750"). Score Ahmed Diallo = 0,840.
@@ -43,9 +43,7 @@ class PoidsScoring:
     def __post_init__(self) -> None:
         poids = (self.w1, self.w2, self.w3, self.w4)
         if any(p < Decimal("0") for p in poids):
-            raise PoidsInvalidesError(
-                f"Tous les poids doivent être >= 0 ; reçus {poids}"
-            )
+            raise PoidsInvalidesError(f"Tous les poids doivent être >= 0 ; reçus {poids}")
         somme = sum(poids, start=Decimal("0"))
         if abs(somme - Decimal("1")) > SOMME_POIDS_TOLERANCE:
             raise PoidsInvalidesError(
@@ -120,10 +118,7 @@ def calculer_score_composite(
 ) -> Decimal:
     """Score composite pondéré, arrondi à 3 décimales (DECIMAL(4,3) en BDD)."""
     brut = (
-        poids.w1 * score_comp
-        + poids.w2 * score_exp
-        + poids.w3 * score_hist
-        + poids.w4 * score_sem
+        poids.w1 * score_comp + poids.w2 * score_exp + poids.w3 * score_hist + poids.w4 * score_sem
     )
     return brut.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
 

@@ -1,10 +1,11 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ============================================================
 # Schémas LLM — sortie brute de l'extraction par l'IA
 # ============================================================
+
 
 class CompetenceLLM(BaseModel):
     nom: str = Field(min_length=1, max_length=120)
@@ -41,6 +42,7 @@ class ExtractionLLM(BaseModel):
 # ============================================================
 # Schémas API — Create/Update/Response pour les endpoints CRUD
 # ============================================================
+
 
 # --- Compétences ---
 class CompetenceCreate(BaseModel):

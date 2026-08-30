@@ -12,8 +12,8 @@ from app.core.security import create_access_token, hash_password
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
-from app.models.cv import CV  # noqa: F401  - register model with metadata
 from app.models.competence import Competence  # noqa: F401  - register model with metadata
+from app.models.cv import CV  # noqa: F401  - register model with metadata
 from app.models.experience import Experience  # noqa: F401  - register model with metadata
 from app.models.formation import Formation  # noqa: F401  - register model with metadata
 from app.models.langue import Langue  # noqa: F401  - register model with metadata
@@ -108,6 +108,7 @@ def tmp_uploads_dir(tmp_path: Path, monkeypatch) -> Path:
 @pytest.fixture
 def celery_eager(monkeypatch):
     from app.worker import celery_app
+
     monkeypatch.setattr(celery_app.conf, "task_always_eager", True)
     monkeypatch.setattr(celery_app.conf, "task_eager_propagates", True)
 
@@ -171,6 +172,7 @@ def mock_llm_client(monkeypatch):
     Tests qui veulent un comportement différent doivent override via patch local.
     """
     from unittest.mock import MagicMock
+
     fixture_path = FIXTURES_DIR / "llm_responses" / "ok_complete.json"
     if not fixture_path.exists():
         return  # fixtures pas encore créées (avant Task 10), pas de mock

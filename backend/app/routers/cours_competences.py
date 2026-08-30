@@ -25,9 +25,7 @@ async def _validate_cours(cours_id: int, db: AsyncSession) -> Cours:
     result = await db.execute(select(Cours).where(Cours.id == cours_id))
     cours = result.scalar_one_or_none()
     if cours is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cours introuvable")
     return cours
 
 
@@ -42,9 +40,7 @@ async def _get_competence_or_404(
     )
     comp = result.scalar_one_or_none()
     if comp is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Compétence introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compétence introuvable")
     return comp
 
 

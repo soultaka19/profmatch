@@ -5,11 +5,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     DateTime,
-    Enum as SQLEnum,
     SmallInteger,
     UniqueConstraint,
     event,
     func,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,9 +39,7 @@ class Session(Base):
     """Session académique (ex. Automne 2026) — clé naturelle (annee, semestre)."""
 
     __tablename__ = "sessions"
-    __table_args__ = (
-        UniqueConstraint("annee", "semestre", name="uq_session_annee_semestre"),
-    )
+    __table_args__ = (UniqueConstraint("annee", "semestre", name="uq_session_annee_semestre"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     annee: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -91,6 +91,4 @@ class Session(Base):
 def _create_ponderations_for_session(mapper, connection, target: Session) -> None:
     from app.models.ponderations_session import PonderationsSession
 
-    connection.execute(
-        PonderationsSession.__table__.insert().values(session_id=target.id)
-    )
+    connection.execute(PonderationsSession.__table__.insert().values(session_id=target.id))

@@ -4,9 +4,7 @@ import json
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from app.services.affectation_xai import XAIJustification, generer_justification_llm, _build_prompt
+from app.services.affectation_xai import XAIJustification, _build_prompt, generer_justification_llm
 from app.services.scoring import ContexteJustification, PoidsScoring, ScoresComposants
 
 
@@ -64,6 +62,7 @@ def test_justification_llm_ok(mock_client_factory):
     assert "W1" not in result  # format narratif, pas technique
     # Timeout XAI dédié transmis (≠ 15 s du client, calibré post-découplage)
     from app.core.config import settings
+
     kwargs = mock_client.chat.completions.create.call_args.kwargs
     assert kwargs["timeout"] == settings.LLM_XAI_TIMEOUT_S
 

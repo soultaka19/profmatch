@@ -38,9 +38,7 @@ async def test_cours_competence_default_importance(db_session: AsyncSession):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("imp", [0, 6, -1, 10])
-async def test_cours_competence_importance_check_invalide(
-    db_session: AsyncSession, imp: int
-):
+async def test_cours_competence_importance_check_invalide(db_session: AsyncSession, imp: int):
     cours = await _make_cours(db_session)
     db_session.add(CoursCompetence(cours_id=cours.id, nom="X", importance=imp))
     with pytest.raises(IntegrityError):

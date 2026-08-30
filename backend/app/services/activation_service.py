@@ -65,9 +65,7 @@ async def generate_setup_token(user_id: int, db: AsyncSession) -> str:
     return token_brut
 
 
-async def activate_with_token(
-    token: str, new_password: str, db: AsyncSession
-) -> User:
+async def activate_with_token(token: str, new_password: str, db: AsyncSession) -> User:
     """Active un compte en consommant le jeton et en définissant le mot de passe.
 
     Lève ActivationError si :
@@ -75,9 +73,7 @@ async def activate_with_token(
     - le token est expiré (expires_at < maintenant)
     - le token a déjà été utilisé (used_at non null)
     """
-    result = await db.execute(
-        select(PasswordSetupToken).where(PasswordSetupToken.token == token)
-    )
+    result = await db.execute(select(PasswordSetupToken).where(PasswordSetupToken.token == token))
     db_token = result.scalar_one_or_none()
     if db_token is None:
         raise ActivationError("Jeton d'activation introuvable")

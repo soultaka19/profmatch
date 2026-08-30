@@ -21,8 +21,11 @@ async def _make_cours(db_session: AsyncSession, code: str, nom: str) -> Cours:
 
 # ── GET list ─────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
-async def test_list_cours_admin(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_list_cours_admin(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     await _make_cours(db_session, "INF1001", "Intro programmation")
     await _make_cours(db_session, "INF2001", "Algorithmes")
     r = await client.get("/api/cours", headers=auth_headers_admin)
@@ -48,7 +51,9 @@ async def test_list_cours_refuse_prof(client: AsyncClient, auth_headers_prof: di
 
 
 @pytest.mark.asyncio
-async def test_list_cours_recherche(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_list_cours_recherche(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     await _make_cours(db_session, "INF1001", "Intro programmation")
     await _make_cours(db_session, "MAT2001", "Calcul")
     r = await client.get("/api/cours?q=programmation", headers=auth_headers_admin)
@@ -59,6 +64,7 @@ async def test_list_cours_recherche(client: AsyncClient, auth_headers_admin: dic
 
 
 # ── Embedding W4 ───────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_create_cours_persists_embedding(
@@ -71,9 +77,7 @@ async def test_create_cours_persists_embedding(
         headers=auth_headers_admin,
     )
     assert r.status_code == 201
-    cours = (
-        await db_session.execute(select(Cours).where(Cours.code == "EMB-1"))
-    ).scalar_one()
+    cours = (await db_session.execute(select(Cours).where(Cours.code == "EMB-1"))).scalar_one()
     await db_session.refresh(cours)
     assert cours.embedding is not None
     assert len(cours.embedding) > 0
@@ -99,6 +103,7 @@ async def test_update_cours_recompute_embedding(
 
 
 # ── POST create ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_create_cours_admin(client: AsyncClient, auth_headers_admin: dict):
@@ -146,8 +151,11 @@ async def test_create_cours_refuse_rh(client: AsyncClient, auth_headers_rh: dict
 
 # ── GET one ──────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
-async def test_get_cours_admin(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_get_cours_admin(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     c = await _make_cours(db_session, "INF1001", "Intro")
     r = await client.get(f"/api/cours/{c.id}", headers=auth_headers_admin)
     assert r.status_code == 200
@@ -161,6 +169,7 @@ async def test_get_cours_404(client: AsyncClient, auth_headers_admin: dict):
 
 
 # ── PUT update ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_update_cours_admin(
@@ -191,13 +200,12 @@ async def test_update_cours_refuse_rh(
     client: AsyncClient, auth_headers_rh: dict, db_session: AsyncSession
 ):
     c = await _make_cours(db_session, "INF1001", "Intro")
-    r = await client.put(
-        f"/api/cours/{c.id}", json={"nom": "X"}, headers=auth_headers_rh
-    )
+    r = await client.put(f"/api/cours/{c.id}", json={"nom": "X"}, headers=auth_headers_rh)
     assert r.status_code == 403
 
 
 # ── DELETE ───────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_delete_cours_admin(
@@ -227,7 +235,9 @@ async def test_delete_cours_cascade_cursus(
     await db_session.refresh(e)
     db_session.add(
         CoursEtapeProgramme(
-            programme_id=p.id, etape_id=e.id, cours_id=c.id,
+            programme_id=p.id,
+            etape_id=e.id,
+            cours_id=c.id,
             categorie=CategorieCours.OBLIGATOIRE,
         )
     )

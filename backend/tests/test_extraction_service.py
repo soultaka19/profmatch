@@ -1,22 +1,29 @@
 from pathlib import Path
 from unittest.mock import MagicMock
+
 import pytest
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker, Session as SyncSession
+from sqlalchemy.orm import Session as SyncSession
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.models.competence import Competence, CompetenceNiveau, SourceOrigine
 from app.models.experience import Experience
 from app.models.formation import Formation
-from app.models.langue import Langue, LangueNiveau
+from app.models.langue import Langue
 from app.models.professeur import Professeur
 from app.schemas.extraction import (
-    CompetenceLLM, ExperienceLLM, FormationLLM, LangueLLM, ExtractionLLM,
+    CompetenceLLM,
+    ExperienceLLM,
+    ExtractionLLM,
+    FormationLLM,
+    LangueLLM,
 )
 from app.services.extraction_service import (
-    extract_structured_data, persist_extraction, ExtractionError,
+    ExtractionError,
+    extract_structured_data,
+    persist_extraction,
 )
-
 
 FIXTURES = Path(__file__).parent / "fixtures" / "llm_responses"
 
@@ -103,6 +110,7 @@ def test_extract_raises_on_malformed_json():
 
 # --- persist_extraction ---
 
+
 @pytest.mark.asyncio
 async def test_persist_extraction_creates_all_entities(
     db_session, professeur_prof: Professeur, sync_session: SyncSession
@@ -135,27 +143,39 @@ async def test_persist_extraction_creates_all_entities(
 async def test_persist_preserves_manual_competences(
     db_session, professeur_prof: Professeur, sync_session: SyncSession
 ):
-    sync_session.add_all([
-        Competence(professeur_id=professeur_prof.id, nom="ManualSkill",
-                   niveau=CompetenceNiveau.EXPERT, source=SourceOrigine.MANUAL),
-        Competence(professeur_id=professeur_prof.id, nom="OldLLMSkill",
-                   niveau=CompetenceNiveau.DEBUTANT, source=SourceOrigine.LLM),
-    ])
+    sync_session.add_all(
+        [
+            Competence(
+                professeur_id=professeur_prof.id,
+                nom="ManualSkill",
+                niveau=CompetenceNiveau.EXPERT,
+                source=SourceOrigine.MANUAL,
+            ),
+            Competence(
+                professeur_id=professeur_prof.id,
+                nom="OldLLMSkill",
+                niveau=CompetenceNiveau.DEBUTANT,
+                source=SourceOrigine.LLM,
+            ),
+        ]
+    )
     sync_session.commit()
 
     data = ExtractionLLM(
         resume=None,
         competences=[CompetenceLLM(nom="NewSkill", niveau="avance")],
-        experiences=[], formations=[], langues=[],
+        experiences=[],
+        formations=[],
+        langues=[],
     )
     persist_extraction(sync_session, professeur_prof.id, data)
     sync_session.commit()
 
     comps = sync_session.execute(select(Competence)).scalars().all()
     names = {c.nom for c in comps}
-    assert "ManualSkill" in names       # préservé
-    assert "OldLLMSkill" not in names   # supprimé
-    assert "NewSkill" in names           # nouveau LLM
+    assert "ManualSkill" in names  # préservé
+    assert "OldLLMSkill" not in names  # supprimé
+    assert "NewSkill" in names  # nouveau LLM
 
 
 @pytest.mark.asyncio
@@ -169,7 +189,10 @@ async def test_persist_preserves_manual_resume(
 
     data = ExtractionLLM(
         resume="LLM tries to overwrite",
-        competences=[], experiences=[], formations=[], langues=[],
+        competences=[],
+        experiences=[],
+        formations=[],
+        langues=[],
     )
     persist_extraction(sync_session, professeur_prof.id, data)
     sync_session.commit()

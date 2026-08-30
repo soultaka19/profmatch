@@ -27,14 +27,25 @@ async def get_current_user(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable"
+        )
+    # Un compte désactivé par l'admin (soft delete) ne doit plus pouvoir agir,
+    # même avec un JWT encore valide (émis avant la désactivation).
+    if not user.actif:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Compte désactivé — contactez l'administrateur.",
+        )
     return user
 
 
 def require_role(*roles: str):
     """Dépendance FastAPI : vérifie que l'utilisateur courant a l'un des rôles attendus."""
+
     async def _check(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role.value not in roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
         return current_user
+
     return _check

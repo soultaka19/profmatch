@@ -11,8 +11,8 @@ from app.models.cours_etape_programme import CategorieCours
 from app.models.session import Semestre
 from app.services.academic_calendar import Rythme
 
-
 # ── Programme ────────────────────────────────────────────────────────────────
+
 
 class ProgrammeUpdate(BaseModel):
     """Mise à jour partielle d'un programme (PATCH-like)."""
@@ -33,6 +33,7 @@ class ProgrammeCalendrierOut(BaseModel):
 
 
 # ── Étape ────────────────────────────────────────────────────────────────────
+
 
 class EtapeCreate(BaseModel):
     ordre: int = Field(ge=1, le=20)
@@ -69,6 +70,7 @@ class EtapeStatutOut(BaseModel):
 
 # ── Cursus (cours dans une étape d'un programme) ─────────────────────────────
 
+
 class CursusCreate(BaseModel):
     cours_id: int = Field(ge=1)
     categorie: CategorieCours = CategorieCours.OBLIGATOIRE
@@ -90,6 +92,7 @@ class CursusOut(BaseModel):
 
 
 # ── Cours (read-only, exposé pour rattachement au cursus) ─────────────────────
+
 
 class CoursReadOnlyOut(BaseModel):
     id: int

@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     # bloquer l'utilisateur. Baisser à 30 s pour une démo plus réactive.
     LLM_XAI_TIMEOUT_S: float = 45.0
 
-    # Upload CV
-    UPLOAD_DIR: str = "/app/uploads"
+    # Upload CV : dossier de stockage des fichiers et taille max acceptée
+    # (services/cv_service.py)
     UPLOADS_DIR: Path = Path("/uploads")
     MAX_UPLOAD_SIZE_MB: int = 10
 

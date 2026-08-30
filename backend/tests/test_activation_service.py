@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, verify_password
+from app.core.security import verify_password
 from app.models.password_setup_token import PasswordSetupToken
 from app.models.user import User, UserRole
 from app.services.activation_service import (

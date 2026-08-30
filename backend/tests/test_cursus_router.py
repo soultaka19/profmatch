@@ -101,9 +101,7 @@ async def test_create_cursus_cours_inconnu(
 
 
 @pytest.mark.asyncio
-async def test_list_cursus(
-    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
-):
+async def test_list_cursus(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
     p, e, c = await _seed(db_session)
     db_session.add(
         CoursEtapeProgramme(
@@ -111,9 +109,7 @@ async def test_list_cursus(
         )
     )
     await db_session.commit()
-    r = await client.get(
-        f"/api/programmes/{p.id}/etapes/{e.id}/cours", headers=auth_headers_admin
-    )
+    r = await client.get(f"/api/programmes/{p.id}/etapes/{e.id}/cours", headers=auth_headers_admin)
     assert r.status_code == 200
     data = r.json()
     assert len(data) == 1
@@ -126,7 +122,9 @@ async def test_update_cursus_categorie(
 ):
     p, e, c = await _seed(db_session)
     lien = CoursEtapeProgramme(
-        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        programme_id=p.id,
+        etape_id=e.id,
+        cours_id=c.id,
         categorie=CategorieCours.OBLIGATOIRE,
     )
     db_session.add(lien)
@@ -146,9 +144,12 @@ async def test_delete_cursus(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     from sqlalchemy import select as _select
+
     p, e, c = await _seed(db_session)
     lien = CoursEtapeProgramme(
-        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        programme_id=p.id,
+        etape_id=e.id,
+        cours_id=c.id,
         categorie=CategorieCours.OBLIGATOIRE,
     )
     db_session.add(lien)
@@ -172,7 +173,9 @@ async def test_delete_cursus_refuse_rh(
 ):
     p, e, c = await _seed(db_session)
     lien = CoursEtapeProgramme(
-        programme_id=p.id, etape_id=e.id, cours_id=c.id,
+        programme_id=p.id,
+        etape_id=e.id,
+        cours_id=c.id,
         categorie=CategorieCours.OBLIGATOIRE,
     )
     db_session.add(lien)

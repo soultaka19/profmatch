@@ -1,0 +1,11 @@
+# Exclus du contexte de build Docker (COPY . .) : un node_modules local
+# (Windows) écraserait celui installé dans le stage `deps` (binaires natifs
+# incompatibles) ; .next, couverture, tests et secrets n'ont rien à faire
+# dans l'image.
+node_modules
+.next
+.env*
+coverage
+tsconfig.tsbuildinfo
+*.test.*
+.claude

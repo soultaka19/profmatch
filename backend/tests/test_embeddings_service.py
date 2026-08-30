@@ -1,8 +1,9 @@
 """Tests du service d'embeddings (sans modèle réel — mocké pour CI)."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
 
 from app.services.embeddings import (
     build_cours_text,

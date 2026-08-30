@@ -49,9 +49,7 @@ async def test_create_competence_importance_par_defaut(
 
 
 @pytest.mark.asyncio
-async def test_create_competence_cours_inconnu(
-    client: AsyncClient, auth_headers_admin: dict
-):
+async def test_create_competence_cours_inconnu(client: AsyncClient, auth_headers_admin: dict):
     r = await client.post(
         "/api/cours/999/competences",
         json={"nom": "X"},
@@ -78,10 +76,12 @@ async def test_list_competences(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     c = await _make_cours(db_session)
-    db_session.add_all([
-        CoursCompetence(cours_id=c.id, nom="Python", importance=5),
-        CoursCompetence(cours_id=c.id, nom="SQL", importance=3),
-    ])
+    db_session.add_all(
+        [
+            CoursCompetence(cours_id=c.id, nom="Python", importance=5),
+            CoursCompetence(cours_id=c.id, nom="SQL", importance=3),
+        ]
+    )
     await db_session.commit()
     r = await client.get(f"/api/cours/{c.id}/competences", headers=auth_headers_admin)
     assert r.status_code == 200
@@ -146,13 +146,9 @@ async def test_delete_competence(
     await db_session.commit()
     await db_session.refresh(comp)
     comp_id = comp.id
-    r = await client.delete(
-        f"/api/cours/{c.id}/competences/{comp_id}", headers=auth_headers_admin
-    )
+    r = await client.delete(f"/api/cours/{c.id}/competences/{comp_id}", headers=auth_headers_admin)
     assert r.status_code == 204
-    found = await db_session.execute(
-        select(CoursCompetence).where(CoursCompetence.id == comp_id)
-    )
+    found = await db_session.execute(select(CoursCompetence).where(CoursCompetence.id == comp_id))
     assert found.scalar_one_or_none() is None
 
 
@@ -165,7 +161,5 @@ async def test_delete_competence_refuse_rh(
     db_session.add(comp)
     await db_session.commit()
     await db_session.refresh(comp)
-    r = await client.delete(
-        f"/api/cours/{c.id}/competences/{comp.id}", headers=auth_headers_rh
-    )
+    r = await client.delete(f"/api/cours/{c.id}/competences/{comp.id}", headers=auth_headers_rh)
     assert r.status_code == 403

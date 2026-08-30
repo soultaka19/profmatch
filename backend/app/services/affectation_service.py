@@ -69,8 +69,10 @@ def _ctx_to_dict(ctx: ContexteJustification) -> dict:
         "similarite_semantique": float(ctx.similarite_semantique),
         "score_global_pct": float(ctx.score_global_pct),
         "poids": {
-            "w1": float(ctx.poids.w1), "w2": float(ctx.poids.w2),
-            "w3": float(ctx.poids.w3), "w4": float(ctx.poids.w4),
+            "w1": float(ctx.poids.w1),
+            "w2": float(ctx.poids.w2),
+            "w3": float(ctx.poids.w3),
+            "w4": float(ctx.poids.w4),
         },
         "composants": {
             "score_comp": float(ctx.composants.score_comp),
@@ -88,7 +90,9 @@ def _enqueue_enrichissement(affectation_id: int, ctx_dict: dict) -> None:
     les tests sans avoir à toucher au broker Celery. L'import de la tâche est
     différé pour ne pas créer de cycle module↔tasks au chargement."""
     from app.tasks.affectation_tasks import enrichir_justification_xai_task
+
     enrichir_justification_xai_task.delay(affectation_id, ctx_dict)
+
 
 TOP_N_PAR_COURS: int = 3
 
@@ -134,7 +138,9 @@ async def _charger_cours_par_programmes(
     return list(result.scalars().all())
 
 
-async def _charger_competences_cours(cours_ids: list[int], db: AsyncSession) -> dict[int, list[CoursCompetence]]:
+async def _charger_competences_cours(
+    cours_ids: list[int], db: AsyncSession
+) -> dict[int, list[CoursCompetence]]:
     result = await db.execute(
         select(CoursCompetence).where(CoursCompetence.cours_id.in_(cours_ids))
     )
@@ -146,9 +152,7 @@ async def _charger_competences_cours(cours_ids: list[int], db: AsyncSession) -> 
 
 
 async def _charger_professeurs_traites(db: AsyncSession) -> list[Professeur]:
-    from app.models.competence import Competence
     from app.models.cv import CV, CVStatut
-    from app.models.experience import Experience
 
     result = await db.execute(
         select(Professeur)
@@ -172,20 +176,22 @@ async def _charger_bonus_historique(
     Retourne {(professeur_id, cours_id): (bonus_normalisé, nb_sessions, note_moy)}.
     Remplace l'appel par paire qui générait N×M requêtes lors de la génération.
     """
-    rows = (await db.execute(
-        select(
-            Affectation.professeur_id,
-            Affectation.cours_id,
-            func.count(AffectationFeedback.id),
-            func.avg(AffectationFeedback.note),
+    rows = (
+        await db.execute(
+            select(
+                Affectation.professeur_id,
+                Affectation.cours_id,
+                func.count(AffectationFeedback.id),
+                func.avg(AffectationFeedback.note),
+            )
+            .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
+            .where(
+                Affectation.statut == AffectationStatut.VALIDEE,
+                Affectation.session_id != session_id,
+            )
+            .group_by(Affectation.professeur_id, Affectation.cours_id)
         )
-        .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
-        .where(
-            Affectation.statut == AffectationStatut.VALIDEE,
-            Affectation.session_id != session_id,
-        )
-        .group_by(Affectation.professeur_id, Affectation.cours_id)
-    )).all()
+    ).all()
 
     bonus_map: dict[tuple[int, int], tuple[float, int, float]] = {}
     for prof_id, cours_id, nb_validees, note_moy in rows:
@@ -205,9 +211,7 @@ async def _construire_ctx_dict(aff: Affectation, db: AsyncSession) -> dict:
     l'affectation (déjà calculés à la génération) — on ne re-score pas."""
     from app.services.justification_detail import _annees_experience, _historique_paire
 
-    competences_cours = (await _charger_competences_cours([aff.cours_id], db)).get(
-        aff.cours_id, []
-    )
+    competences_cours = (await _charger_competences_cours([aff.cours_id], db)).get(aff.cours_id, [])
     competences_prof = {c.nom for c in aff.professeur.competences}
     prof_lower = {c.lower() for c in competences_prof}
     nb_couvertes = sum(1 for cc in competences_cours if cc.nom.lower() in prof_lower)
@@ -222,9 +226,11 @@ async def _construire_ctx_dict(aff: Affectation, db: AsyncSession) -> dict:
     if aff.professeur.embedding and cours is not None and cours.embedding:
         sim = cosine_similarity(aff.professeur.embedding, cours.embedding)
 
-    pond = (await db.execute(
-        select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
-    )).scalar_one()
+    pond = (
+        await db.execute(
+            select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
+        )
+    ).scalar_one()
     ctx = ContexteJustification(
         nom_professeur=(
             aff.professeur.user.nom_complet
@@ -252,9 +258,7 @@ async def _construire_ctx_dict(aff: Affectation, db: AsyncSession) -> dict:
     return _ctx_to_dict(ctx)
 
 
-async def declencher_enrichissement_si_besoin(
-    affectation_id: int, db: AsyncSession
-) -> dict:
+async def declencher_enrichissement_si_besoin(affectation_id: int, db: AsyncSession) -> dict:
     """Enrichissement XAI LAZY : déclenche l'appel LLM d'UNE justification au
     moment où le RH la consulte, au lieu d'un enqueue de masse à la génération.
 
@@ -267,21 +271,27 @@ async def declencher_enrichissement_si_besoin(
     Bascule le statut en EN_COURS puis délègue à la tâche Celery. Un échec
     d'enqueue (broker down) ne casse pas la consultation : la statique reste
     affichée. Retourne un petit dict de traçabilité."""
-    aff = (await db.execute(
-        select(Affectation).where(Affectation.id == affectation_id).options(
-            selectinload(Affectation.cours),
-            selectinload(Affectation.professeur).selectinload(Professeur.user),
-            selectinload(Affectation.professeur).selectinload(Professeur.competences),
+    aff = (
+        await db.execute(
+            select(Affectation)
+            .where(Affectation.id == affectation_id)
+            .options(
+                selectinload(Affectation.cours),
+                selectinload(Affectation.professeur).selectinload(Professeur.user),
+                selectinload(Affectation.professeur).selectinload(Professeur.competences),
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     if aff is None:
         return {"skip": "introuvable"}
     if aff.justification_statut != JustificationStatut.STATIQUE:
         return {"skip": aff.justification_statut.value}
 
-    pond = (await db.execute(
-        select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
-    )).scalar_one_or_none()
+    pond = (
+        await db.execute(
+            select(PonderationsSession).where(PonderationsSession.session_id == aff.session_id)
+        )
+    ).scalar_one_or_none()
     if pond is None or not pond.xai_actif:
         return {"skip": "xai_inactif"}
 
@@ -309,7 +319,9 @@ def _score_comp_pondere(
     if total_importance == 0:
         return Decimal("0")
     score_pondere = sum(
-        cc.importance for cc in competences_cours if cc.nom.lower() in {c.lower() for c in competences_prof}
+        cc.importance
+        for cc in competences_cours
+        if cc.nom.lower() in {c.lower() for c in competences_prof}
     )
     return Decimal(str(score_pondere / total_importance))
 
@@ -333,16 +345,15 @@ def _scorer_paire(
     sc_comp = _score_comp_pondere(competences_prof, competences_cours)
 
     annee_courante = _date.today().year
-    annees_exp = sum(
-        ((exp.annee_fin or annee_courante) - exp.annee_debut)
-        for exp in prof.experiences
-    ) if prof.experiences else 0
+    annees_exp = (
+        sum(((exp.annee_fin or annee_courante) - exp.annee_debut) for exp in prof.experiences)
+        if prof.experiences
+        else 0
+    )
     annees_exp = max(0, annees_exp)
     sc_exp = score_experience(float(annees_exp))
 
-    bonus_hist, nb_sessions_hist, note_moy_hist = bonus_map.get(
-        (prof.id, cours.id), (0.0, 0, 0.0)
-    )
+    bonus_hist, nb_sessions_hist, note_moy_hist = bonus_map.get((prof.id, cours.id), (0.0, 0, 0.0))
     sc_hist = score_historique(bonus_hist)
 
     sim = 0.0
@@ -359,8 +370,7 @@ def _scorer_paire(
     score_total = calculer_score_composite(poids, sc_comp, sc_exp, sc_hist, sc_sem)
 
     nb_comp_couvertes = sum(
-        1 for cc in competences_cours
-        if cc.nom.lower() in {c.lower() for c in competences_prof}
+        1 for cc in competences_cours if cc.nom.lower() in {c.lower() for c in competences_prof}
     )
     ctx = ContexteJustification(
         nom_professeur=prof.user.nom_complet if prof.user else f"Prof {prof.id}",
@@ -402,9 +412,7 @@ async def generer_affectations(
     if session is None:
         return [], list(programme_ids)
 
-    progs_result = await db.execute(
-        select(Programme).where(Programme.id.in_(programme_ids))
-    )
+    progs_result = await db.execute(select(Programme).where(Programme.id.in_(programme_ids)))
     progs = list(progs_result.scalars().all())
     eligibles = [p for p in progs if programme_actif_pour_session(p, session)]
     exclus_ids = [p.id for p in progs if not programme_actif_pour_session(p, session)]
@@ -525,9 +533,7 @@ async def valider_affectation(
     """Valide ou rejette une affectation proposée."""
     import datetime
 
-    result = await db.execute(
-        select(Affectation).where(Affectation.id == affectation_id)
-    )
+    result = await db.execute(select(Affectation).where(Affectation.id == affectation_id))
     aff = result.scalar_one_or_none()
     if aff is None:
         raise ValueError(f"Affectation {affectation_id} introuvable")
@@ -549,24 +555,27 @@ async def creer_affectation_manuelle(
     """Affecte manuellement un prof à un cours (REV-04) : score réel calculé,
     statut VALIDEE, origine MANUEL, auteur = RH. Upsert sur (session, prof, cours)."""
     import datetime
+
     from app.models.cv import CVStatut
 
-    prof = (await db.execute(
-        select(Professeur).where(Professeur.id == professeur_id).options(
-            selectinload(Professeur.user),
-            selectinload(Professeur.competences),
-            selectinload(Professeur.experiences),
-            selectinload(Professeur.cv),
+    prof = (
+        await db.execute(
+            select(Professeur)
+            .where(Professeur.id == professeur_id)
+            .options(
+                selectinload(Professeur.user),
+                selectinload(Professeur.competences),
+                selectinload(Professeur.experiences),
+                selectinload(Professeur.cv),
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     if prof is None:
         raise ValueError("Professeur introuvable")
     if prof.cv is None or prof.cv.statut != CVStatut.TRAITE:
         raise ValueError("CV non traité")
 
-    cours = (await db.execute(
-        select(Cours).where(Cours.id == cours_id)
-    )).scalar_one_or_none()
+    cours = (await db.execute(select(Cours).where(Cours.id == cours_id))).scalar_one_or_none()
     if cours is None:
         raise ValueError("Cours introuvable")
 
@@ -574,18 +583,18 @@ async def creer_affectation_manuelle(
     poids, xai_actif = await _charger_ponderations(session_id, db)
     bonus_map = await _charger_bonus_historique(session_id, db)
 
-    score_total, composants, ctx = _scorer_paire(
-        prof, cours, competences_cours, poids, bonus_map
-    )
+    score_total, composants, ctx = _scorer_paire(prof, cours, competences_cours, poids, bonus_map)
     justification = await _rediger_justification(ctx, xai_actif)
 
-    aff = (await db.execute(
-        select(Affectation).where(
-            Affectation.session_id == session_id,
-            Affectation.professeur_id == professeur_id,
-            Affectation.cours_id == cours_id,
+    aff = (
+        await db.execute(
+            select(Affectation).where(
+                Affectation.session_id == session_id,
+                Affectation.professeur_id == professeur_id,
+                Affectation.cours_id == cours_id,
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     if aff is None:
         aff = Affectation(session_id=session_id, professeur_id=professeur_id, cours_id=cours_id)
         db.add(aff)
@@ -617,21 +626,29 @@ async def lister_professeurs_disponibles(
     Retourne [(professeur_id, nom_complet)] trié par nom."""
     from app.models.cv import CV, CVStatut
 
-    deja = (await db.execute(
-        select(Affectation.professeur_id).where(
-            Affectation.session_id == session_id,
-            Affectation.cours_id == cours_id,
-            Affectation.statut != AffectationStatut.REJETEE,
+    deja = (
+        await db.execute(
+            select(Affectation.professeur_id).where(
+                Affectation.session_id == session_id,
+                Affectation.cours_id == cours_id,
+                Affectation.statut != AffectationStatut.REJETEE,
+            )
         )
-    )).all()
+    ).all()
     deja_ids = {row[0] for row in deja}
 
-    profs = (await db.execute(
-        select(Professeur)
-        .join(CV, CV.professeur_id == Professeur.id)
-        .where(CV.statut == CVStatut.TRAITE)
-        .options(selectinload(Professeur.user))
-    )).scalars().all()
+    profs = (
+        (
+            await db.execute(
+                select(Professeur)
+                .join(CV, CV.professeur_id == Professeur.id)
+                .where(CV.statut == CVStatut.TRAITE)
+                .options(selectinload(Professeur.user))
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     out = [
         (p.id, p.user.nom_complet if p.user else f"Prof {p.id}")
@@ -726,28 +743,39 @@ async def lister_etapes_avec_statut(
     """
     from app.models.etape_programme import EtapeProgramme
 
-    etapes = (await db.execute(
-        select(EtapeProgramme)
-        .where(EtapeProgramme.programme_id == programme_id)
-        .order_by(EtapeProgramme.ordre)
-    )).scalars().all()
+    etapes = (
+        (
+            await db.execute(
+                select(EtapeProgramme)
+                .where(EtapeProgramme.programme_id == programme_id)
+                .order_by(EtapeProgramme.ordre)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
-    liens = (await db.execute(
-        select(CoursEtapeProgramme.etape_id, CoursEtapeProgramme.cours_id)
-        .where(CoursEtapeProgramme.programme_id == programme_id)
-    )).all()
+    liens = (
+        await db.execute(
+            select(CoursEtapeProgramme.etape_id, CoursEtapeProgramme.cours_id).where(
+                CoursEtapeProgramme.programme_id == programme_id
+            )
+        )
+    ).all()
     cours_par_etape: dict[int, list[int]] = {}
     for etape_id, cours_id in liens:
         cours_par_etape.setdefault(etape_id, []).append(cours_id)
 
     cours_valides = {
         row[0]
-        for row in (await db.execute(
-            select(Affectation.cours_id).where(
-                Affectation.session_id == session_id,
-                Affectation.statut == AffectationStatut.VALIDEE,
+        for row in (
+            await db.execute(
+                select(Affectation.cours_id).where(
+                    Affectation.session_id == session_id,
+                    Affectation.statut == AffectationStatut.VALIDEE,
+                )
             )
-        )).all()
+        ).all()
     }
 
     aucun_candidat = (await _nb_professeurs_traites(db)) == 0
@@ -756,16 +784,16 @@ async def lister_etapes_avec_statut(
     for etape in etapes:
         cours_ids = cours_par_etape.get(etape.id, [])
         total = len(cours_ids)
-        couverts = sum(
-            1 for cid in cours_ids if cid in cours_valides or aucun_candidat
+        couverts = sum(1 for cid in cours_ids if cid in cours_valides or aucun_candidat)
+        resultats.append(
+            EtapeStatut(
+                id=etape.id,
+                programme_id=programme_id,
+                ordre=etape.ordre,
+                nom=etape.nom,
+                total_cours=total,
+                cours_couverts=couverts,
+                affectation_complete=total > 0 and couverts == total,
+            )
         )
-        resultats.append(EtapeStatut(
-            id=etape.id,
-            programme_id=programme_id,
-            ordre=etape.ordre,
-            nom=etape.nom,
-            total_cours=total,
-            cours_couverts=couverts,
-            affectation_complete=total > 0 and couverts == total,
-        ))
     return resultats

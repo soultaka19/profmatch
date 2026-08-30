@@ -7,8 +7,6 @@ backfill, le score sémantique W4 vaut 0 pour toujours sur ces profs/cours.
 
 from __future__ import annotations
 
-from decimal import Decimal
-
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.cours import Cours
 from app.models.cv import CV, CVStatut
 from app.models.professeur import Professeur
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,20 +37,20 @@ async def _make_prof_avec_cv(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    prof = (await db.execute(
-        select(Professeur).where(Professeur.user_id == user.id)
-    )).scalar_one()
+    prof = (await db.execute(select(Professeur).where(Professeur.user_id == user.id))).scalar_one()
     prof.resume_profil = f"Profil de {nom}"
     if avec_embedding:
         prof.embedding = [0.1, 0.2, 0.3]
-    db.add(CV(
-        professeur_id=prof.id,
-        nom_original="cv.pdf",
-        chemin_fichier="x",
-        taille_octets=1,
-        mime_type="application/pdf",
-        statut=statut_cv,
-    ))
+    db.add(
+        CV(
+            professeur_id=prof.id,
+            nom_original="cv.pdf",
+            chemin_fichier="x",
+            taille_octets=1,
+            mime_type="application/pdf",
+            statut=statut_cv,
+        )
+    )
     await db.commit()
     await db.refresh(prof)
     return prof
@@ -155,9 +152,7 @@ async def test_backfill_cours_ignore_si_deja_present(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_backfill_endpoint_exige_admin(client, auth_headers_rh):
     """RH ne peut pas déclencher le backfill (réservé admin)."""
-    resp = await client.post(
-        "/api/admin/maintenance/backfill-embeddings", headers=auth_headers_rh
-    )
+    resp = await client.post("/api/admin/maintenance/backfill-embeddings", headers=auth_headers_rh)
     assert resp.status_code == 403
 
 

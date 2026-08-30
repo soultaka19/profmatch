@@ -13,7 +13,9 @@ from app.models.session import Semestre, Session
 from app.models.user import User
 
 
-async def _setup_aff(db_session: AsyncSession, professeur_prof: Professeur, annee: int = 2026) -> Affectation:
+async def _setup_aff(
+    db_session: AsyncSession, professeur_prof: Professeur, annee: int = 2026
+) -> Affectation:
     sess = Session(annee=annee, semestre=Semestre.AUTOMNE)
     db_session.add(sess)
     await db_session.commit()
@@ -23,9 +25,14 @@ async def _setup_aff(db_session: AsyncSession, professeur_prof: Professeur, anne
     await db_session.commit()
     await db_session.refresh(cours)
     aff = Affectation(
-        session_id=sess.id, professeur_id=professeur_prof.id, cours_id=cours.id,
-        score_total=Decimal("0.5"), score_comp=Decimal("0.5"),
-        score_exp=Decimal("0.5"), score_hist=Decimal("0.5"), score_sem=Decimal("0.5"),
+        session_id=sess.id,
+        professeur_id=professeur_prof.id,
+        cours_id=cours.id,
+        score_total=Decimal("0.5"),
+        score_comp=Decimal("0.5"),
+        score_exp=Decimal("0.5"),
+        score_hist=Decimal("0.5"),
+        score_sem=Decimal("0.5"),
     )
     db_session.add(aff)
     await db_session.commit()
@@ -75,7 +82,9 @@ async def test_feedback_note_check_constraint_valide(
 
 
 @pytest.mark.asyncio
-async def test_feedback_cascade_par_affectation(db_session: AsyncSession, professeur_prof: Professeur):
+async def test_feedback_cascade_par_affectation(
+    db_session: AsyncSession, professeur_prof: Professeur
+):
     aff = await _setup_aff(db_session, professeur_prof)
     db_session.add(AffectationFeedback(affectation_id=aff.id, note=3))
     db_session.add(AffectationFeedback(affectation_id=aff.id, note=5))

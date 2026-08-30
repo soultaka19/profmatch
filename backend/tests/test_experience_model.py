@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.experience import Experience
+
 from app.models.competence import SourceOrigine
+from app.models.experience import Experience
 from app.models.professeur import Professeur
 
 
@@ -41,8 +42,6 @@ async def test_experience_with_annee_fin(db_session: AsyncSession, professeur_pr
     db_session.add(exp)
     await db_session.commit()
 
-    result = await db_session.execute(
-        select(Experience).where(Experience.poste == "Stagiaire")
-    )
+    result = await db_session.execute(select(Experience).where(Experience.poste == "Stagiaire"))
     saved = result.scalar_one()
     assert saved.annee_fin == 2019

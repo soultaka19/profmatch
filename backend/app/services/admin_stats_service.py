@@ -12,9 +12,7 @@ from app.models.user import User
 from app.schemas.admin_stats import AdminStatsOut
 
 
-async def _count(
-    db: AsyncSession, model: type[Base], *conditions: ColumnElement[bool]
-) -> int:
+async def _count(db: AsyncSession, model: type[Base], *conditions: ColumnElement[bool]) -> int:
     stmt = select(func.count()).select_from(model)
     for cond in conditions:
         stmt = stmt.where(cond)
@@ -34,5 +32,7 @@ async def compute_admin_stats(db: AsyncSession) -> AdminStatsOut:
         sessions_total=await _count(db, Session),
         sessions_ouvertes=await _count(db, Session, Session.statut == SessionStatut.OUVERTE),
         affectations_total=await _count(db, Affectation),
-        affectations_validees=await _count(db, Affectation, Affectation.statut == AffectationStatut.VALIDEE),
+        affectations_validees=await _count(
+            db, Affectation, Affectation.statut == AffectationStatut.VALIDEE
+        ),
     )

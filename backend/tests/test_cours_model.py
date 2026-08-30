@@ -9,7 +9,9 @@ from app.models.etape_programme import EtapeProgramme
 from app.models.programme import Programme
 
 
-async def _prog_etape(db_session: AsyncSession, code: str = "51046") -> tuple[Programme, EtapeProgramme]:
+async def _prog_etape(
+    db_session: AsyncSession, code: str = "51046"
+) -> tuple[Programme, EtapeProgramme]:
     prog = Programme(code=code, nom=f"Prog {code}")
     db_session.add(prog)
     await db_session.commit()
@@ -76,16 +78,24 @@ async def test_lien_unique_par_triplet(db_session: AsyncSession):
     await db_session.commit()
     await db_session.refresh(cours)
 
-    db_session.add(CoursEtapeProgramme(
-        programme_id=prog.id, etape_id=etape.id, cours_id=cours.id,
-        categorie=CategorieCours.OBLIGATOIRE,
-    ))
+    db_session.add(
+        CoursEtapeProgramme(
+            programme_id=prog.id,
+            etape_id=etape.id,
+            cours_id=cours.id,
+            categorie=CategorieCours.OBLIGATOIRE,
+        )
+    )
     await db_session.commit()
 
-    db_session.add(CoursEtapeProgramme(
-        programme_id=prog.id, etape_id=etape.id, cours_id=cours.id,
-        categorie=CategorieCours.CHOIX_FRANCAIS,
-    ))
+    db_session.add(
+        CoursEtapeProgramme(
+            programme_id=prog.id,
+            etape_id=etape.id,
+            cours_id=cours.id,
+            categorie=CategorieCours.CHOIX_FRANCAIS,
+        )
+    )
     with pytest.raises(IntegrityError):
         await db_session.commit()
 
@@ -97,10 +107,14 @@ async def test_cascade_cours_efface_les_liens(db_session: AsyncSession):
     db_session.add(cours)
     await db_session.commit()
     await db_session.refresh(cours)
-    db_session.add(CoursEtapeProgramme(
-        programme_id=prog.id, etape_id=etape.id, cours_id=cours.id,
-        categorie=CategorieCours.OBLIGATOIRE,
-    ))
+    db_session.add(
+        CoursEtapeProgramme(
+            programme_id=prog.id,
+            etape_id=etape.id,
+            cours_id=cours.id,
+            categorie=CategorieCours.OBLIGATOIRE,
+        )
+    )
     await db_session.commit()
 
     await db_session.delete(cours)

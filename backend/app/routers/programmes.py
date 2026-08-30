@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_role
 from app.db.session import get_db
+from app.models.etape_programme import EtapeProgramme
 from app.models.programme import Programme
 from app.models.user import User
-from app.models.etape_programme import EtapeProgramme
 from app.schemas.affectation import ProgrammeCreate, ProgrammeOut
 from app.schemas.programme import ProgrammeCalendrierOut, ProgrammeUpdate
 from app.services.academic_calendar import (
@@ -35,9 +35,7 @@ async def create_programme(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> ProgrammeOut:
-    existing = await db.execute(
-        select(Programme).where(Programme.code == payload.code)
-    )
+    existing = await db.execute(select(Programme).where(Programme.code == payload.code))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -122,14 +120,10 @@ async def get_calendrier(
     result = await db.execute(select(Programme).where(Programme.id == programme_id))
     prog = result.scalar_one_or_none()
     if not prog:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Programme introuvable")
 
     nb_etapes = await db.scalar(
-        select(func.count(EtapeProgramme.id)).where(
-            EtapeProgramme.programme_id == programme_id
-        )
+        select(func.count(EtapeProgramme.id)).where(EtapeProgramme.programme_id == programme_id)
     )
 
     return ProgrammeCalendrierOut(

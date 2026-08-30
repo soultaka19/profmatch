@@ -86,45 +86,53 @@ def persist_extraction(db: Session, professeur_id: int, data: ExtractionLLM) -> 
 
     # 2. Insérer les nouvelles compétences
     for c in data.competences:
-        db.add(Competence(
-            professeur_id=professeur_id,
-            nom=c.nom,
-            niveau=c.niveau,
-            source=SourceOrigine.LLM,
-        ))
+        db.add(
+            Competence(
+                professeur_id=professeur_id,
+                nom=c.nom,
+                niveau=c.niveau,
+                source=SourceOrigine.LLM,
+            )
+        )
 
     # 3. Insérer les nouvelles expériences avec ordre stable
     for idx, e in enumerate(data.experiences):
-        db.add(Experience(
-            professeur_id=professeur_id,
-            poste=e.poste,
-            employeur=e.employeur,
-            annee_debut=e.annee_debut,
-            annee_fin=e.annee_fin,
-            description_courte=e.description_courte,
-            source=SourceOrigine.LLM,
-            ordre=idx,
-        ))
+        db.add(
+            Experience(
+                professeur_id=professeur_id,
+                poste=e.poste,
+                employeur=e.employeur,
+                annee_debut=e.annee_debut,
+                annee_fin=e.annee_fin,
+                description_courte=e.description_courte,
+                source=SourceOrigine.LLM,
+                ordre=idx,
+            )
+        )
 
     # 4. Insérer les nouvelles formations
     for idx, f in enumerate(data.formations):
-        db.add(Formation(
-            professeur_id=professeur_id,
-            diplome=f.diplome,
-            etablissement=f.etablissement,
-            annee=f.annee,
-            source=SourceOrigine.LLM,
-            ordre=idx,
-        ))
+        db.add(
+            Formation(
+                professeur_id=professeur_id,
+                diplome=f.diplome,
+                etablissement=f.etablissement,
+                annee=f.annee,
+                source=SourceOrigine.LLM,
+                ordre=idx,
+            )
+        )
 
     # 5. Insérer les nouvelles langues
-    for l in data.langues:
-        db.add(Langue(
-            professeur_id=professeur_id,
-            langue=l.langue,
-            niveau=l.niveau,
-            source=SourceOrigine.LLM,
-        ))
+    for lang in data.langues:
+        db.add(
+            Langue(
+                professeur_id=professeur_id,
+                langue=lang.langue,
+                niveau=lang.niveau,
+                source=SourceOrigine.LLM,
+            )
+        )
 
     # 6. UPDATE conditionnel du resume_profil — n'écrase JAMAIS un 'manual'
     db.execute(
@@ -147,9 +155,7 @@ def compute_professeur_embedding(db: Session, professeur_id: int) -> None:
     appeler après `persist_extraction`, dans la même transaction (pas de commit
     interne). Sans embedding, le score W4 vaut toujours 0.
     """
-    prof = db.execute(
-        select(Professeur).where(Professeur.id == professeur_id)
-    ).scalar_one_or_none()
+    prof = db.execute(select(Professeur).where(Professeur.id == professeur_id)).scalar_one_or_none()
     if prof is None:
         return
     competences = [c.nom for c in prof.competences]

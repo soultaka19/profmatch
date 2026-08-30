@@ -96,17 +96,19 @@ async def _compter_justifications(session_id: int, db: AsyncSession) -> Justific
     Une seule requête `GROUP BY` — pas de N+1, et le résultat est cumulé en
     mémoire pour exposer les 4 catégories même quand certaines sont à zéro.
     """
-    rows = (await db.execute(
-        select(
-            Affectation.justification_statut,
-            func.count(Affectation.id),
+    rows = (
+        await db.execute(
+            select(
+                Affectation.justification_statut,
+                func.count(Affectation.id),
+            )
+            .where(
+                Affectation.session_id == session_id,
+                Affectation.statut == AffectationStatut.PROPOSEE,
+            )
+            .group_by(Affectation.justification_statut)
         )
-        .where(
-            Affectation.session_id == session_id,
-            Affectation.statut == AffectationStatut.PROPOSEE,
-        )
-        .group_by(Affectation.justification_statut)
-    )).all()
+    ).all()
     par_statut = {js: int(n) for js, n in rows}
     return JustificationTotaux(
         total=sum(par_statut.values()),
@@ -194,11 +196,7 @@ async def creer_affectation_manuelle_endpoint(
         )
     except ValueError as exc:
         msg = str(exc)
-        code = (
-            status.HTTP_409_CONFLICT
-            if "non traité" in msg
-            else status.HTTP_404_NOT_FOUND
-        )
+        code = status.HTTP_409_CONFLICT if "non traité" in msg else status.HTTP_404_NOT_FOUND
         raise HTTPException(status_code=code, detail=msg)
 
     result = await db.execute(
@@ -219,10 +217,7 @@ async def professeurs_disponibles(
 ) -> list[ProfesseurDisponibleOut]:
     """Profs avec CV traité non encore affectés à ce (session, cours)."""
     profs = await lister_professeurs_disponibles(session_id, cours_id, db)
-    return [
-        ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom)
-        for pid, nom in profs
-    ]
+    return [ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom) for pid, nom in profs]
 
 
 @router.get(
@@ -234,9 +229,7 @@ async def mes_affectations(
     current_user: User = Depends(require_role("prof")),
     db: AsyncSession = Depends(get_db),
 ) -> list[AffectationProfOut]:
-    prof_result = await db.execute(
-        select(Professeur).where(Professeur.user_id == current_user.id)
-    )
+    prof_result = await db.execute(select(Professeur).where(Professeur.user_id == current_user.id))
     prof = prof_result.scalar_one_or_none()
     if prof is None:
         return []
@@ -266,6 +259,7 @@ async def get_affectation(
     # Prof : peut voir uniquement ses propres affectations
     if current_user.role.value == "prof":
         from sqlalchemy import select as sa_select
+
         prof_result = await db.execute(
             sa_select(Professeur).where(Professeur.user_id == current_user.id)
         )
@@ -308,9 +302,7 @@ async def valider_ou_rejeter(
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
     try:
-        aff = await valider_affectation(
-            affectation_id, current_user.id, payload.statut, db
-        )
+        aff = await valider_affectation(affectation_id, current_user.id, payload.statut, db)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 

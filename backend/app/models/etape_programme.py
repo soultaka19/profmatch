@@ -22,9 +22,7 @@ class EtapeProgramme(Base):
     """Étape (Étape 1, 2, 3, 4...) à l'intérieur d'un programme académique."""
 
     __tablename__ = "etapes_programme"
-    __table_args__ = (
-        UniqueConstraint("programme_id", "ordre", name="uq_etape_programme_ordre"),
-    )
+    __table_args__ = (UniqueConstraint("programme_id", "ordre", name="uq_etape_programme_ordre"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     programme_id: Mapped[int] = mapped_column(

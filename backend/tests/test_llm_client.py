@@ -1,5 +1,6 @@
-from app.services.llm_client import get_llm_client
 from openai import OpenAI
+
+from app.services.llm_client import get_llm_client
 
 
 def test_get_llm_client_returns_openai_instance():

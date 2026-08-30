@@ -15,8 +15,8 @@ from app.models.affectation import (
 )
 from app.models.session import Semestre, SessionStatut
 
-
 # ── Programme ───────────────────────────────────────────────────────────────
+
 
 class ProgrammeOut(BaseModel):
     id: int
@@ -36,6 +36,7 @@ class ProgrammeCreate(BaseModel):
 
 
 # ── Session ──────────────────────────────────────────────────────────────────
+
 
 class SessionOut(BaseModel):
     id: int
@@ -59,6 +60,7 @@ class SessionUpdate(BaseModel):
 
 
 # ── Pondérations ─────────────────────────────────────────────────────────────
+
 
 class PonderationsOut(BaseModel):
     session_id: int
@@ -88,6 +90,7 @@ class PonderationsUpdate(BaseModel):
 
 
 # ── Affectation ───────────────────────────────────────────────────────────────
+
 
 class AffectationOut(BaseModel):
     id: int
@@ -226,9 +229,7 @@ class ProfesseurDisponibleOut(BaseModel):
 
 
 class AffectationValidateRequest(BaseModel):
-    statut: AffectationStatut = Field(
-        description="Statut cible : validee ou rejetee"
-    )
+    statut: AffectationStatut = Field(description="Statut cible : validee ou rejetee")
 
     @model_validator(mode="after")
     def check_statut(self) -> "AffectationValidateRequest":

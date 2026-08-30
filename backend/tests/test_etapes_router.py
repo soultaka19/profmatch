@@ -17,7 +17,9 @@ async def _make_programme(db_session: AsyncSession, code: str = "51046") -> Prog
 
 
 @pytest.mark.asyncio
-async def test_create_etape_admin(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_create_etape_admin(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     p = await _make_programme(db_session)
     r = await client.post(
         f"/api/programmes/{p.id}/etapes",
@@ -74,11 +76,13 @@ async def test_list_etapes_tri_par_ordre(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     p = await _make_programme(db_session)
-    db_session.add_all([
-        EtapeProgramme(programme_id=p.id, ordre=2, nom="Deux"),
-        EtapeProgramme(programme_id=p.id, ordre=1, nom="Un"),
-        EtapeProgramme(programme_id=p.id, ordre=3, nom="Trois"),
-    ])
+    db_session.add_all(
+        [
+            EtapeProgramme(programme_id=p.id, ordre=2, nom="Deux"),
+            EtapeProgramme(programme_id=p.id, ordre=1, nom="Un"),
+            EtapeProgramme(programme_id=p.id, ordre=3, nom="Trois"),
+        ]
+    )
     await db_session.commit()
     r = await client.get(f"/api/programmes/{p.id}/etapes", headers=auth_headers_admin)
     assert r.status_code == 200
@@ -114,7 +118,9 @@ async def test_update_etape_nom(
 
 
 @pytest.mark.asyncio
-async def test_update_etape_404(client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession):
+async def test_update_etape_404(
+    client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
+):
     p = await _make_programme(db_session)
     r = await client.put(
         f"/api/programmes/{p.id}/etapes/999",
@@ -147,15 +153,14 @@ async def test_delete_etape(
     client: AsyncClient, auth_headers_admin: dict, db_session: AsyncSession
 ):
     from sqlalchemy import select
+
     p = await _make_programme(db_session)
     e = EtapeProgramme(programme_id=p.id, ordre=1)
     db_session.add(e)
     await db_session.commit()
     await db_session.refresh(e)
     eid = e.id
-    r = await client.delete(
-        f"/api/programmes/{p.id}/etapes/{eid}", headers=auth_headers_admin
-    )
+    r = await client.delete(f"/api/programmes/{p.id}/etapes/{eid}", headers=auth_headers_admin)
     assert r.status_code == 204
     found = await db_session.execute(select(EtapeProgramme).where(EtapeProgramme.id == eid))
     assert found.scalar_one_or_none() is None
@@ -170,7 +175,5 @@ async def test_delete_etape_refuse_rh(
     db_session.add(e)
     await db_session.commit()
     await db_session.refresh(e)
-    r = await client.delete(
-        f"/api/programmes/{p.id}/etapes/{e.id}", headers=auth_headers_rh
-    )
+    r = await client.delete(f"/api/programmes/{p.id}/etapes/{e.id}", headers=auth_headers_rh)
     assert r.status_code == 403

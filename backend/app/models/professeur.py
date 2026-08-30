@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, Enum as SQLEnum, Float, ForeignKey, Text, event, func
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Text, event, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +12,7 @@ from app.models.user import User, UserRole
 
 if TYPE_CHECKING:
     from app.models.competence import Competence  # noqa: F401
+    from app.models.cv import CV  # noqa: F401
     from app.models.experience import Experience  # noqa: F401
     from app.models.formation import Formation  # noqa: F401
     from app.models.langue import Langue  # noqa: F401
@@ -78,6 +80,4 @@ class Professeur(Base):
 @event.listens_for(User, "after_insert")
 def _create_professeur_for_prof_user(mapper, connection, target: User) -> None:
     if target.role == UserRole.PROF:
-        connection.execute(
-            Professeur.__table__.insert().values(user_id=target.id)
-        )
+        connection.execute(Professeur.__table__.insert().values(user_id=target.id))

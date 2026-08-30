@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
@@ -7,8 +7,10 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.models.cv import CV, CVStatut
 from app.services.extraction_service import (
-    compute_professeur_embedding, extract_structured_data, persist_extraction,
     ExtractionError,
+    compute_professeur_embedding,
+    extract_structured_data,
+    persist_extraction,
 )
 from app.services.llm_client import get_llm_client
 from app.worker import celery_app

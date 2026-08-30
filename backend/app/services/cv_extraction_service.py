@@ -2,10 +2,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pdfplumber
-from celery import shared_task
 from docx import Document
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.models.cv import CV, CVStatut
@@ -21,6 +20,7 @@ def _sync_session_factory():
     same rows as the test's async session.
     """
     import os
+
     raw_url = settings.DATABASE_URL
     if os.environ.get("PYTEST_CURRENT_TEST") and settings.TEST_DATABASE_URL:
         raw_url = settings.TEST_DATABASE_URL
@@ -78,6 +78,7 @@ def extract_cv_text(self, cv_id: int) -> None:
             # Chaînage Celery : déclenche l'extraction LLM en aval.
             # Lazy import pour éviter cycle (extraction_tasks importe la même metadata).
             from app.tasks.extraction_tasks import extract_cv_data_llm
+
             extract_cv_data_llm.delay(cv.id)
         except (FileNotFoundError, ValueError) as exc:
             cv.statut = CVStatut.ERREUR
