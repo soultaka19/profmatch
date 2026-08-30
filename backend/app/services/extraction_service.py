@@ -1,3 +1,5 @@
+import re
+
 from openai import OpenAI
 from pydantic import ValidationError
 from sqlalchemy import delete, select, update
@@ -16,6 +18,25 @@ from app.services.llm_prompts import build_extraction_prompt
 
 class ExtractionError(Exception):
     """Erreur permanente d'extraction LLM (validation 2× ou JSON cassé)."""
+
+
+# Bloc de code Markdown entourant parfois la réponse : ```json ... ``` ou ``` ... ```
+_BLOC_MARKDOWN = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
+
+
+def _json_nu(raw: str) -> str:
+    """Retire un éventuel bloc de code Markdown autour du JSON.
+
+    Le prompt demande du JSON nu, et les modèles s'y tiennent la plupart du
+    temps — mais pas tous, ni dans toutes leurs configurations : Gemini renvoie
+    du JSON nu par défaut et l'entoure de ```json dès qu'on baisse son effort de
+    raisonnement. Sans ce nettoyage, `model_validate_json` échoue, la boucle de
+    retry consomme ses trois tentatives, et l'extraction se solde par une erreur
+    alors que le contenu était bon. Le coût du nettoyage est nul, celui de son
+    absence est de trois appels LLM et un CV en statut `erreur`.
+    """
+    bloc = _BLOC_MARKDOWN.match(raw)
+    return bloc.group(1) if bloc else raw
 
 
 def extract_structured_data(texte_brut: str, client: OpenAI) -> ExtractionLLM:
@@ -39,13 +60,13 @@ def extract_structured_data(texte_brut: str, client: OpenAI) -> ExtractionLLM:
             model=settings.LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
-            max_tokens=2000,
+            max_tokens=settings.LLM_EXTRACTION_MAX_TOKENS,
             # Override per-requête : l'extraction génère beaucoup plus de tokens
             # que la narration XAI ; le timeout de 15 s du client est trop court
             # pour le modèle 120B et provoquait des ReadTimeout systématiques.
             timeout=settings.LLM_EXTRACTION_TIMEOUT_S,
         )
-        raw = response.choices[0].message.content or ""
+        raw = _json_nu(response.choices[0].message.content or "")
 
         try:
             return ExtractionLLM.model_validate_json(raw)

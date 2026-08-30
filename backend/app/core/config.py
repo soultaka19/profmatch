@@ -30,7 +30,10 @@ class Settings(BaseSettings):
 
     # API LLM
     LLM_API_URL: str
-    LLM_API_COOKIE: str
+    # Spécifique au proxy CoCalc de la compétition : laissée vide pour tout
+    # autre fournisseur (Gemini, OpenAI, Ollama…), auquel cas aucun cookie
+    # n'est envoyé — voir services/llm_client.py.
+    LLM_API_COOKIE: str = ""
     # Vide par défaut pour ne pas bloquer les tests CI (le client LLM est mocké
     # autouse). Doit être renseignée en .env pour les appels live au proxy CoCalc.
     LLM_API_KEY: str = ""
@@ -41,6 +44,17 @@ class Settings(BaseSettings):
     # tâche Celery de fond, donc on peut accorder largement plus que les 15 s du
     # client par défaut.
     LLM_EXTRACTION_TIMEOUT_S: float = 90.0
+    # Plafond de génération de l'extraction CV. Valait 2000 en dur, dimensionné
+    # pour gpt-oss-120B qui n'émettait que du texte de sortie.
+    #
+    # Les modèles à raisonnement (Gemini 3.x) imputent AUSSI leurs jetons de
+    # réflexion à ce plafond : mesuré sur un CV court, 640 jetons de réflexion
+    # pour 160 de sortie, et un appel plafonné à 100 s'arrête avec
+    # `finish_reason: "length"` après 1 seul jeton produit. À 2000, un CV fourni
+    # verrait donc son JSON tronqué — donc invalide, donc trois tentatives puis
+    # échec. 4000 laisse la marge nécessaire ; à baisser pour un modèle sans
+    # raisonnement, où la valeur d'origine suffit.
+    LLM_EXTRACTION_MAX_TOKENS: int = 4000
     # Timeout de la narration XAI. Génération légère (~500 tokens) mais sur un
     # modèle 120B souvent lent : 15 s faisait trop souvent retomber sur la
     # justification statique. Depuis le découplage Niveau 2 (enrichissement lazy

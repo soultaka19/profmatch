@@ -27,3 +27,22 @@ def test_get_llm_client_uses_base_url(monkeypatch):
     monkeypatch.setattr("app.core.config.settings.LLM_API_URL", "https://example.com/api")
     client = get_llm_client()
     assert str(client.base_url).startswith("https://example.com/api")
+
+
+def test_get_llm_client_sans_cookie_quand_variable_vide(monkeypatch):
+    """Aucun cookie CoCalc ne doit partir chez un fournisseur qui n'en veut pas.
+
+    Le cookie est spécifique au proxy de la compétition. Depuis la bascule vers
+    Gemini, `LLM_API_COOKIE` est vide par défaut : envoyer alors un cookie de
+    valeur vide n'aurait aucun sens et polluerait chaque requête.
+    """
+    monkeypatch.setattr("app.core.config.settings.LLM_API_COOKIE", "")
+    client = get_llm_client()
+    assert client._client.cookies.get("COCALC_COMPUTE_SERVER_AUTH_TOKEN") is None
+
+
+def test_get_llm_client_sans_cookie_quand_variable_blanche(monkeypatch):
+    """Une variable réduite à des espaces vaut une variable vide."""
+    monkeypatch.setattr("app.core.config.settings.LLM_API_COOKIE", "   ")
+    client = get_llm_client()
+    assert client._client.cookies.get("COCALC_COMPUTE_SERVER_AUTH_TOKEN") is None

@@ -68,6 +68,37 @@ def test_extract_uses_dedicated_extraction_timeout():
     assert settings.LLM_EXTRACTION_TIMEOUT_S >= 60
 
 
+def test_extract_utilise_le_plafond_de_generation_configure():
+    """Le plafond vient de la configuration, plus d'une constante en dur.
+
+    Il était fixé à 2000, dimensionné pour un modèle sans raisonnement. Les
+    modèles à raisonnement imputent leurs jetons de réflexion au même plafond :
+    à 2000, le JSON d'un CV fourni ressortait tronqué, donc invalide.
+    """
+    client = _mock_client_with_response((FIXTURES / "ok_complete.json").read_text(encoding="utf-8"))
+    extract_structured_data("CV text", client)
+    kwargs = client.chat.completions.create.call_args.kwargs
+    assert kwargs["max_tokens"] == settings.LLM_EXTRACTION_MAX_TOKENS
+
+
+@pytest.mark.parametrize("cloture", ["```json\n{corps}\n```", "```\n{corps}\n```"])
+def test_extract_accepte_un_json_entoure_de_balises_markdown(cloture):
+    """Un bloc de code Markdown autour du JSON ne doit pas faire échouer l'extraction.
+
+    Le prompt demande du JSON nu et la plupart des modèles s'y tiennent, mais
+    pas dans toutes leurs configurations : Gemini entoure sa réponse de ```json
+    dès qu'on baisse son effort de raisonnement. Sans nettoyage, la boucle de
+    retry brûlait ses trois tentatives sur un contenu pourtant correct.
+    """
+    corps = (FIXTURES / "ok_complete.json").read_text(encoding="utf-8")
+    client = _mock_client_with_response(cloture.format(corps=corps))
+    result = extract_structured_data("CV text", client)
+    assert isinstance(result, ExtractionLLM)
+    assert result.resume == "Développeur Python senior avec 8 ans d'expérience."
+    # Une seule tentative : le nettoyage évite le cycle de retry.
+    assert client.chat.completions.create.call_count == 1
+
+
 def test_extract_retries_on_validation_error_then_succeeds():
     bad = (FIXTURES / "invalid_enum.json").read_text(encoding="utf-8")
     good = (FIXTURES / "ok_complete.json").read_text(encoding="utf-8")
