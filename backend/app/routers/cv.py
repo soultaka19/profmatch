@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.demo_scope import consommer_appel_ia
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.cv import CVStatut
@@ -11,7 +12,14 @@ from app.services import cv_service
 router = APIRouter()
 
 
-@router.post("/upload", response_model=CVResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload",
+    response_model=CVResponse,
+    status_code=status.HTTP_201_CREATED,
+    # Un téléversement déclenche l'extraction LLM du CV : c'est l'appel le plus
+    # coûteux du produit, donc celui qui doit être décompté du budget.
+    dependencies=[Depends(consommer_appel_ia)],
+)
 async def upload_cv(
     file: UploadFile,
     current_user: User = Depends(require_role("prof")),

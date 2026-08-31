@@ -5,6 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crud_helpers import get_or_404
+from app.core.demo_scope import (
+    session_modifiable_ou_404,
+    session_visible_ou_404,
+    visibilite,
+)
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.programme import Programme
@@ -30,7 +35,11 @@ async def list_sessions(
     current_user: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
 ) -> list[SessionOut]:
-    result = await db.execute(select(Session).order_by(Session.annee.desc(), Session.semestre))
+    result = await db.execute(
+        select(Session)
+        .where(visibilite(Session.sandbox_id, current_user))
+        .order_by(Session.annee.desc(), Session.semestre)
+    )
     return list(result.scalars().all())
 
 
@@ -51,7 +60,12 @@ async def create_session(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Session {payload.semestre.value} {payload.annee} existe déjà",
         )
-    sess = Session(annee=payload.annee, semestre=payload.semestre, statut=payload.statut)
+    sess = Session(
+        annee=payload.annee,
+        semestre=payload.semestre,
+        statut=payload.statut,
+        sandbox_id=current_user.sandbox_id,
+    )
     db.add(sess)
     await db.commit()
     await db.refresh(sess)
@@ -64,7 +78,7 @@ async def get_session(
     current_user: User = Depends(require_role("admin", "rh")),
     db: AsyncSession = Depends(get_db),
 ) -> SessionOut:
-    return await get_or_404(Session, session_id, db, label="Session")
+    return await session_visible_ou_404(db, session_id, current_user)
 
 
 @router.put("/{session_id}", response_model=SessionOut)
@@ -74,7 +88,7 @@ async def update_session(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> SessionOut:
-    sess = await get_or_404(Session, session_id, db, label="Session")
+    sess = await session_modifiable_ou_404(db, session_id, current_user)
     sess.statut = payload.statut
     await db.commit()
     await db.refresh(sess)
@@ -87,7 +101,7 @@ async def delete_session(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    sess = await get_or_404(Session, session_id, db, label="Session")
+    sess = await session_modifiable_ou_404(db, session_id, current_user)
     await db.delete(sess)
     await db.commit()
 
@@ -100,7 +114,7 @@ async def list_programmes_eligibles(
 ) -> list[Programme]:
     """Programmes dont le rythme d'admission permet de dispenser des étapes
     durant cette session (dérivé de Programme.semestres_admission)."""
-    sess = await get_or_404(Session, session_id, db, label="Session")
+    sess = await session_visible_ou_404(db, session_id, current_user)
     progs = (await db.execute(select(Programme).order_by(Programme.code))).scalars().all()
     return [p for p in progs if programme_actif_pour_session(p, sess)]
 
@@ -116,7 +130,7 @@ async def list_etapes_statut(
     db: AsyncSession = Depends(get_db),
 ) -> list[EtapeStatutOut]:
     """Étapes d'un programme avec leur statut d'affectation pour la session."""
-    await get_or_404(Session, session_id, db, label="Session")
+    await session_visible_ou_404(db, session_id, current_user)
     await get_or_404(Programme, programme_id, db, label="Programme")
     statuts = await lister_etapes_avec_statut(session_id, programme_id, db)
     return [EtapeStatutOut.model_validate(s) for s in statuts]
@@ -130,6 +144,7 @@ async def get_ponderations(
 ) -> PonderationsOut:
     from app.models.ponderations_session import PonderationsSession
 
+    await session_visible_ou_404(db, session_id, current_user)
     result = await db.execute(
         select(PonderationsSession).where(PonderationsSession.session_id == session_id)
     )
@@ -148,6 +163,7 @@ async def update_session_ponderations(
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> PonderationsOut:
+    await session_modifiable_ou_404(db, session_id, current_user)
     try:
         pond = await update_ponderations(
             session_id, payload.w1, payload.w2, payload.w3, payload.w4, db

@@ -13,12 +13,28 @@ from app.models.professeur import Professeur
 from app.models.session import Semestre, Session
 
 
+async def _session_ouverte(db_session: AsyncSession) -> Session:
+    """La génération exige désormais une session existante et à portée.
+
+    C'est le cloisonnement des bacs à sable qui l'impose : sans cette
+    vérification, un visiteur pourrait générer dans la session de
+    l'établissement, donc pour tout le monde.
+    """
+    sess = Session(annee=2031, semestre=Semestre.AUTOMNE)
+    db_session.add(sess)
+    await db_session.commit()
+    await db_session.refresh(sess)
+    return sess
+
+
 @pytest.mark.asyncio
 async def test_post_generer_avec_etape_ids(
     client: AsyncClient,
     auth_headers_rh: dict[str, str],
+    db_session: AsyncSession,
 ):
     """POST /api/affectations/generer transmet etape_ids à la tâche Celery."""
+    sess = await _session_ouverte(db_session)
     mock_result = MagicMock()
     mock_result.id = "test-task-id-etapes"
 
@@ -28,22 +44,24 @@ async def test_post_generer_avec_etape_ids(
     ) as mock_delay:
         resp = await client.post(
             "/api/affectations/generer",
-            json={"session_id": 999, "programme_ids": [1], "etape_ids": [10, 20]},
+            json={"session_id": sess.id, "programme_ids": [1], "etape_ids": [10, 20]},
             headers=auth_headers_rh,
         )
 
     assert resp.status_code == 202
     body = resp.json()
     assert body["task_id"] == "test-task-id-etapes"
-    mock_delay.assert_called_once_with(999, [1], [10, 20])
+    mock_delay.assert_called_once_with(sess.id, [1], [10, 20])
 
 
 @pytest.mark.asyncio
 async def test_post_generer_sans_etape_ids(
     client: AsyncClient,
     auth_headers_rh: dict[str, str],
+    db_session: AsyncSession,
 ):
     """Sans etape_ids, None est transmis (rétrocompatibilité)."""
+    sess = await _session_ouverte(db_session)
     mock_result = MagicMock()
     mock_result.id = "test-task-id-no-etapes"
 
@@ -53,12 +71,29 @@ async def test_post_generer_sans_etape_ids(
     ) as mock_delay:
         resp = await client.post(
             "/api/affectations/generer",
-            json={"session_id": 999, "programme_ids": [1]},
+            json={"session_id": sess.id, "programme_ids": [1]},
             headers=auth_headers_rh,
         )
 
     assert resp.status_code == 202
-    mock_delay.assert_called_once_with(999, [1], None)
+    mock_delay.assert_called_once_with(sess.id, [1], None)
+
+
+@pytest.mark.asyncio
+async def test_post_generer_refuse_une_session_inconnue(
+    client: AsyncClient,
+    auth_headers_rh: dict[str, str],
+):
+    """Une session qui n'existe pas ne lance aucune tâche."""
+    with patch("app.routers.affectations.generer_affectations_task.delay") as mock_delay:
+        resp = await client.post(
+            "/api/affectations/generer",
+            json={"session_id": 999999, "programme_ids": [1]},
+            headers=auth_headers_rh,
+        )
+
+    assert resp.status_code == 404
+    mock_delay.assert_not_called()
 
 
 @pytest.mark.asyncio

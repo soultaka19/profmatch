@@ -79,5 +79,28 @@ class Settings(BaseSettings):
     # Frontend (utilisé pour construire l'URL d'activation envoyée à l'admin)
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # --- Démonstration publique ------------------------------------------
+    # Bac à sable jetable : trois comptes (prof/rh/admin) et une session
+    # académique par visiteur, effacés à l'expiration.
+    DEMO_DUREE_MINUTES: int = 60
+    # Plafond de bacs vivants. Il ne dépend d'aucun en-tête : c'est le
+    # garde-fou qui tient encore si la limite par adresse IP est contournée.
+    DEMO_MAX_VIVANTS: int = 30
+    # Créations autorisées par adresse IP et par fenêtre.
+    DEMO_LIMITE_CREATIONS: int = 3
+    DEMO_FENETRE_MINUTES: int = 10
+    DEMO_PURGE_INTERVALLE_SECONDES: int = 300
+
+    # --- Budget des appels au modèle -------------------------------------
+    # Appels LLM accordés à un bac à sable : l'extraction d'un CV en consomme
+    # un, chaque narration XAI consultée en consomme un autre.
+    DEMO_APPELS_IA: int = 6
+    # Plafond global quotidien, tous bacs confondus. Mesuré au tarif
+    # gemini-3.6-flash (0,75 $/M en entrée, 3,75 $/M en sortie, jetons de
+    # réflexion facturés en sortie) : une extraction de CV coûte de l'ordre
+    # de 0,8 ¢ et une narration XAI de 0,3 ¢, soit moins de 0,50 $ par jour
+    # à ce plafond.
+    DEMO_APPELS_IA_PAR_JOUR: int = 60
+
 
 settings = Settings()

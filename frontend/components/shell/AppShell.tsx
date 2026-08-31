@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";
+import { DemoBanner } from "@/components/demo/DemoBanner";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import type { NavSection } from "@/lib/nav/types";
 import { cn } from "@/lib/utils";
@@ -92,7 +93,12 @@ export function AppShell({
   // ainsi topbar et contenu partagent la même largeur (gouttière de scrollbar
   // comprise) et restent alignés, scrollbar présente ou non.
   return (
-    <div className="fixed inset-0 flex bg-canvas">
+    // Colonne : le bandeau de démonstration prend sa propre rangée au-dessus
+    // de tout, et la rangée du dessous occupe exactement ce qui reste. Hors
+    // démonstration le bandeau ne rend rien et la mise en page est inchangée.
+    <div className="fixed inset-0 flex flex-col bg-canvas">
+      <DemoBanner />
+      <div className="flex min-h-0 flex-1">
       <AppSidebar
         navigation={navigation}
         homeHref={homeHref}
@@ -137,6 +143,7 @@ export function AppShell({
           {children}
         </div>
       </main>
+      </div>
     </div>
   );
 }

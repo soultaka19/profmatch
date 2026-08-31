@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     DateTime,
+    ForeignKey,
     SmallInteger,
     UniqueConstraint,
     event,
@@ -19,6 +20,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.affectation import Affectation
+    from app.models.demo_sandbox import DemoSandbox
     from app.models.ponderations_session import PonderationsSession
 
 
@@ -70,6 +72,18 @@ class Session(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+    # NULL = session réelle de l'établissement. Une session de bac à sable
+    # isole ce que le visiteur génère : affectations et pondérations y pendent
+    # déjà, c'est l'axe de cloisonnement que le domaine offrait de lui-même.
+    sandbox_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("demo_sandboxes.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
+    sandbox: Mapped["DemoSandbox | None"] = relationship("DemoSandbox", back_populates="sessions")
 
     affectations: Mapped[list["Affectation"]] = relationship(
         "Affectation", back_populates="session", cascade="all, delete-orphan"

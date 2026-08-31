@@ -2,13 +2,14 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, String, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.demo_sandbox import DemoSandbox  # noqa: F401
     from app.models.professeur import Professeur  # noqa: F401
 
 
@@ -32,6 +33,17 @@ class User(Base):
     cree_le: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # NULL = compte réel de l'établissement. Non NULL = compte jetable d'un
+    # visiteur : c'est le seul axe qui porte des données personnelles, puisque
+    # le professeur et son CV pendent du compte.
+    sandbox_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("demo_sandboxes.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
+    sandbox: Mapped["DemoSandbox | None"] = relationship("DemoSandbox", back_populates="users")
 
     professeur: Mapped["Professeur | None"] = relationship(
         "Professeur", back_populates="user", uselist=False, cascade="all, delete-orphan"

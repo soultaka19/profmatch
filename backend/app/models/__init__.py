@@ -5,6 +5,7 @@ from app.models.cours import Cours  # noqa: F401
 from app.models.cours_competence import CoursCompetence  # noqa: F401
 from app.models.cours_etape_programme import CategorieCours, CoursEtapeProgramme  # noqa: F401
 from app.models.cv import CV, CVStatut  # noqa: F401
+from app.models.demo_sandbox import DemoQuotaJour, DemoSandbox  # noqa: F401
 from app.models.etape_programme import EtapeProgramme  # noqa: F401
 from app.models.experience import Experience  # noqa: F401
 from app.models.formation import Formation  # noqa: F401
