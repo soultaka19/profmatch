@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/auth/LoginForm";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, PlayCircle } from "lucide-react";
+import Link from "next/link";
 
 const features = [
   "Extraction automatique des compétences et expériences depuis le CV.",
@@ -72,6 +73,16 @@ export default function LoginPage() {
         </p>
 
         <LoginForm />
+
+        {/* Entrée sans compte : un visiteur professionnel doit pouvoir juger le
+            produit sans laisser d'adresse courriel. */}
+        <Link
+          href="/demo"
+          className="mt-8 flex items-center justify-center gap-1.5 text-body-sm text-fg-muted transition-colors hover:text-primary"
+        >
+          <PlayCircle className="h-4 w-4" />
+          Essayer sans compte
+        </Link>
       </section>
 
     </main>

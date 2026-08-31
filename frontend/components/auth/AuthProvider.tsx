@@ -17,6 +17,8 @@ interface AuthContextValue {
   user: UserOut | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<UserOut>;
+  /** Adopte un jeton obtenu hors du formulaire (bac à sable, changement de rôle). */
+  adopterJeton: (token: string) => Promise<UserOut>;
   logout: () => void;
 }
 
@@ -50,14 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return me;
   }, []);
 
+  // La démonstration remet trois jetons d'un coup, sans jamais demander
+  // d'adresse courriel ni de mot de passe : passer d'un rôle à l'autre, c'est
+  // changer de jeton, pas se reconnecter.
+  const adopterJeton = useCallback(async (token: string) => {
+    localStorage.setItem("access_token", token);
+    const me = await authApi.me();
+    setUser(me);
+    return me;
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, logout }),
-    [user, isLoading, login, logout]
+    () => ({ user, isLoading, login, adopterJeton, logout }),
+    [user, isLoading, login, adopterJeton, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

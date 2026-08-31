@@ -6,11 +6,19 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.demo_scope import (
+    affectation_visible_ou_404,
+    session_modifiable_ou_404,
+    session_visible_ou_404,
+    tenter_appel_ia,
+    visibilite,
+)
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.affectation import Affectation, AffectationStatut, JustificationStatut
 from app.models.cours_etape_programme import CoursEtapeProgramme
 from app.models.professeur import Professeur
+from app.models.session import Session as SessionModel
 from app.models.user import User
 from app.schemas.affectation import (
     AffectationManuelleCreate,
@@ -82,8 +90,14 @@ def _to_prof_out(aff: Affectation) -> AffectationProfOut:
 async def generer_affectations(
     payload: GenererAffectationsRequest,
     current_user: User = Depends(require_role("rh")),
+    db: AsyncSession = Depends(get_db),
 ) -> GenererAffectationsResponse:
-    """Lance la génération asynchrone des affectations via Celery."""
+    """Lance la génération asynchrone des affectations via Celery.
+
+    La session doit être celle de l'appelant : un visiteur ne génère pas dans
+    la session de l'établissement, il générerait pour tout le monde.
+    """
+    await session_modifiable_ou_404(db, payload.session_id, current_user)
     task = generer_affectations_task.delay(
         payload.session_id, payload.programme_ids, payload.etape_ids
     )
@@ -158,7 +172,12 @@ async def list_affectations(
     current_user: User = Depends(require_role("rh", "admin")),
     db: AsyncSession = Depends(get_db),
 ) -> list[AffectationOut]:
-    query = select(Affectation).options(*_RELATIONS)
+    query = (
+        select(Affectation)
+        .options(*_RELATIONS)
+        .join(SessionModel, Affectation.session_id == SessionModel.id)
+        .where(visibilite(SessionModel.sandbox_id, current_user))
+    )
     if session_id is not None:
         query = query.where(Affectation.session_id == session_id)
     if cours_id is not None:
@@ -190,9 +209,15 @@ async def creer_affectation_manuelle_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
     """REV-04 : le RH affecte manuellement un professeur à un cours."""
+    await session_modifiable_ou_404(db, payload.session_id, current_user)
     try:
         aff = await creer_affectation_manuelle(
-            payload.session_id, payload.professeur_id, payload.cours_id, current_user.id, db
+            payload.session_id,
+            payload.professeur_id,
+            payload.cours_id,
+            current_user.id,
+            db,
+            current_user.sandbox_id,
         )
     except ValueError as exc:
         msg = str(exc)
@@ -216,7 +241,8 @@ async def professeurs_disponibles(
     db: AsyncSession = Depends(get_db),
 ) -> list[ProfesseurDisponibleOut]:
     """Profs avec CV traité non encore affectés à ce (session, cours)."""
-    profs = await lister_professeurs_disponibles(session_id, cours_id, db)
+    await session_visible_ou_404(db, session_id, current_user)
+    profs = await lister_professeurs_disponibles(session_id, cours_id, db, current_user.sandbox_id)
     return [ProfesseurDisponibleOut(professeur_id=pid, nom_complet=nom) for pid, nom in profs]
 
 
@@ -250,12 +276,11 @@ async def get_affectation(
     current_user: User = Depends(require_role("rh", "admin", "prof")),
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
+    await affectation_visible_ou_404(db, affectation_id, current_user)
     result = await db.execute(
         select(Affectation).options(*_RELATIONS).where(Affectation.id == affectation_id)
     )
-    aff = result.scalar_one_or_none()
-    if not aff:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Affectation introuvable")
+    aff = result.scalar_one()
     # Prof : peut voir uniquement ses propres affectations
     if current_user.role.value == "prof":
         from sqlalchemy import select as sa_select
@@ -287,7 +312,12 @@ async def get_justification(
     Enrichissement XAI LAZY : la consultation déclenche (au premier passage)
     l'enrichissement LLM de CETTE justification — le front poll ensuite tant
     que le statut est EN_COURS pour voir la narration remplacer la statique."""
-    await declencher_enrichissement_si_besoin(affectation_id, db)
+    await affectation_visible_ou_404(db, affectation_id, current_user)
+    # Budget : un quota épuisé fait retomber sur la justification statique,
+    # déjà prévue par le produit, plutôt que de casser l'affichage du panneau.
+    await declencher_enrichissement_si_besoin(
+        affectation_id, db, lambda: tenter_appel_ia(db, current_user)
+    )
     try:
         return await get_justification_detail(affectation_id, db)
     except ValueError as exc:
@@ -301,6 +331,7 @@ async def valider_ou_rejeter(
     current_user: User = Depends(require_role("rh")),
     db: AsyncSession = Depends(get_db),
 ) -> AffectationOut:
+    await affectation_visible_ou_404(db, affectation_id, current_user, ecriture=True)
     try:
         aff = await valider_affectation(affectation_id, current_user.id, payload.statut, db)
     except ValueError as exc:
@@ -323,6 +354,7 @@ async def add_feedback(
     current_user: User = Depends(require_role("rh")),
     db: AsyncSession = Depends(get_db),
 ) -> FeedbackOut:
+    await affectation_visible_ou_404(db, affectation_id, current_user, ecriture=True)
     return await ajouter_feedback(
         affectation_id, current_user.id, payload.note, payload.commentaire, db
     )

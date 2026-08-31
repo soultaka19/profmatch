@@ -16,6 +16,7 @@ Flux :
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -23,6 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.demo_scope import portee_sandbox
 from app.models.affectation import (
     Affectation,
     AffectationOrigine,
@@ -151,13 +153,23 @@ async def _charger_competences_cours(
     return mapping
 
 
-async def _charger_professeurs_traites(db: AsyncSession) -> list[Professeur]:
+async def _charger_professeurs_traites(
+    db: AsyncSession, sandbox_id: int | None = None
+) -> list[Professeur]:
+    """Vivier des candidats, borné à la portée de la session traitée.
+
+    La génération tourne dans le worker Celery, sans utilisateur : la portée se
+    dérive donc de la session elle-même. Sans ce filtre, un visiteur verrait
+    dans ses affectations les professeurs — donc les CV — d'un autre visiteur.
+    """
     from app.models.cv import CV, CVStatut
+    from app.models.user import User
 
     result = await db.execute(
         select(Professeur)
         .join(CV, CV.professeur_id == Professeur.id)
-        .where(CV.statut == CVStatut.TRAITE)
+        .join(User, Professeur.user_id == User.id)
+        .where(CV.statut == CVStatut.TRAITE, portee_sandbox(User.sandbox_id, sandbox_id))
         .options(
             selectinload(Professeur.user),
             selectinload(Professeur.competences),
@@ -168,13 +180,18 @@ async def _charger_professeurs_traites(db: AsyncSession) -> list[Professeur]:
 
 
 async def _charger_bonus_historique(
-    session_id: int, db: AsyncSession
+    session_id: int, db: AsyncSession, sandbox_id: int | None = None
 ) -> dict[tuple[int, int], tuple[float, int, float]]:
     """Précharge en UNE requête le bonus W3 de toutes les paires (prof, cours)
     ayant un historique validé et noté hors de la session courante.
 
     Retourne {(professeur_id, cours_id): (bonus_normalisé, nb_sessions, note_moy)}.
     Remplace l'appel par paire qui générait N×M requêtes lors de la génération.
+
+    L'historique est borné à la portée de la session traitée. Sans cela, une
+    affectation validée par un visiteur nourrirait le W3 des générations
+    suivantes de l'établissement — une contamination silencieuse, qui déplacerait
+    de vrais scores.
     """
     rows = (
         await db.execute(
@@ -185,9 +202,11 @@ async def _charger_bonus_historique(
                 func.avg(AffectationFeedback.note),
             )
             .join(AffectationFeedback, AffectationFeedback.affectation_id == Affectation.id)
+            .join(Session, Affectation.session_id == Session.id)
             .where(
                 Affectation.statut == AffectationStatut.VALIDEE,
                 Affectation.session_id != session_id,
+                portee_sandbox(Session.sandbox_id, sandbox_id),
             )
             .group_by(Affectation.professeur_id, Affectation.cours_id)
         )
@@ -258,7 +277,11 @@ async def _construire_ctx_dict(aff: Affectation, db: AsyncSession) -> dict:
     return _ctx_to_dict(ctx)
 
 
-async def declencher_enrichissement_si_besoin(affectation_id: int, db: AsyncSession) -> dict:
+async def declencher_enrichissement_si_besoin(
+    affectation_id: int,
+    db: AsyncSession,
+    avant_enqueue: Callable[[], Awaitable[bool]] | None = None,
+) -> dict:
     """Enrichissement XAI LAZY : déclenche l'appel LLM d'UNE justification au
     moment où le RH la consulte, au lieu d'un enqueue de masse à la génération.
 
@@ -294,6 +317,11 @@ async def declencher_enrichissement_si_besoin(affectation_id: int, db: AsyncSess
     ).scalar_one_or_none()
     if pond is None or not pond.xai_actif:
         return {"skip": "xai_inactif"}
+
+    # Le budget n'est consulté qu'ici, une fois toutes les conditions réunies :
+    # la consultation d'une justification déjà enrichie ne doit rien coûter.
+    if avant_enqueue is not None and not await avant_enqueue():
+        return {"skip": "budget_epuise"}
 
     ctx_dict = await _construire_ctx_dict(aff, db)
     aff.justification_statut = JustificationStatut.EN_COURS
@@ -427,12 +455,12 @@ async def generer_affectations(
 
     cours_ids = [c.id for c in cours_list]
     competences_par_cours = await _charger_competences_cours(cours_ids, db)
-    professeurs = await _charger_professeurs_traites(db)
+    professeurs = await _charger_professeurs_traites(db, session.sandbox_id)
     if not professeurs:
         return [], exclus_ids
 
     # Préchargement du bonus W3 en une requête (évite le N×M de l'appel par paire).
-    bonus_map = await _charger_bonus_historique(session_id, db)
+    bonus_map = await _charger_bonus_historique(session_id, db, session.sandbox_id)
 
     # Supprimer les PROPOSEE existantes UNIQUEMENT pour les cours du périmètre généré
     if cours_ids:
@@ -551,17 +579,25 @@ async def creer_affectation_manuelle(
     cours_id: int,
     user_id: int,
     db: AsyncSession,
+    sandbox_id: int | None = None,
 ) -> Affectation:
     """Affecte manuellement un prof à un cours (REV-04) : score réel calculé,
-    statut VALIDEE, origine MANUEL, auteur = RH. Upsert sur (session, prof, cours)."""
+    statut VALIDEE, origine MANUEL, auteur = RH. Upsert sur (session, prof, cours).
+
+    Le professeur doit être dans la portée de l'appelant : un identifiant se
+    devine, et affecter le professeur d'un autre visiteur ferait apparaître son
+    nom — donc son CV — dans un espace qui n'est pas le sien.
+    """
     import datetime
 
     from app.models.cv import CVStatut
+    from app.models.user import User
 
     prof = (
         await db.execute(
             select(Professeur)
-            .where(Professeur.id == professeur_id)
+            .join(User, Professeur.user_id == User.id)
+            .where(Professeur.id == professeur_id, portee_sandbox(User.sandbox_id, sandbox_id))
             .options(
                 selectinload(Professeur.user),
                 selectinload(Professeur.competences),
@@ -581,7 +617,7 @@ async def creer_affectation_manuelle(
 
     competences_cours = (await _charger_competences_cours([cours_id], db)).get(cours_id, [])
     poids, xai_actif = await _charger_ponderations(session_id, db)
-    bonus_map = await _charger_bonus_historique(session_id, db)
+    bonus_map = await _charger_bonus_historique(session_id, db, sandbox_id)
 
     score_total, composants, ctx = _scorer_paire(prof, cours, competences_cours, poids, bonus_map)
     justification = await _rediger_justification(ctx, xai_actif)
@@ -619,6 +655,7 @@ async def lister_professeurs_disponibles(
     session_id: int,
     cours_id: int,
     db: AsyncSession,
+    sandbox_id: int | None = None,
 ) -> list[tuple[int, str]]:
     """Profs avec CV traité n'ayant PAS déjà d'affectation *active* (proposée ou
     validée) pour ce (session, cours). Les profs rejetés restent disponibles : le
@@ -637,12 +674,15 @@ async def lister_professeurs_disponibles(
     ).all()
     deja_ids = {row[0] for row in deja}
 
+    from app.models.user import User
+
     profs = (
         (
             await db.execute(
                 select(Professeur)
                 .join(CV, CV.professeur_id == Professeur.id)
-                .where(CV.statut == CVStatut.TRAITE)
+                .join(User, Professeur.user_id == User.id)
+                .where(CV.statut == CVStatut.TRAITE, portee_sandbox(User.sandbox_id, sandbox_id))
                 .options(selectinload(Professeur.user))
             )
         )

@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.demo_scope import possession, visibilite
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.user import User
@@ -35,10 +36,27 @@ def _activation_url(token: str) -> str:
     return f"{settings.FRONTEND_URL.rstrip('/')}/activate?token={token}"
 
 
+async def _charger(db: AsyncSession, user_id: int, courant: User, ecriture: bool) -> User:
+    """Charge un compte que `courant` a le droit de voir, ou de modifier.
+
+    Le cloisonnement des comptes est celui qui compte le plus : un compte porte
+    le professeur, donc le CV téléversé, donc des données personnelles réelles.
+    Un visiteur ne doit ni les lire ni y toucher — et surtout pas réinitialiser
+    le mot de passe d'un compte de l'établissement.
+    """
+    portee = (
+        possession(User.sandbox_id, courant) if ecriture else visibilite(User.sandbox_id, courant)
+    )
+    user = (await db.execute(select(User).where(User.id == user_id, portee))).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    return user
+
+
 @router.post("", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_utilisateur(
     payload: UserCreate,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserCreateResponse:
     existing = await db.execute(select(User).where(User.email == payload.email))
@@ -53,6 +71,7 @@ async def create_utilisateur(
         role=payload.role,
         nom_complet=payload.nom_complet,
         actif=True,
+        sandbox_id=current_user.sandbox_id,
     )
     db.add(user)
     await db.commit()
@@ -69,10 +88,10 @@ async def create_utilisateur(
 @router.get("", response_model=list[UserAdminOut])
 async def list_utilisateurs(
     actif: bool | None = None,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> list[UserAdminOut]:
-    stmt = select(User).order_by(User.nom_complet)
+    stmt = select(User).where(visibilite(User.sandbox_id, current_user)).order_by(User.nom_complet)
     if actif is not None:
         stmt = stmt.where(User.actif.is_(actif))
     result = await db.execute(stmt)
@@ -82,13 +101,10 @@ async def list_utilisateurs(
 @router.get("/{user_id}", response_model=UserAdminOut)
 async def get_utilisateur(
     user_id: int,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminOut:
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user = await _charger(db, user_id, current_user, ecriture=False)
     return user
 
 
@@ -96,13 +112,10 @@ async def get_utilisateur(
 async def update_utilisateur(
     user_id: int,
     payload: UserUpdate,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminOut:
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user = await _charger(db, user_id, current_user, ecriture=True)
 
     if payload.nom_complet is not None:
         user.nom_complet = payload.nom_complet
@@ -125,10 +138,7 @@ async def desactiver_utilisateur(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Un admin ne peut pas se désactiver lui-même",
         )
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user = await _charger(db, user_id, current_user, ecriture=True)
     user.actif = False
     await db.commit()
     await db.refresh(user)
@@ -138,13 +148,10 @@ async def desactiver_utilisateur(
 @router.post("/{user_id}/restaurer", response_model=UserAdminOut)
 async def restaurer_utilisateur(
     user_id: int,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminOut:
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user = await _charger(db, user_id, current_user, ecriture=True)
     user.actif = True
     await db.commit()
     await db.refresh(user)
@@ -154,7 +161,7 @@ async def restaurer_utilisateur(
 @router.post("/{user_id}/reinit-password", response_model=UserCreateResponse)
 async def reinit_password(
     user_id: int,
-    _: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ) -> UserCreateResponse:
     """Réémet un jeton d'activation pour l'utilisateur (réinitialisation par admin).
@@ -163,10 +170,7 @@ async def reinit_password(
     le sien via le lien d'activation. Cet endpoint sert pour les mots de passe
     perdus ou compromis.
     """
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+    user = await _charger(db, user_id, current_user, ecriture=True)
 
     user.password_hash = None
     await db.commit()

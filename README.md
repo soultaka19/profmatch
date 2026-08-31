@@ -61,6 +61,13 @@ ProfMatch keeps the decision deterministic and the narration optional:
   through a one-shot token link, soft delete/restore.
 - **Admin tooling** — platform statistics and an idempotent demo dataset
   (programmes, courses, ~11 teachers with processed CVs) loadable from the UI.
+- **Disposable public demo (`/demo`)** — one click hands a visitor three throwaway
+  accounts (prof/rh/admin) and an academic session of their own, erased after an
+  hour. No email, no password. The shared catalogue stays visible (otherwise
+  assignment generation would have no candidates) but read-only, and one
+  visitor's accounts, teachers and uploaded CVs are invisible to another — the
+  constraint that shaped the design, since a visitor may well upload their real
+  CV. LLM calls are capped per sandbox and per day.
 
 ## My Role
 

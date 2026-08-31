@@ -16,6 +16,12 @@ vi.mock("@/components/auth/AuthProvider", () => ({
   }),
 }));
 
+// Le bandeau de démonstration vit dans l'AppShell ; hors démonstration il ne
+// rend rien, ce que ce faux reproduit sans exiger de DemoProvider.
+vi.mock("@/components/demo/DemoProvider", () => ({
+  useDemo: () => ({ estDemo: false }),
+}));
+
 vi.mock("@/components/theme/ThemeSwitcher", () => ({
   ThemeSwitcher: () => <button type="button">Thème</button>,
 }));

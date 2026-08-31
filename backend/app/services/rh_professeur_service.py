@@ -1,8 +1,16 @@
-"""Service RH : accès en lecture aux profils professeurs."""
+"""Service RH : accès en lecture aux profils professeurs.
+
+Les CV téléversés pendant une démonstration sont des données personnelles
+réelles — quelqu'un peut très bien y déposer le sien. Les deux lectures de ce
+service sont donc bornées au bac à sable de l'appelant : un visiteur voit les
+professeurs de l'établissement (il en a besoin pour que la génération
+d'affectations ait des candidats) et les siens, jamais ceux d'un autre visiteur.
+"""
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.demo_scope import visibilite
 from app.models.competence import Competence
 from app.models.cv import CV
 from app.models.experience import Experience
@@ -25,19 +33,22 @@ async def list_professeurs(
     page: int,
     page_size: int,
     q: str | None,
+    appelant: User,
 ) -> tuple[list[ProfesseurListItem], int]:
-    """Liste paginée des professeurs (tous), avec méta CV (LEFT JOIN)."""
+    """Liste paginée des professeurs visibles, avec méta CV (LEFT JOIN)."""
+    portee = visibilite(User.sandbox_id, appelant)
+
     base = (
         select(Professeur, User, CV)
         .join(User, Professeur.user_id == User.id)
         .outerjoin(CV, CV.professeur_id == Professeur.id)
-        .where(User.role == UserRole.PROF)
+        .where(User.role == UserRole.PROF, portee)
     )
 
     count_stmt = (
         select(func.count(Professeur.id))
         .join(User, Professeur.user_id == User.id)
-        .where(User.role == UserRole.PROF)
+        .where(User.role == UserRole.PROF, portee)
     )
 
     if q:
@@ -68,13 +79,18 @@ async def list_professeurs(
 async def get_professeur_detail(
     db: AsyncSession,
     professeur_id: int,
+    appelant: User,
 ) -> ProfesseurDetailResponse | None:
     row = (
         await db.execute(
             select(Professeur, User, CV)
             .join(User, Professeur.user_id == User.id)
             .outerjoin(CV, CV.professeur_id == Professeur.id)
-            .where(Professeur.id == professeur_id, User.role == UserRole.PROF)
+            .where(
+                Professeur.id == professeur_id,
+                User.role == UserRole.PROF,
+                visibilite(User.sandbox_id, appelant),
+            )
         )
     ).first()
     if row is None:
