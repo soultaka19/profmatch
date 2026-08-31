@@ -63,6 +63,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [appelsRestants, setAppelsRestants] = useState(0);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const demarrage = useRef(false);
+  // Lu depuis le gestionnaire d'erreur de `rafraichir`, qui ne doit pas
+  // dépendre de la valeur capturée à la création de la fonction.
+  const expireLeRef = useRef<Date | null>(null);
 
   const estDemo = expireLe !== null;
 
@@ -77,6 +80,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setAppelsTotal(0);
     setAppelsRestants(0);
   }, []);
+
+  useEffect(() => {
+    expireLeRef.current = expireLe;
+  }, [expireLe]);
 
   const rafraichir = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -94,9 +101,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setAppelsRestants(s.appels_ia_restants ?? 0);
       })
       .catch(() => {
-        // Jeton expiré ou API injoignable : on n'affiche pas un compte à
-        // rebours dont on ne répond plus.
-        oublier();
+        // La purge a effacé le bac : le compte n'existe plus, l'API répond 401.
+        // On garde alors le bandeau « expiré » plutôt que de le faire
+        // disparaître — le visiteur doit comprendre pourquoi plus rien ne
+        // répond. Dans les autres cas (API injoignable avant l'échéance), on
+        // oublie plutôt que d'afficher un décompte dont on ne répond plus.
+        const echu = expireLeRef.current !== null && expireLeRef.current.getTime() <= Date.now();
+        if (!echu) oublier();
       });
   }, [oublier]);
 

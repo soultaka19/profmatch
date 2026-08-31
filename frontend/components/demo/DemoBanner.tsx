@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, FlaskConical, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useDemo } from "@/components/demo/DemoProvider";
@@ -87,9 +88,15 @@ export function DemoBanner() {
         <span className="hidden text-fg-muted md:inline">
           Données fictives, supprimées automatiquement.
         </span>
-        <Button size="sm" variant="outline" onClick={quitter}>
-          Quitter
-        </Button>
+        {expire ? (
+          <Button size="sm" asChild>
+            <Link href="/demo">Nouvel espace</Link>
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" onClick={quitter}>
+            Quitter
+          </Button>
+        )}
       </span>
     </div>
   );
