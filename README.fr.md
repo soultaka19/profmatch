@@ -65,6 +65,33 @@ docker compose up --build
 
 ---
 
+## Essayer sans compte — `/demo`
+
+`POST /api/demo/sandbox` (ou le bouton **« Essayer sans compte »** de la page de
+connexion) ouvre un **espace de démonstration jetable** : trois comptes
+prof/rh/admin, une session académique à soi, et un bandeau qui annonce en
+permanence le temps restant et les appels à l'IA encore accordés. Rien n'est
+demandé au visiteur — ni adresse courriel, ni mot de passe — et tout est effacé
+au bout d'une heure.
+
+**Ce que le visiteur peut faire :** téléverser un CV, générer et valider des
+affectations dans **sa** session, ajuster les pondérations W1–W4, lire les
+justifications XAI, et passer d'un rôle à l'autre sans se reconnecter.
+
+**Ce qu'il ne peut pas faire :** écrire dans le référentiel partagé (programmes,
+cours, compétences) ni toucher aux sessions de l'établissement. Il les voit —
+sans elles la génération n'aurait aucun candidat — mais en lecture seule.
+
+**Ce qu'il ne voit pas :** les comptes, professeurs et CV d'un autre visiteur.
+C'est le point qui a dicté la conception : quelqu'un peut très bien téléverser
+son vrai CV.
+
+Réglages : `DEMO_DUREE_MINUTES`, `DEMO_MAX_VIVANTS`, `DEMO_LIMITE_CREATIONS`,
+`DEMO_FENETRE_MINUTES`, `DEMO_PURGE_INTERVALLE_SECONDES`, `DEMO_APPELS_IA`,
+`DEMO_APPELS_IA_PAR_JOUR`.
+
+---
+
 ## Comptes de démonstration
 
 Les trois comptes sont **créés automatiquement au démarrage** — aucune action requise :
